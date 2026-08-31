@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#2f7d32" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="張老師教學資源" />
+  <meta name="format-detection" content="telephone=no" />
   <title>佛教志蓮小學　張老師教學資源</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
@@ -19,8 +23,9 @@
       --muted: #3d5c40;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     html, body {
-      margin: 0; min-height: 100%;
+      margin: 0; min-height: 100%; min-height: 100dvh;
       font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
       color: var(--ink);
       background: linear-gradient(#8fd3f0, #c8f0c0) fixed;
@@ -29,13 +34,13 @@
       background: var(--green);
       color: #fff;
       text-align: center;
-      padding: 18px 16px 16px;
+      padding: max(14px, env(safe-area-inset-top)) 16px 16px;
       box-shadow: 0 8px 0 var(--green-dark);
     }
     header .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--yellow); }
-    header h1 { margin: 6px 0 0; font-size: 26px; font-weight: 900; letter-spacing: .04em; }
-    header p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; opacity: .95; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
+    header h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
+    header p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; opacity: .95; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
     .chars {
       display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px;
     }
@@ -53,7 +58,7 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
       gap: 14px;
     }
     a.card, .item {
@@ -64,6 +69,7 @@
       padding: 16px 16px 14px;
       box-shadow: 0 6px 0 #8fbf92;
       cursor: pointer;
+      min-height: 44px;
     }
     a.card:active, .item:active { transform: translateY(2px); box-shadow: 0 4px 0 #8fbf92; }
     a.card .emoji { font-size: 42px; line-height: 1; }
@@ -84,10 +90,16 @@
       border-radius: 16px; padding: 12px 16px; cursor: pointer;
       text-decoration: none; display: inline-block; text-align: center;
     }
-    .btn-back { background: #fff; color: var(--green-dark); border: 4px solid var(--green); }
+    .btn-back { background: #fff; color: var(--green-dark); border: 4px solid var(--green); min-height: 44px; }
     .btn-play {
       background: var(--green); color: #fff; font-size: 20px; width: 100%;
-      box-shadow: 0 6px 0 var(--green-dark); margin: 8px 0 16px;
+      box-shadow: 0 6px 0 var(--green-dark); margin: 8px 0 12px;
+      min-height: 52px; line-height: 1.3; padding: 16px;
+    }
+    .btn-dl {
+      background: #1565c0; color: #fff; font-size: 18px; width: 100%;
+      box-shadow: 0 6px 0 #0d47a1; margin: 0 0 16px;
+      min-height: 52px; line-height: 1.3; padding: 16px;
     }
     .qrbox {
       background: #fff; border-radius: 24px; border: 5px solid var(--yellow);
@@ -131,9 +143,11 @@
         subject: "p2-sci",
         type: "game",
         title: "小小發明家跳跳關",
-        blurb: "五關科學平台遊戲。吃星星答二年級科學題，題目跟課本溫習。",
+        blurb: "五關科學平台遊戲。吃星星答二年級科學題。電腦、iPad、iPhone 都可以玩。",
         play: "https://cheungchung314-eng.github.io/chilin-jump-game/",
-        qr: "qrs/jump.png"
+        qr: "qrs/jump.png",
+        download: "downloads/chilin-jump-game.zip",
+        downloadName: "小小發明家跳跳關.zip"
       }
     ];
 
@@ -154,7 +168,7 @@
           <img src="assets/boy.png" alt="小志">
           <img src="assets/girl.png" alt="小蓮">
         </div>
-        <p class="note">請選擇年級和科目。遊戲可以在電腦、平板或手機遊玩。每個遊戲都有連結和二維碼。</p>
+        <p class="note">請選擇年級和科目。遊戲和小測驗都可以在電腦、iPad、iPhone 遊玩。每個項目有連結、二維碼，以及可以重新下載的原檔。</p>
         <div class="grid">
           ${SUBJECTS.map(s => `
             <a class="card" href="#/s/${s.id}">
@@ -199,7 +213,9 @@
           <p>${it.blurb}</p>
           <p style="margin-top:8px">開始前要填班別和學號（例如 4C 和 12）。不用寫姓名。成績只有張老師看到。</p>
         </div>
-        <a class="btn btn-play" href="${it.play}">立即遊玩</a>
+        <a class="btn btn-play" href="${it.play}">立即遊玩（電腦／iPad／iPhone）</a>
+        ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲原檔</a>
+        <p class="note" style="margin-top:0">唔見咗檔案可以在這裏下載返。解壓後打開 index.html，電腦、iPad、電話都係同一套檔案。離線玩不會交成績；要交功課請按「立即遊玩」或掃碼。</p>` : ""}
         <div class="qrbox">
           <img src="${it.qr}" alt="二維碼：${it.title}">
           <p>用相機掃描，即可遊玩。這個碼長期有效。</p>
