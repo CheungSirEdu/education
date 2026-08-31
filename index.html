@@ -143,7 +143,8 @@
         subject: "p2-sci",
         type: "game",
         title: "小小發明家跳跳關",
-        blurb: "共五關科學遊戲。取得星星後回答二年級科學題目，適用於電腦、平板電腦及智能電話。",
+        blurb: "二年級科學　《科學新領域》",
+        topics: "第1課　生物和非生物；第2課　觀察動物；第3課　動手種植物；第9課　磁鐵的特性；第10課　推力和拉力；第11課　地心吸力；第12課　奇思妙想；第13課　小小發明家",
         play: "https://cheungsiredu.github.io/chilin-jump-game/",
         qr: "qrs/jump.png",
         download: "downloads/chilin-jump-game.zip",
@@ -210,7 +211,8 @@
         </div>
         <div class="item" style="cursor:default;margin-bottom:14px">
           <h2>${it.title}</h2>
-          <p>${it.blurb}</p>
+          <p>${it.blurb || ""}</p>
+          ${it.topics ? `<p style="margin-top:8px">課題：${it.topics}</p>` : ""}
           <p style="margin-top:8px">開始前請填寫班別及學號（例如：4C、12）。無須填寫姓名。成績只供教師查閱。</p>
         </div>
         <a class="btn btn-play" href="${it.play}">立即遊玩</a>
