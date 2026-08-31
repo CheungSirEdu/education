@@ -119,22 +119,22 @@
   <header>
     <p class="school">佛教志蓮小學</p>
     <h1>張老師教學資源</h1>
-    <p>學生和家長都可以使用。開始遊戲或測驗前，請填寫班別和學號，不用寫姓名。</p>
+    <p>供學生及家長使用。開始遊戲或測驗前，請填寫班別及學號，無須填寫姓名。</p>
   </header>
   <main class="wrap" id="app"></main>
   <footer>
-    本站不收集姓名、電話或照片。<br>
-    只記錄班別、學號和成績，給張老師批改，不會公開給其他同學。<br>
-    內容適合小學生閱讀。
+    本站不會收集姓名、電話或照片。<br>
+    只記錄班別、學號及成績，供教師批改，不會向其他同學公開。<br>
+    本站內容適合小學生閱讀。
   </footer>
   <script>
     const SUBJECTS = [
-      { id: "p2-sci", title: "二年班科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
-      { id: "p4-sci", title: "四年班科學", emoji: "🔬", blurb: "教材即將推出" },
-      { id: "p4-math", title: "四年班數學", emoji: "➕", blurb: "教材即將推出" },
-      { id: "p4-pe", title: "四年班體育", emoji: "⚽", blurb: "教材即將推出" },
-      { id: "p4-ict", title: "四年班資訊科技", emoji: "💻", blurb: "教材即將推出" },
-      { id: "p5-ict", title: "五年班資訊科技", emoji: "🖥️", blurb: "教材即將推出" }
+      { id: "p2-sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
+      { id: "p4-sci", title: "四年級科學", emoji: "🔬", blurb: "教材即將推出" },
+      { id: "p4-math", title: "四年級數學", emoji: "➕", blurb: "教材即將推出" },
+      { id: "p4-pe", title: "四年級體育", emoji: "⚽", blurb: "教材即將推出" },
+      { id: "p4-ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
+      { id: "p5-ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" }
     ];
 
     const ITEMS = [
@@ -143,7 +143,7 @@
         subject: "p2-sci",
         type: "game",
         title: "小小發明家跳跳關",
-        blurb: "五關科學平台遊戲。吃星星答二年級科學題。電腦、iPad、iPhone 都可以玩。",
+        blurb: "共五關科學遊戲。取得星星後回答二年級科學題目，適用於電腦、平板電腦及智能電話。",
         play: "https://cheungsiredu.github.io/chilin-jump-game/",
         qr: "qrs/jump.png",
         download: "downloads/chilin-jump-game.zip",
@@ -168,7 +168,7 @@
           <img src="assets/boy.png" alt="小志">
           <img src="assets/girl.png" alt="小蓮">
         </div>
-        <p class="note">請選擇年級和科目。遊戲和小測驗都可以在電腦、iPad、iPhone 遊玩。每個項目有連結、二維碼，以及可以重新下載的原檔。</p>
+        <p class="note">請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結及二維碼。</p>
         <div class="grid">
           ${SUBJECTS.map(s => `
             <a class="card" href="#/s/${s.id}">
@@ -194,7 +194,7 @@
             <div class="emoji">${it.type === "game" ? "🎮" : "📝"}</div>
             <h2>${it.title}</h2>
             <p>${it.blurb}</p>
-          </a>`).join("")}</div>` : `<div class="empty">這部分的教材即將推出。<br>張老師批准後才會放上來。</div>`}
+          </a>`).join("")}</div>` : `<div class="empty">此部分教材即將推出。</div>`}
       `;
     }
 
@@ -205,20 +205,19 @@
       document.title = it.title + "　張老師教學資源";
       $("app").innerHTML = `
         <div class="bar">
-          <a class="btn btn-back" href="#/">← 目錄</a>
+          <a class="btn btn-back" href="#/">← 返回目錄</a>
           <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? s.title : "返回"}</a>
         </div>
         <div class="item" style="cursor:default;margin-bottom:14px">
           <h2>${it.title}</h2>
           <p>${it.blurb}</p>
-          <p style="margin-top:8px">開始前要填班別和學號（例如 4C 和 12）。不用寫姓名。成績只有張老師看到。</p>
+          <p style="margin-top:8px">開始前請填寫班別及學號（例如：4C、12）。無須填寫姓名。成績只供教師查閱。</p>
         </div>
-        <a class="btn btn-play" href="${it.play}">立即遊玩（電腦／iPad／iPhone）</a>
-        ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲原檔</a>
-        <p class="note" style="margin-top:0">唔見咗檔案可以在這裏下載返。解壓後打開 index.html，電腦、iPad、電話都係同一套檔案。離線玩不會交成績；要交功課請按「立即遊玩」或掃碼。</p>` : ""}
+        <a class="btn btn-play" href="${it.play}">立即遊玩</a>
+        ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲檔案</a>` : ""}
         <div class="qrbox">
           <img src="${it.qr}" alt="二維碼：${it.title}">
-          <p>用相機掃描，即可遊玩。這個碼長期有效。</p>
+          <p>請用相機掃描二維碼即可遊玩。</p>
         </div>
       `;
     }
