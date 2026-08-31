@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2f7d32" />
+  <title>佛教志蓮小學　張老師教學資源</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #2f7d32;
+      --green-dark: #1b5e20;
+      --yellow: #f4d35e;
+      --sky: #7ec8e3;
+      --sky2: #c8f0c0;
+      --card: #fffef6;
+      --ink: #1d2b1f;
+      --muted: #3d5c40;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; min-height: 100%;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(#8fd3f0, #c8f0c0) fixed;
+    }
+    header {
+      background: var(--green);
+      color: #fff;
+      text-align: center;
+      padding: 18px 16px 16px;
+      box-shadow: 0 8px 0 var(--green-dark);
+    }
+    header .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--yellow); }
+    header h1 { margin: 6px 0 0; font-size: 26px; font-weight: 900; letter-spacing: .04em; }
+    header p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; opacity: .95; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px 48px; }
+    .chars {
+      display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px;
+    }
+    .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .note {
+      background: var(--card);
+      border: 5px solid var(--green);
+      border-radius: 22px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 0 var(--green-dark);
+      line-height: 1.55;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 14px;
+    }
+    a.card, .item {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--card);
+      border: 5px solid #c5dcc6;
+      border-radius: 24px;
+      padding: 16px 16px 14px;
+      box-shadow: 0 6px 0 #8fbf92;
+      cursor: pointer;
+    }
+    a.card:active, .item:active { transform: translateY(2px); box-shadow: 0 4px 0 #8fbf92; }
+    a.card .emoji { font-size: 42px; line-height: 1; }
+    a.card h2, .item h2 { margin: 8px 0 4px; font-size: 22px; color: var(--green-dark); }
+    a.card p, .item p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; }
+    .empty {
+      background: var(--card);
+      border: 5px dashed #9ccc65;
+      border-radius: 24px;
+      padding: 28px 18px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    button, .btn {
+      appearance: none; border: 0; font: inherit; font-weight: 900;
+      border-radius: 16px; padding: 12px 16px; cursor: pointer;
+      text-decoration: none; display: inline-block; text-align: center;
+    }
+    .btn-back { background: #fff; color: var(--green-dark); border: 4px solid var(--green); }
+    .btn-play {
+      background: var(--green); color: #fff; font-size: 20px; width: 100%;
+      box-shadow: 0 6px 0 var(--green-dark); margin: 8px 0 16px;
+    }
+    .qrbox {
+      background: #fff; border-radius: 24px; border: 5px solid var(--yellow);
+      padding: 14px; text-align: center;
+    }
+    .qrbox img { width: min(100%, 420px); height: auto; }
+    .qrbox p { margin: 8px 0 0; font-weight: 700; font-size: 14px; }
+    footer {
+      text-align: center; padding: 8px 16px 28px; color: var(--green-dark);
+      font-size: 13px; font-weight: 700; line-height: 1.6;
+    }
+    h3.sec { margin: 0 0 12px; font-size: 24px; color: var(--green-dark); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="school">佛教志蓮小學</p>
+    <h1>張老師教學資源</h1>
+    <p>學生和家長都可以使用。開始遊戲或測驗前，請填寫班別和學號，不用寫姓名。</p>
+  </header>
+  <main class="wrap" id="app"></main>
+  <footer>
+    本站不收集姓名、電話或照片。<br>
+    只記錄班別、學號和成績，給張老師批改，不會公開給其他同學。<br>
+    內容適合小學生閱讀。
+  </footer>
+  <script>
+    const SUBJECTS = [
+      { id: "p2-sci", title: "二年班科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
+      { id: "p4-sci", title: "四年班科學", emoji: "🔬", blurb: "教材即將推出" },
+      { id: "p4-math", title: "四年班數學", emoji: "➕", blurb: "教材即將推出" },
+      { id: "p4-pe", title: "四年班體育", emoji: "⚽", blurb: "教材即將推出" },
+      { id: "p4-ict", title: "四年班資訊科技", emoji: "💻", blurb: "教材即將推出" },
+      { id: "p5-ict", title: "五年班資訊科技", emoji: "🖥️", blurb: "教材即將推出" }
+    ];
+
+    const ITEMS = [
+      {
+        id: "jump",
+        subject: "p2-sci",
+        type: "game",
+        title: "小小發明家跳跳關",
+        blurb: "五關科學平台遊戲。吃星星答二年級科學題，題目跟課本溫習。",
+        play: "https://cheungchung314-eng.github.io/chilin-jump-game/",
+        qr: "qrs/jump.png"
+      }
+    ];
+
+    function $(id) { return document.getElementById(id); }
+
+    function route() {
+      const hash = (location.hash || "#/").replace(/^#/, "");
+      const parts = hash.split("/").filter(Boolean);
+      if (parts[0] === "s" && parts[1]) return renderSubject(parts[1]);
+      if (parts[0] === "i" && parts[1]) return renderItem(parts[1]);
+      renderHome();
+    }
+
+    function renderHome() {
+      document.title = "佛教志蓮小學　張老師教學資源";
+      $("app").innerHTML = `
+        <div class="chars">
+          <img src="assets/boy.png" alt="小志">
+          <img src="assets/girl.png" alt="小蓮">
+        </div>
+        <p class="note">請選擇年級和科目。遊戲可以在電腦、平板或手機遊玩。每個遊戲都有連結和二維碼。</p>
+        <div class="grid">
+          ${SUBJECTS.map(s => `
+            <a class="card" href="#/s/${s.id}">
+              <div class="emoji">${s.emoji}</div>
+              <h2>${s.title}</h2>
+              <p>${s.blurb}</p>
+            </a>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSubject(id) {
+      const s = SUBJECTS.find(x => x.id === id);
+      if (!s) return renderHome();
+      const items = ITEMS.filter(x => x.subject === id);
+      document.title = s.title + "　張老師教學資源";
+      $("app").innerHTML = `
+        <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
+        <h3 class="sec">${s.emoji} ${s.title}</h3>
+        ${items.length ? `<div class="grid">${items.map(it => `
+          <a class="card" href="#/i/${it.id}">
+            <div class="emoji">${it.type === "game" ? "🎮" : "📝"}</div>
+            <h2>${it.title}</h2>
+            <p>${it.blurb}</p>
+          </a>`).join("")}</div>` : `<div class="empty">這部分的教材即將推出。<br>張老師批准後才會放上來。</div>`}
+      `;
+    }
+
+    function renderItem(id) {
+      const it = ITEMS.find(x => x.id === id);
+      if (!it) return renderHome();
+      const s = SUBJECTS.find(x => x.id === it.subject);
+      document.title = it.title + "　張老師教學資源";
+      $("app").innerHTML = `
+        <div class="bar">
+          <a class="btn btn-back" href="#/">← 目錄</a>
+          <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? s.title : "返回"}</a>
+        </div>
+        <div class="item" style="cursor:default;margin-bottom:14px">
+          <h2>${it.title}</h2>
+          <p>${it.blurb}</p>
+          <p style="margin-top:8px">開始前要填班別和學號（例如 4C 和 12）。不用寫姓名。成績只有張老師看到。</p>
+        </div>
+        <a class="btn btn-play" href="${it.play}">立即遊玩</a>
+        <div class="qrbox">
+          <img src="${it.qr}" alt="二維碼：${it.title}">
+          <p>用相機掃描，即可遊玩。這個碼長期有效。</p>
+        </div>
+      `;
+    }
+
+    window.addEventListener("hashchange", route);
+    route();
+  </script>
+</body>
+</html>
