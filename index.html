@@ -141,7 +141,7 @@
       { id: "p4-pe", title: "四年級體育", emoji: "⚽", blurb: "教材即將推出" },
       { id: "p4-ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
       { id: "p5-ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" },
-      { id: "world", title: "環遊世界", emoji: "🌍", blurb: "外語小學堂：日文、法文、韓文" }
+      { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" }
     ];
 
     const ITEMS = [
@@ -178,28 +178,28 @@
       },
       {
         id: "jp",
-        subject: "world",
+        subject: "lang",
         type: "game",
         title: "日文小學堂",
-        description: "環遊世界課程　外語體驗。聽廣東話解釋、聽日文示範，然後用麥克風朗讀。適用於 iPad、iPhone 及電腦。共 20 題。",
+        description: "外語　日文體驗。聽廣東話解釋、聽日文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/jp.html",
         qr: "qrs/lang-jp.png"
       },
       {
         id: "fr",
-        subject: "world",
+        subject: "lang",
         type: "game",
         title: "法文小學堂",
-        description: "環遊世界課程　外語體驗。聽廣東話解釋、聽法文示範，然後用麥克風朗讀。適用於 iPad、iPhone 及電腦。共 20 題。",
+        description: "外語　法文體驗。聽廣東話解釋、聽法文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/fr.html",
         qr: "qrs/lang-fr.png"
       },
       {
         id: "ko",
-        subject: "world",
+        subject: "lang",
         type: "game",
         title: "韓文小學堂",
-        description: "環遊世界課程　外語體驗。聽廣東話解釋、聽韓文示範，然後用麥克風朗讀。適用於 iPad、iPhone 及電腦。共 20 題。",
+        description: "外語　韓文體驗。聽廣東話解釋、聽韓文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/ko.html",
         qr: "qrs/lang-ko.png"
       }
@@ -210,7 +210,10 @@
     function route() {
       const hash = (location.hash || "#/").replace(/^#/, "");
       const parts = hash.split("/").filter(Boolean);
-      if (parts[0] === "s" && parts[1]) return renderSubject(parts[1]);
+      if (parts[0] === "s" && parts[1]) {
+        const sid = parts[1] === "world" ? "lang" : parts[1];
+        return renderSubject(sid);
+      }
       if (parts[0] === "i" && parts[1]) return renderItem(parts[1]);
       renderHome();
     }
