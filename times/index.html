@@ -536,10 +536,7 @@ buildTablePicks();
 $("klass").value = "";
 try {
   const w = JSON.parse(localStorage.getItem(STORE + "-who") || "null");
-  if (w) {
-    if (w.klass) $("klass").value = w.klass;
-    if (w.no) $("stuno").value = w.no;
-  }
+  if (w && w.no) $("stuno").value = w.no;
 } catch(e) {}
 const PUBLIC_URL = "https://cheungsiredu.github.io/education/times/";
 function showQr(url, imgSrc) {
