@@ -8,6 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="日文小學堂">
 <meta name="format-detection" content="telephone=no">
+<meta http-equiv="Permissions-Policy" content="microphone=*">
 <title>🇯🇵 日文小學堂　iPad／iPhone／電腦</title>
 <style>
 /* 外語小學堂：iPhone、iPad、電腦共用 */
@@ -348,7 +349,7 @@ button {
       <label>學號<input type="text" id="no-input" class="input-box" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="學號 (例如: 12)"></label>
     </div>
     <button class="btn btn-start" id="startBtn" type="button" disabled>開始挑戰！</button>
-    <p class="hint" id="login-warn">學號只可填數字。iPad／iPhone 請用 Safari，並允許麥克風。</p>
+    <p class="hint" id="login-warn">學號只可填數字。iPhone／iPad 請用 Safari。第一次朗讀時若問麥克風，請撳「允許」。</p>
     <div class="mic-banner"></div>
 </div>
 
@@ -455,7 +456,6 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   const levels = window.LANG_LEVELS;
   const SCORE_URL = window.SCORE_URL || "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
   const TOKEN = "chilin-edu-2026";
-  const TTS_TL = { "zh-HK": "yue", "ja-JP": "ja", "fr-FR": "fr", "ko-KR": "ko" };
 
   let cur = 0;
   let scores = new Array(levels.length).fill(0);
@@ -465,8 +465,10 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   let micTimeout = null;
   let listening = false;
   let audioCtx = null;
-  let audioUnlocked = false;
-  let ttsTry = 0;
+  let currentSource = null;
+  let bufCache = {};
+  let lastAlts = [];
+  let scoredThisListen = false;
   let ttsText = "";
   let ttsLang = "";
 
@@ -495,23 +497,14 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       .replace(/[\s.?!,。！？、，·・]/g, "");
   }
 
-  function getAudioEl() {
-    let a = $("ttsPlayer");
-    if (!a) {
-      a = document.createElement("audio");
-      a.id = "ttsPlayer";
-      a.setAttribute("playsinline", "");
-      a.setAttribute("webkit-playsinline", "");
-      a.preload = "auto";
-      document.body.appendChild(a);
-    }
-    return a;
-  }
-
-  function unlockAudio() {
+  function setAudioSession() {
     if (navigator.audioSession) {
       try { navigator.audioSession.type = "play-and-record"; } catch (e) {}
     }
+  }
+
+  function unlockAudio() {
+    setAudioSession();
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) {
@@ -519,21 +512,6 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
         if (audioCtx.state === "suspended") audioCtx.resume();
       }
     } catch (e) {}
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-    try {
-      const a = getAudioEl();
-      a.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-      const p = a.play();
-      if (p && p.then) p.then(function () { a.pause(); }).catch(function () {});
-    } catch (e) {}
-    if (synth) {
-      try {
-        const u = new SpeechSynthesisUtterance(" ");
-        u.volume = 0;
-        synth.speak(u);
-      } catch (e) {}
-    }
   }
 
   function loadVoices() {
@@ -568,7 +546,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function speakSynth(text, lang) {
-    if (!synth || !text) return;
+    if (!synth || !text || isIOS()) return;
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     u.rate = lang.indexOf("zh") === 0 ? 0.92 : 0.8;
@@ -577,23 +555,11 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     try { synth.speak(u); } catch (e) {}
   }
 
-  function ttsUrl(text, tl, kind) {
-    const q = encodeURIComponent(text);
-    const t = encodeURIComponent(tl);
-    if (kind === 1) {
-      return "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=" + t + "&q=" + q;
-    }
-    return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=" + t + "&q=" + q;
-  }
-
   function stopTts() {
-    try {
-      const a = getAudioEl();
-      a.onended = null;
-      a.onerror = null;
-      a.pause();
-      try { a.currentTime = 0; } catch (e) {}
-    } catch (e) {}
+    if (currentSource) {
+      try { currentSource.onended = null; currentSource.stop(); } catch (e) {}
+      currentSource = null;
+    }
     if (synth) {
       try { synth.cancel(); } catch (e) {}
     }
@@ -607,63 +573,51 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     });
   }
 
+  function playBuffer(buf) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    currentSource = src;
+    src.onended = function () {
+      if (currentSource === src) {
+        currentSource = null;
+        setPlaying(false);
+        setMsg("", "");
+      }
+    };
+    src.start(0);
+  }
+
   function playTts(text, lang, kind) {
     ttsText = text;
     ttsLang = lang;
-    ttsTry = 0;
-    stopTts();
     unlockAudio();
+    stopTts();
     if (!text) return;
     setPlaying(true);
     setMsg("🔊 正在播放…", "#666");
     const i = String(cur).padStart(2, "0");
-    const local = "audio/" + CFG.key + "/" + kind + i + ".mp3";
-    const a = getAudioEl();
-    a.onended = function () {
-      setPlaying(false);
-      setMsg("", "");
-    };
-    a.onerror = function () {
-      startAudio(0);
-    };
-    a.src = local;
-    const p = a.play();
-    if (p && p.catch) {
-      p.catch(function () { startAudio(0); });
-    }
-  }
+    const url = "audio/" + CFG.key + "/" + kind + i + ".mp3";
 
-  function startAudio(kind) {
-    const tl = TTS_TL[ttsLang] || ttsLang;
-    const a = getAudioEl();
-    a.onended = function () {
-      setPlaying(false);
-      setMsg("", "");
-    };
-    a.onerror = function () {
-      if (ttsTry === 0) {
-        ttsTry = 1;
-        startAudio(1);
-      } else {
-        setPlaying(false);
-        speakSynth(ttsText, ttsLang);
-        setMsg("", "");
-      }
-    };
-    a.src = ttsUrl(ttsText, tl, kind);
-    const p = a.play();
-    if (p && p.catch) {
-      p.catch(function () {
-        if (ttsTry === 0) {
-          ttsTry = 1;
-          startAudio(1);
-        } else {
-          setPlaying(false);
-          speakSynth(ttsText, ttsLang);
-          setMsg("", "");
-        }
-      });
+    if (bufCache[url]) {
+      playBuffer(bufCache[url]);
+      return;
     }
+    fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("http");
+      return r.arrayBuffer();
+    }).then(function (arr) {
+      if (!audioCtx) unlockAudio();
+      return audioCtx.decodeAudioData(arr.slice(0));
+    }).then(function (buf) {
+      bufCache[url] = buf;
+      playBuffer(buf);
+    }).catch(function () {
+      setPlaying(false);
+      speakSynth(ttsText, ttsLang);
+      if (isIOS()) setMsg("未能播放聲音，請再按一次", "var(--fail)");
+      else setMsg("", "");
+    });
   }
 
   function setMsg(text, color) {
@@ -684,16 +638,55 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     });
   }
 
+  function applyScore(alts) {
+    if (scoredThisListen) return;
+    scoredThisListen = true;
+    const speechRaw = (alts && alts[0]) || "";
+    $("heard").textContent = speechRaw ? ("我聽到：" + speechRaw) : "";
+
+    const target = fold(levels[cur][CFG.readField] || levels[cur][CFG.wordField]);
+    let score = 0;
+    (alts || []).forEach(function (t) {
+      const speech = fold(t);
+      if (!speech) return;
+      let s = 0;
+      if (speech === target) s = 100;
+      else if (speech.includes(target) || target.includes(speech)) s = 85;
+      else {
+        let matches = 0;
+        const sArr = speech.split("");
+        target.split("").forEach(function (ch) { if (sArr.indexOf(ch) >= 0) matches++; });
+        const ratio = target.length ? matches / target.length : 0;
+        if (ratio >= 0.4) s = 75;
+        else if (ratio >= 0.1) s = 60;
+      }
+      if (s > score) score = s;
+    });
+
+    try { if (rec) rec.stop(); } catch (e) {}
+
+    if (score >= 60) {
+      setMsg(score + CFG.okMsg, "var(--win)");
+      scores[cur] = score;
+      $("val-" + cur).textContent = score + "分";
+      setTimeout(nextLevel, 1000);
+    } else {
+      setMsg(CFG.failMsg, "var(--fail)");
+    }
+  }
+
   function initRec() {
     if (!SpeechRec || rec) return;
     rec = new SpeechRec();
     rec.lang = CFG.recogLang;
-    rec.continuous = false;
-    rec.interimResults = false;
+    rec.continuous = !!isIOS();
+    rec.interimResults = !!isIOS();
     rec.maxAlternatives = 5;
 
     rec.onstart = function () {
       listening = true;
+      scoredThisListen = false;
+      lastAlts = [];
       clearTimeout(micTimeout);
       $("micBtn").classList.add("recording");
       $("micBtn").textContent = "■ 正在聆聽… 請朗讀";
@@ -701,12 +694,14 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       $("heard").textContent = "";
       micTimeout = setTimeout(function () {
         try { rec.stop(); } catch (e) {}
-        setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
+        if (!scoredThisListen && !lastAlts.length) {
+          setMsg("⚠️ 沒偵測到聲音，請再按一次。若 iPhone 問麥克風，請撳允許。", "var(--fail)");
+        }
       }, 8000);
     };
 
-    rec.onspeechend = function () {
-      try { rec.stop(); } catch (e) {}
+    rec.onaudiostart = function () {
+      setMsg("🎤 咪已開，請而家朗讀", "#666");
     };
 
     rec.onend = function () {
@@ -714,6 +709,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       $("micBtn").classList.remove("recording");
       $("micBtn").textContent = CFG.btnMic;
       clearTimeout(micTimeout);
+      if (!scoredThisListen && lastAlts.length) applyScore(lastAlts);
     };
 
     rec.onerror = function (ev) {
@@ -723,7 +719,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       $("micBtn").textContent = CFG.btnMic;
       const err = (ev && ev.error) || "";
       if (err === "not-allowed" || err === "service-not-allowed") {
-        showBanner("請允許使用麥克風。iPad／iPhone 請用 Safari 開啟本網站。你仍然可以聽廣東話同外語。");
+        showBanner("請允許使用麥克風：設定 → Safari → 麥克風 → 允許。然後再撳綠色掣。");
         setMsg("未能開啟麥克風", "var(--fail)");
       } else if (err === "no-speech") {
         setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
@@ -733,59 +729,34 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     };
 
     rec.onresult = function (e) {
-      clearTimeout(micTimeout);
       const alts = [];
-      const res = e.results[0];
-      for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
-      const speechRaw = alts[0] || "";
-      $("heard").textContent = speechRaw ? ("我聽到：" + speechRaw) : "";
-
-      const target = fold(levels[cur][CFG.readField] || levels[cur][CFG.wordField]);
-      let score = 0;
-      alts.forEach(function (t) {
-        const speech = fold(t);
-        if (!speech) return;
-        let s = 0;
-        if (speech === target) s = 100;
-        else if (speech.includes(target) || target.includes(speech)) s = 85;
-        else {
-          let matches = 0;
-          const sArr = speech.split("");
-          target.split("").forEach(function (ch) { if (sArr.indexOf(ch) >= 0) matches++; });
-          const ratio = target.length ? matches / target.length : 0;
-          if (ratio >= 0.4) s = 75;
-          else if (ratio >= 0.1) s = 60;
+      let isFinal = false;
+      for (let i = 0; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r[0] && r[0].transcript) alts.push(r[0].transcript);
+        for (let j = 1; j < r.length; j++) {
+          if (r[j] && r[j].transcript) alts.push(r[j].transcript);
         }
-        if (s > score) score = s;
-      });
-
-      if (score >= 60) {
-        setMsg(score + CFG.okMsg, "var(--win)");
-        scores[cur] = score;
-        $("val-" + cur).textContent = score + "分";
-        setTimeout(nextLevel, 1000);
-      } else {
-        setMsg(CFG.failMsg, "var(--fail)");
+        if (r.isFinal) isFinal = true;
       }
+      if (!alts.length) return;
+      lastAlts = alts;
+      $("heard").textContent = "我聽到：" + alts[0];
+      if (isFinal || !isIOS()) applyScore(alts);
     };
   }
 
-  function warmMic() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-      stream.getTracks().forEach(function (t) { t.stop(); });
-    }).catch(function () {});
-  }
-
   function toggleMic() {
-    stopTts();
     unlockAudio();
+    stopTts();
+    setAudioSession();
     if (!SpeechRec) {
-      showBanner("此瀏覽器未能評分朗讀。iPad／iPhone 請用 Safari。你仍然可以聽廣東話同外語。");
+      showBanner("此瀏覽器未能評分朗讀。iPhone／iPad 請用 Safari 開啟。");
       return;
     }
     if (location.protocol === "file:") {
-      showBanner("朗讀評分請用 Safari 開啟網站。你而家仍然可以聽廣東話同外語。");
+      showBanner("朗讀評分請用 Safari 掃描網站二維碼開啟。");
+      return;
     }
     initRec();
     if (!rec) return;
@@ -793,12 +764,14 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       try { rec.stop(); } catch (e) {}
       return;
     }
+    scoredThisListen = false;
+    lastAlts = [];
     try {
       rec.start();
     } catch (e) {
       try { rec.abort(); } catch (err) {}
       try { rec.start(); } catch (err2) {
-        showBanner("未能開始聆聽。請再按一次。iPad／iPhone 請用 Safari。");
+        showBanner("未能開始聆聽。請再按綠色掣。若彈出詢問，請允許麥克風。");
       }
     }
   }
@@ -822,7 +795,6 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     studentClass = id.class;
     studentNo = id.no;
     unlockAudio();
-    warmMic();
     $("login-screen").style.display = "none";
     $("game-area").classList.add("on");
     $("display-class").textContent = studentClass;
@@ -830,7 +802,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     initScoreBoard();
     initRec();
     if (isIOS() && !isSafari()) {
-      showBanner("iPad／iPhone 請用 Safari，朗讀同播音會較穩定。");
+      showBanner("iPhone／iPad 請用 Safari 開啟，綠色朗讀掣先會收到把聲。");
     }
   }
 
