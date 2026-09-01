@@ -348,7 +348,7 @@ function start(mode) {
   state = {
     mode, i: 0, score: 0, typed: "",
     qs: uniqueQs(mode === "timed" ? 80 : n, fromWrong),
-    log: [], start: Date.now(), left: 60, tick: null, locked: false
+    log: [], start: Date.now(), left: 60, tick: null, wait: null, locked: false
   };
   if (!state.qs.length) state.qs = uniqueQs(10);
   show("play");
@@ -400,9 +400,16 @@ function submit(val) {
   if (ok) state.score++;
   else wrongBank.push(q);
   state.log.push({ ...q, ok, given: val });
-  $("answer").textContent = val === "" ? "?" : val;
-  $("answer").className = "answer " + (ok ? "ok" : "bad");
-  $("msg").textContent = ok ? "答對了。" : ("答案是 " + q.ans);
+  if (ok) {
+    $("answer").textContent = val === "" ? "?" : val;
+    $("answer").className = "answer ok";
+    $("msg").textContent = "答對了。";
+  } else {
+    $("question").textContent = q.a + "  ×  " + q.b + "  =  " + q.ans;
+    $("answer").textContent = q.ans;
+    $("answer").className = "answer ok";
+    $("msg").textContent = "答案是 " + q.ans;
+  }
   $("msg").style.color = ok ? "var(--ok)" : "var(--bad)";
   if (state.mode === "mc") {
     [...$("choices").children].forEach(b => {
@@ -411,7 +418,9 @@ function submit(val) {
       else if (n === Number(val) && !ok) b.classList.add("wrong");
     });
   }
-  setTimeout(() => {
+  if (state.wait) clearTimeout(state.wait);
+  state.wait = setTimeout(() => {
+    state.wait = null;
     state.i++;
     if (state.mode === "timed") {
       if (state.left <= 0) return finish();
@@ -419,11 +428,12 @@ function submit(val) {
       renderQ();
     } else if (state.i >= state.qs.length) finish();
     else renderQ();
-  }, ok ? 450 : 900);
+  }, ok ? 450 : 3000);
 }
 
 function finish() {
   if (state.tick) clearInterval(state.tick);
+  if (state.wait) { clearTimeout(state.wait); state.wait = null; }
   show("result");
   const total = state.mode === "timed" ? state.log.length : state.qs.length;
   const pct = total ? Math.round(100 * state.score / total) : 0;
@@ -525,7 +535,11 @@ document.querySelectorAll("#home .mode-btn").forEach(b => {
 });
 $("btn-settings").onclick = () => { buildTablePicks(); show("settings"); };
 $("save-settings").onclick = () => show("home");
-$("quit").onclick = () => { if (state.tick) clearInterval(state.tick); show("home"); };
+$("quit").onclick = () => {
+  if (state.tick) clearInterval(state.tick);
+  if (state.wait) { clearTimeout(state.wait); state.wait = null; }
+  show("home");
+};
 $("again").onclick = () => start(lastMode === "wrong" ? "type" : lastMode);
 $("home-btn").onclick = () => show("home");
 $("fill-back").onclick = () => show("home");
