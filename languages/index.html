@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="外語小學堂">
+<title>環遊世界　外語小學堂</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; min-height: 100%; min-height: 100dvh;
+  font-family: "PingFang TC", "Noto Sans TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+  background: linear-gradient(#8fd3f0, #c8f0c0) fixed; color: #1d2b1f;
+  overflow-x: hidden;
+}
+body { padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); }
+.wrap { width: min(100%, 720px); margin: 0 auto; max-width: 100%; }
+.home-link {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px;
+  background: #fff; color: #1b5e20; border: 3px solid #2f7d32; border-radius: 14px;
+  text-decoration: none; font-weight: 800; font-size: 15px;
+}
+h1 { text-align: center; margin: 18px 0 6px; font-size: clamp(26px, 7vw, 34px); color: #1b5e20; }
+.lead { text-align: center; font-weight: 700; color: #3d5c40; line-height: 1.5; }
+.grid { display: grid; gap: 14px; margin-top: 18px; }
+a.pick {
+  display: block; text-decoration: none; color: inherit;
+  background: #fffef6; border: 5px solid #2f7d32; border-radius: 24px;
+  padding: 18px 16px; box-shadow: 0 8px 0 #1b5e20; min-height: 88px;
+}
+a.pick:active { transform: translateY(2px); box-shadow: 0 6px 0 #1b5e20; }
+.em { font-size: 42px; line-height: 1; }
+h2 { margin: 8px 0 4px; font-size: 24px; color: #1b5e20; }
+a.pick p { margin: 0; font-weight: 700; color: #3d5c40; }
+.note {
+  margin-top: 18px; background: #fffef6; border: 4px solid #2f7d32; border-radius: 18px;
+  padding: 12px 14px; font-weight: 700; line-height: 1.5; font-size: 14px;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+@media (min-width: 700px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="home-link" href="../index.html#/s/world">← 返回目錄</a>
+  <h1>🌍 外語小學堂</h1>
+  <p class="lead">環遊世界課程　第二部分　AI 朗讀練習<br>適用於 iPad、iPhone 及電腦</p>
+  <div class="grid">
+      <a class="pick" href="jp.html">
+        <div class="em">🇯🇵</div>
+        <h2>日文小學堂</h2>
+        <p>20 句日文，聽、跟讀、評分</p>
+      </a>
+      <a class="pick" href="fr.html">
+        <div class="em">🇫🇷</div>
+        <h2>法文小學堂</h2>
+        <p>20 句法文，聽、跟讀、評分</p>
+      </a>
+      <a class="pick" href="ko.html">
+        <div class="em">🇰🇷</div>
+        <h2>韓文小學堂</h2>
+        <p>20 句韓文，聽、跟讀、評分</p>
+      </a>
+  </div>
+  <p class="note">網站：https://cheungsiredu.github.io/education/languages/<br>開始前請填班別及學號，無須填姓名。成績只交給老師。</p>
+</div>
+</body>
+</html>

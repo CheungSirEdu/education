@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#002395">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="法文小學堂">
+<meta name="format-detection" content="telephone=no">
+<title>🇫🇷 法文小學堂　iPad／iPhone／電腦</title>
+<style>
+/* 外語小學堂：iPhone、iPad、電腦共用 */
+:root {
+  --main: #d63031;
+  --sub: #fab1a0;
+  --win: #00b894;
+  --gold: #e6b800;
+  --fail: #ff7675;
+  --nav: #eceff1;
+  --ink: #2d3436;
+  --muted: #636e72;
+  --card: #ffffff;
+  --shadow: 0 10px 0 rgba(0, 0, 0, .08);
+  --radius: 24px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html, body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
+  color: var(--ink);
+  font-family: "PingFang TC", "Noto Sans TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+  background: var(--bg, #fff5f5);
+  overflow-x: hidden;
+}
+body {
+  padding: max(10px, var(--safe-t)) max(12px, var(--safe-r)) max(18px, var(--safe-b)) max(12px, var(--safe-l));
+}
+button, input { font: inherit; }
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.topbar {
+  width: min(100%, 720px);
+  margin: 0 auto 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  background: #fff;
+  color: var(--main);
+  border: 3px solid var(--main);
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 15px;
+}
+.device-tag {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+#login-screen {
+  width: min(100%, 440px);
+  margin: 12px auto 0;
+  background: var(--card);
+  padding: 28px 18px 22px;
+  border-radius: var(--radius);
+  border: 5px solid var(--main);
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+#login-screen h1 {
+  margin: 0 0 6px;
+  font-size: clamp(26px, 7vw, 34px);
+  color: var(--main);
+  letter-spacing: .04em;
+}
+.lead {
+  margin: 0 0 14px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 15px;
+}
+.ids { display: grid; gap: 10px; margin: 12px 0 16px; text-align: left; }
+.ids label { font-size: 14px; font-weight: 800; color: var(--main); }
+.input-box {
+  width: 100%;
+  margin-top: 4px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 3px solid var(--sub);
+  font-size: 18px;
+  text-align: center;
+  font-weight: 800;
+  background: #fff;
+}
+.hint {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 10px 0 0;
+}
+.hint.warn { color: #c0392b; background: #fff0f0; border-radius: 12px; padding: 8px 10px; }
+#game-area { display: none; width: min(100%, 720px); margin: 0 auto; gap: 12px; }
+#game-area.on { display: flex; flex-direction: column; }
+.card, .score-board {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card {
+  width: 100%;
+  padding: 16px 14px 18px;
+  border: 5px solid var(--main);
+  text-align: center;
+}
+.score-board {
+  width: 100%;
+  padding: 12px;
+  border: 4px solid var(--sub);
+}
+.who {
+  margin: 0 0 8px;
+  color: var(--main);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+#score-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  background: #fafafa;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--muted);
+}
+.score-item b { font-size: 11px; color: var(--ink); }
+.current-row {
+  background: #fff6f0;
+  color: var(--main);
+  outline: 2px solid var(--main);
+}
+#progress {
+  font-weight: 800;
+  color: var(--main);
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.explain-box {
+  background: #fffaf0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  margin: 8px 0 12px;
+  border: 2px dashed var(--main);
+  min-height: 72px;
+  text-align: left;
+}
+#explain-text { font-size: 16px; color: #444; line-height: 1.5; font-weight: 700; }
+.word-box {
+  background: #fff;
+  border: 4px solid var(--sub);
+  padding: 14px 10px;
+  border-radius: 20px;
+  margin: 8px 0 14px;
+}
+.word-text {
+  font-size: clamp(28px, 8vw, 44px);
+  color: var(--main);
+  font-weight: 900;
+  display: block;
+  min-height: 48px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+.mean { color: var(--muted); font-size: 18px; font-weight: 800; margin-top: 4px; }
+.btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 14px 12px;
+  min-height: 52px;
+  border-radius: 50px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .18); }
+.btn-hk { background: #f1f2f6; color: #555; border: 2px solid #ddd; box-shadow: none; }
+.btn-demo { background: var(--sub); }
+.btn-mic {
+  background: var(--win);
+  min-height: 72px;
+  font-size: 20px;
+  margin-top: 12px;
+}
+.btn-start { background: var(--main); font-size: 22px; min-height: 56px; }
+.btn-start:disabled { background: #9aaa9b; box-shadow: none; }
+.nav-group { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+.btn-nav { background: var(--nav); color: #555; width: 50%; font-size: 15px; box-shadow: none; }
+.btn-finish-wrap { margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; }
+.btn-finish { background: var(--fail); width: 100%; }
+.recording { background: var(--fail) !important; animation: pulse 1s infinite; }
+#score-msg, #heard {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 10px 0 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.4;
+}
+#heard { font-size: 14px; color: var(--muted); min-height: 20px; }
+.mic-banner {
+  display: none;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff3cd;
+  color: #7a5b00;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: left;
+}
+.mic-banner.show { display: block; }
+#final-area h2 { color: var(--main); margin: 8px 0; font-size: 28px; }
+#total-avg { font-size: clamp(56px, 16vw, 80px); color: var(--gold); font-weight: 900; line-height: 1; }
+#save-status { color: var(--win); font-weight: 800; margin: 8px 0 18px; }
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  z-index: 20;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  padding-bottom: max(16px, var(--safe-b));
+}
+.modal.show { display: flex; }
+.modal .box {
+  width: min(100%, 420px);
+  background: #fff;
+  border-radius: 22px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 4px solid var(--main);
+}
+.modal p { font-weight: 700; line-height: 1.5; }
+.modal .row { display: flex; gap: 10px; }
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@media (min-width: 900px) {
+  #game-area.on {
+    width: min(100%, 960px);
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    align-items: start;
+  }
+  #score-list {
+    grid-template-columns: 1fr;
+    max-height: min(70vh, 640px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .score-item {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .card { padding: 22px 22px 24px; }
+}
+@media (max-width: 380px) {
+  .btn { font-size: 15px; min-height: 48px; padding: 12px; }
+  .btn-mic { font-size: 17px; min-height: 64px; }
+  .word-text { font-size: 26px; }
+  #score-list { gap: 4px; }
+  .score-item { min-height: 40px; font-size: 11px; }
+}
+
+
+        :root {
+            --main: #002395;
+            --sub: #74b9ff;
+            --bg: #eef3fb;
+        }
+        body { background: #eef3fb; }
+        .btn-demo { background: #74b9ff; color: #fff; box-shadow: 0 4px 0 #0984e3; }
+        .btn-start { background: #002395; }
+    
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home-link" href="index.html">← 外語小學堂</a>
+  <span class="device-tag">iPad · iPhone · 電腦</span>
+</div>
+
+<div id="login-screen">
+    <h1>🇫🇷 法文小學堂</h1>
+    <p class="lead">請輸入班別及學號，無須填寫姓名。<br>適用於 iPad、iPhone 及電腦。朗讀評分請允許使用麥克風。</p>
+    <div class="ids">
+      <label>班別<input type="text" id="class-input" class="input-box" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="班別 (例如: 4C)"></label>
+      <label>學號<input type="text" id="no-input" class="input-box" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="學號 (例如: 12)"></label>
+    </div>
+    <button class="btn btn-start" id="startBtn" type="button" disabled>開始挑戰 !</button>
+    <p class="hint" id="login-warn">學號只可填數字。請用 Safari（iPad／iPhone）或 Chrome（電腦）。</p>
+    <div class="mic-banner"></div>
+</div>
+
+<div id="game-area">
+    <div class="score-board">
+        <h3 class="who">
+            班別: <span id="display-class">--</span><br>
+            學號: <span id="display-no">--</span>
+        </h3>
+        <div id="score-list"></div>
+    </div>
+
+    <div class="card">
+        <div id="progress">關卡：1 / 20</div>
+        <div class="explain-box">
+            <div id="explain-text">請先聽取解釋。</div>
+        </div>
+
+        <div id="main-play-area">
+            <div class="word-box">
+                <span class="word-text" id="target-word">Bonjour</span>
+                <div class="mean" id="target-mean">你好 / 早安</div>
+            </div>
+            <button class="btn btn-hk" id="explainBtn" type="button">💬 1. 廣東話解釋</button>
+            <button class="btn btn-demo" id="demoBtn" type="button">🔊 2. 法文範例</button>
+            <button class="btn btn-mic" id="micBtn" type="button">🎙️ 3. 按一下後朗讀</button>
+            <div id="score-msg"></div>
+            <div id="heard"></div>
+            <div class="mic-banner"></div>
+            <div class="nav-group">
+                <button class="btn btn-nav" id="prevBtn" type="button">⬅️ 上一題</button>
+                <button class="btn btn-nav" id="skipBtn" type="button">跳過 ➡️</button>
+            </div>
+            <div class="btn-finish-wrap">
+                <button class="btn btn-finish" id="finishBtn" type="button">🚩 提交成績並結束</button>
+            </div>
+        </div>
+
+        <div id="final-area" style="display:none;">
+            <h2>🎊 挑戰結束！</h2>
+            <p style="font-weight:800;">您的最終平均分為：</p>
+            <div id="total-avg">0</div>
+            <div id="save-status">正在上傳成績...</div>
+            <button class="btn btn-demo" id="againBtn" type="button" style="margin-top:18px;">🔄 下一位同學</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="confirm-modal">
+  <div class="box">
+    <p>確定要提交目前的成績並結束嗎？未完成的題目會計算為 0 分。</p>
+    <div class="row">
+      <button class="btn btn-nav" id="cancelSubmit" type="button">繼續作答</button>
+      <button class="btn btn-finish" id="okSubmit" type="button">確定提交</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.LANG_CFG = {
+        title: "法文小學堂",
+        activity: "法文小學堂",
+        wordField: "fr",
+        readField: "fr",
+        speakLang: "fr-FR",
+        recogLang: "fr-FR",
+        btnMic: "🎙️ 3. 按一下後朗讀",
+        okMsg: "分！ Bravo!",
+        failMsg: "❌ 我覺得不正確，請你再說一次",
+        listenMsg: "🎤 正在聆聽您的朗讀...",
+        explainHint: "請先聽取解釋。",
+        formID: "1FAIpQLSc19cqllph7OVhjnztia0CJjNdWVvKXzsuINy-oYM35no0jHw"
+    };
+window.LANG_LEVELS = [
+        { fr: "Bonjour", mean: "你好 / 早安", explain: "法語中最基本的打招呼方式。" },
+        { fr: "Merci", mean: "謝謝", explain: "當你想感謝別人的時候使用。" },
+        { fr: "S'il vous plaît", mean: "請 / 麻煩你", explain: "有禮貌的請求方式。" },
+        { fr: "Enchanté", mean: "很高興認識你", explain: "初次見面時使用的禮貌用語。" },
+        { fr: "Excusez-moi, monsieur", mean: "不好意思，先生", explain: "正式道歉或想尋求幫助時使用。" },
+        { fr: "Au revoir", mean: "再見", explain: "道別時使用的詞語。" },
+        { fr: "Salut, ça va ?", mean: "你好嗎？", explain: "朋友之間見面時的親切問候。" },
+        { fr: "Oui, c'est ça", mean: "是的，沒錯", explain: "表示認同對方的說法。" },
+        { fr: "Non, merci", mean: "不，謝謝", explain: "有禮貌地拒絕別人的提議。" },
+        { fr: "Ça va ?", mean: "你過得好嗎？", explain: "詢問朋友近況常用的簡單句子。" },
+        { fr: "Bien, merci", mean: "很好，謝謝", explain: "回應問候，表示自己過得不錯。" },
+        { fr: "S'il vous plaît, madame", mean: "女士，麻煩您", explain: "有禮貌地向女士提出請求。" },
+        { fr: "Bonsoir, tout le monde", mean: "大家晚上好", explain: "晚上向大家打招呼時使用。" },
+        { fr: "Je t'aime beaucoup", mean: "我很愛你", explain: "對家人或重要的人表達愛意。" },
+        { fr: "Monsieur", mean: "先生", explain: "對男士的正式稱謂。" },
+        { fr: "Madame", mean: "女士", explain: "對女士的正式稱謂。" },
+        { fr: "D'accord", mean: "同意 / 可以", explain: "表示認同或覺得可以接受。" },
+        { fr: "C'est très bien", mean: "非常好", explain: "稱讚事物做得非常出色。" },
+        { fr: "A bientôt", mean: "待會兒見", explain: "預計很快會再次見面時使用。" },
+        { fr: "Magnifique", mean: "太精彩了", explain: "讚美事物非常完美或出色。" }
+    ];
+window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
+</script>
+<script>
+(function () {
+  const CFG = window.LANG_CFG;
+  const levels = window.LANG_LEVELS;
+  const SCORE_URL = window.SCORE_URL || "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
+  const TOKEN = "chilin-edu-2026";
+
+  let cur = 0;
+  let scores = new Array(levels.length).fill(0);
+  let studentClass = "";
+  let studentNo = "";
+  let rec = null;
+  let micTimeout = null;
+  let listening = false;
+  let voicesReady = false;
+
+  const synth = window.speechSynthesis;
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function $(id) { return document.getElementById(id); }
+
+  function isTouchMac() {
+    return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  }
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || isTouchMac();
+  }
+  function isSafari() {
+    const ua = navigator.userAgent;
+    return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome\//.test(ua);
+  }
+
+  function fold(s) {
+    return String(s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[''`´’]/g, "'")
+      .replace(/[\s.?!,。！？、，·・]/g, "");
+  }
+
+  function unlockSpeech() {
+    if (!synth) return;
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      synth.speak(u);
+      synth.cancel();
+    } catch (e) {}
+  }
+
+  function loadVoices() {
+    if (!synth) return [];
+    const v = synth.getVoices() || [];
+    if (v.length) voicesReady = true;
+    return v;
+  }
+
+  if (synth) {
+    loadVoices();
+    if (typeof synth.onvoiceschanged !== "undefined") {
+      synth.onvoiceschanged = loadVoices;
+    }
+  }
+
+  function pickVoice(lang) {
+    const voices = loadVoices();
+    const want = String(lang || "").toLowerCase().replace("_", "-");
+    const prefix = want.split("-")[0];
+    const scoreVoice = (v) => {
+      const vl = (v.lang || "").toLowerCase().replace("_", "-");
+      const name = (v.name || "").toLowerCase();
+      if (vl === want) return 3;
+      if (vl.startsWith(want)) return 2;
+      if (vl.startsWith(prefix)) return 1;
+      if (prefix === "zh" && /hk|yue|sinji|cantonese/.test(vl + " " + name)) return 3;
+      return 0;
+    };
+    let best = null, bestN = 0;
+    voices.forEach((v) => {
+      const n = scoreVoice(v);
+      if (n > bestN) { best = v; bestN = n; }
+    });
+    return best;
+  }
+
+  function speak(text, lang, rate) {
+    if (!synth || !text) return;
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    u.rate = rate || 0.85;
+    const voice = pickVoice(lang);
+    if (voice) u.voice = voice;
+    synth.speak(u);
+  }
+
+  function setMsg(text, color) {
+    const el = $("score-msg");
+    el.textContent = text || "";
+    el.style.color = color || "";
+  }
+
+  function showBanner(text) {
+    document.querySelectorAll(".mic-banner").forEach((el) => {
+      if (!text) {
+        el.classList.remove("show");
+        el.textContent = "";
+        return;
+      }
+      el.textContent = text;
+      el.classList.add("show");
+    });
+  }
+
+  function initRec() {
+    if (!SpeechRec) return;
+    try { if (rec) rec.stop(); } catch (e) {}
+    rec = new SpeechRec();
+    rec.lang = CFG.recogLang;
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 5;
+
+    rec.onstart = () => {
+      listening = true;
+      clearTimeout(micTimeout);
+      $("micBtn").classList.add("recording");
+      $("micBtn").textContent = "■ 正在聆聽… 請朗讀";
+      setMsg(CFG.listenMsg, "#666");
+      $("heard").textContent = "";
+      micTimeout = setTimeout(() => {
+        try { rec.stop(); } catch (e) {}
+        setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
+      }, 8000);
+    };
+
+    rec.onspeechend = () => {
+      try { rec.stop(); } catch (e) {}
+    };
+
+    rec.onend = () => {
+      listening = false;
+      $("micBtn").classList.remove("recording");
+      $("micBtn").textContent = CFG.btnMic;
+      clearTimeout(micTimeout);
+    };
+
+    rec.onerror = (ev) => {
+      clearTimeout(micTimeout);
+      listening = false;
+      $("micBtn").classList.remove("recording");
+      $("micBtn").textContent = CFG.btnMic;
+      const err = (ev && ev.error) || "";
+      if (err === "not-allowed" || err === "service-not-allowed") {
+        showBanner("未能使用麥克風。請用 Safari 開啟，並允許本網站使用麥克風。你仍然可以聽示範。");
+        setMsg("未能開啟麥克風", "var(--fail)");
+      } else if (err === "no-speech") {
+        setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
+      } else if (err !== "aborted") {
+        setMsg("請再按一次朗讀", "#666");
+      }
+      setTimeout(initRec, 200);
+    };
+
+    rec.onresult = (e) => {
+      clearTimeout(micTimeout);
+      const alts = [];
+      const res = e.results[0];
+      for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
+      const speechRaw = alts[0] || "";
+      $("heard").textContent = speechRaw ? ("我聽到：" + speechRaw) : "";
+
+      const target = fold(levels[cur][CFG.readField] || levels[cur][CFG.wordField]);
+      let score = 0;
+      alts.forEach((t) => {
+        const speech = fold(t);
+        if (!speech) return;
+        let s = 0;
+        if (speech === target) s = 100;
+        else if (speech.includes(target) || target.includes(speech)) s = 85;
+        else {
+          let matches = 0;
+          const sArr = speech.split("");
+          target.split("").forEach((ch) => { if (sArr.indexOf(ch) >= 0) matches++; });
+          const ratio = target.length ? matches / target.length : 0;
+          if (ratio >= 0.4) s = 75;
+          else if (ratio >= 0.1) s = 60;
+        }
+        if (s > score) score = s;
+      });
+
+      if (score >= 60) {
+        setMsg(score + CFG.okMsg, "var(--win)");
+        scores[cur] = score;
+        $("val-" + cur).textContent = score + "分";
+        setTimeout(nextLevel, 1000);
+      } else {
+        setMsg(CFG.failMsg, "var(--fail)");
+      }
+    };
+  }
+
+  async function ensureMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      return !!SpeechRec;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function toggleMic() {
+    unlockSpeech();
+    if (!SpeechRec) {
+      showBanner("此瀏覽器未能評分朗讀。請用 iPad／iPhone 的 Safari，或電腦的 Chrome。你仍然可以聽示範。");
+      return;
+    }
+    if (location.protocol === "file:") {
+      showBanner("從檔案直接開啟時，麥克風通常不能用。請用 Safari 開啟網站版本。");
+    }
+    if (!rec) initRec();
+    if (listening) {
+      try { rec.stop(); } catch (e) {}
+      return;
+    }
+    try {
+      rec.start();
+    } catch (e) {
+      try { rec.stop(); } catch (err) {}
+      setTimeout(() => {
+        initRec();
+        try { rec.start(); } catch (err2) {
+          showBanner("未能開始聆聽。請再按一次，或改用 Safari。");
+        }
+      }, 280);
+    }
+  }
+
+  function identityOk() {
+    const c = ($("class-input").value || "").trim().slice(0, 8);
+    const n = ($("no-input").value || "").trim();
+    return { ok: c.length >= 1 && /^\d{1,3}$/.test(n), class: c, no: n };
+  }
+
+  function refreshGo() {
+    $("startBtn").disabled = !identityOk().ok;
+  }
+
+  async function startGame() {
+    const id = identityOk();
+    if (!id.ok) {
+      setLoginWarn("請填寫班別，學號只可填 1 至 3 個數字。");
+      return;
+    }
+    studentClass = id.class;
+    studentNo = id.no;
+    unlockSpeech();
+    $("login-screen").style.display = "none";
+    $("game-area").classList.add("on");
+    $("display-class").textContent = studentClass;
+    $("display-no").textContent = studentNo;
+    initScoreBoard();
+    initRec();
+    const micOk = await ensureMic();
+    if (!micOk) {
+      showBanner("未能開啟麥克風。請用 Safari，並允許本網站使用麥克風。你仍然可以聽廣東話解釋和外語示範。");
+    } else if (isIOS() && !isSafari()) {
+      showBanner("建議用 Safari 開啟，朗讀評分會較穩定。");
+    }
+  }
+
+  function setLoginWarn(text) {
+    const el = $("login-warn");
+    el.textContent = text;
+    el.classList.add("warn");
+  }
+
+  function initScoreBoard() {
+    const list = $("score-list");
+    list.innerHTML = "";
+    levels.forEach((_, i) => {
+      const div = document.createElement("div");
+      div.className = "score-item";
+      div.id = "row-" + i;
+      div.innerHTML = "<b>#" + (i + 1) + "</b><span id='val-" + i + "'>---</span>";
+      list.appendChild(div);
+    });
+    updateHighlight();
+  }
+
+  function updateHighlight() {
+    document.querySelectorAll(".score-item").forEach((el) => el.classList.remove("current-row"));
+    const row = $("row-" + cur);
+    if (row) {
+      row.classList.add("current-row");
+      row.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }
+
+  function playExplain() {
+    unlockSpeech();
+    $("explain-text").textContent = levels[cur].explain;
+    speak(levels[cur].explain, "zh-HK", 0.92);
+  }
+
+  function playDemo() {
+    unlockSpeech();
+    const text = levels[cur][CFG.readField] || levels[cur][CFG.wordField];
+    speak(text, CFG.speakLang, 0.8);
+  }
+
+  function nextLevel() {
+    if (cur < levels.length - 1) {
+      cur++;
+      initRec();
+      refreshUI();
+    } else {
+      showFinal();
+    }
+  }
+  function prevLevel() {
+    if (cur > 0) {
+      cur--;
+      initRec();
+      refreshUI();
+    }
+  }
+  function skipLevel() {
+    scores[cur] = 0;
+    $("val-" + cur).textContent = "跳過";
+    nextLevel();
+  }
+
+  function refreshUI() {
+    $("progress").textContent = "關卡：" + (cur + 1) + " / " + levels.length;
+    $("target-word").textContent = levels[cur][CFG.wordField];
+    $("target-mean").textContent = levels[cur].mean;
+    setMsg("", "");
+    $("heard").textContent = "";
+    $("explain-text").textContent = CFG.explainHint;
+    $("main-play-area").style.display = "block";
+    $("final-area").style.display = "none";
+    updateHighlight();
+  }
+
+  function askSubmit() {
+    $("confirm-modal").classList.add("show");
+  }
+  function hideModal() {
+    $("confirm-modal").classList.remove("show");
+  }
+
+  function showFinal() {
+    hideModal();
+    try { if (rec) rec.stop(); } catch (e) {}
+    synth && synth.cancel();
+    $("main-play-area").style.display = "none";
+    $("final-area").style.display = "block";
+    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / levels.length);
+    $("total-avg").textContent = avg;
+    submitToGoogleForm(studentClass, studentNo, avg);
+    submitToSheet(studentClass, studentNo, avg);
+  }
+
+  function submitToGoogleForm(cls, no, score) {
+    const studentInfo = cls + "_(" + no + ")";
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://docs.google.com/forms/d/e/" + CFG.formID + "/formResponse";
+    form.target = "hidden_iframe";
+    const in1 = document.createElement("input");
+    in1.name = "entry.788411312";
+    in1.value = studentInfo;
+    form.appendChild(in1);
+    const in2 = document.createElement("input");
+    in2.name = "entry.488980092";
+    in2.value = String(score);
+    form.appendChild(in2);
+    let ifr = document.querySelector("iframe[name='hidden_iframe']");
+    if (!ifr) {
+      ifr = document.createElement("iframe");
+      ifr.name = "hidden_iframe";
+      ifr.style.display = "none";
+      document.body.appendChild(ifr);
+    }
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => { try { form.remove(); } catch (e) {} }, 2000);
+    setTimeout(() => { $("save-status").textContent = "✅ 成績已成功上傳！"; }, 1500);
+  }
+
+  function submitToSheet(cls, no, score) {
+    if (!SCORE_URL) return;
+    const done = scores.filter((s) => s >= 60).length;
+    const payload = {
+      token: TOKEN,
+      class: cls,
+      no: no,
+      activity: CFG.activity,
+      level: "平均",
+      result: String(score),
+      stars: String(done),
+      hero: "",
+      seconds: ""
+    };
+    try {
+      fetch(SCORE_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  $("class-input").addEventListener("input", refreshGo);
+  $("no-input").addEventListener("input", function () {
+    this.value = this.value.replace(/\D/g, "").slice(0, 3);
+    refreshGo();
+  });
+  $("startBtn").addEventListener("click", startGame);
+  $("explainBtn").addEventListener("click", playExplain);
+  $("demoBtn").addEventListener("click", playDemo);
+  $("micBtn").addEventListener("click", toggleMic);
+  $("prevBtn").addEventListener("click", prevLevel);
+  $("skipBtn").addEventListener("click", skipLevel);
+  $("finishBtn").addEventListener("click", askSubmit);
+  $("cancelSubmit").addEventListener("click", hideModal);
+  $("okSubmit").addEventListener("click", showFinal);
+  $("againBtn").addEventListener("click", function () { location.reload(); });
+
+  if (!SpeechRec) {
+    showBanner("此瀏覽器未能評分朗讀。請用 iPad／iPhone 的 Safari，或電腦的 Chrome。");
+  } else if (location.protocol === "file:") {
+    showBanner("若朗讀評分未能使用，請用 Safari 開啟網站版本（需要麥克風）。");
+  }
+
+  refreshGo();
+})();
+
+</script>
+</body>
+</html>
