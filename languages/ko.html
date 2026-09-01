@@ -221,6 +221,8 @@ button {
   box-shadow: 0 4px 0 rgba(0, 0, 0, .18);
 }
 .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, .18); }
+.btn.playing { outline: 3px solid var(--gold); }
+#ttsPlayer { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
 .btn-hk { background: #f1f2f6; color: #555; border: 2px solid #ddd; box-shadow: none; }
 .btn-demo { background: var(--sub); }
 .btn-mic {
@@ -340,13 +342,13 @@ button {
 
 <div id="login-screen">
     <h1>🇰🇷 韓文小學堂</h1>
-    <p class="lead">請輸入班別及學號，無須填寫姓名。<br>適用於 iPad、iPhone 及電腦。朗讀評分請允許使用麥克風。</p>
+    <p class="lead">請輸入班別及學號，無須填寫姓名。<br>適用於 iPad、iPhone 及電腦。撳掣可聽廣東話同外語，再跟住朗讀。</p>
     <div class="ids">
       <label>班別<input type="text" id="class-input" class="input-box" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="班別 (例如: 4C)"></label>
       <label>學號<input type="text" id="no-input" class="input-box" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="學號 (例如: 12)"></label>
     </div>
     <button class="btn btn-start" id="startBtn" type="button" disabled>開始挑戰 !</button>
-    <p class="hint" id="login-warn">學號只可填數字。請用 Safari（iPad／iPhone）或 Chrome（電腦）。</p>
+    <p class="hint" id="login-warn">學號只可填數字。iPad／iPhone 請用 Safari，並允許麥克風。</p>
     <div class="mic-banner"></div>
 </div>
 
@@ -395,6 +397,8 @@ button {
     </div>
 </div>
 
+<audio id="ttsPlayer" playsinline webkit-playsinline preload="auto"></audio>
+
 <div class="modal" id="confirm-modal">
   <div class="box">
     <p>確定要提交目前的成績並結束嗎？未完成的題目會計算為 0 分。</p>
@@ -407,6 +411,7 @@ button {
 
 <script>
 window.LANG_CFG = {
+        key: "ko",
         title: "韓文小學堂",
         activity: "韓文小學堂",
         wordField: "ko",
@@ -450,6 +455,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   const levels = window.LANG_LEVELS;
   const SCORE_URL = window.SCORE_URL || "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
   const TOKEN = "chilin-edu-2026";
+  const TTS_TL = { "zh-HK": "yue", "ja-JP": "ja", "fr-FR": "fr", "ko-KR": "ko" };
 
   let cur = 0;
   let scores = new Array(levels.length).fill(0);
@@ -458,7 +464,11 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   let rec = null;
   let micTimeout = null;
   let listening = false;
-  let voicesReady = false;
+  let audioCtx = null;
+  let audioUnlocked = false;
+  let ttsTry = 0;
+  let ttsText = "";
+  let ttsLang = "";
 
   const synth = window.speechSynthesis;
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -485,60 +495,175 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       .replace(/[\s.?!,。！？、，·・]/g, "");
   }
 
-  function unlockSpeech() {
-    if (!synth) return;
+  function getAudioEl() {
+    let a = $("ttsPlayer");
+    if (!a) {
+      a = document.createElement("audio");
+      a.id = "ttsPlayer";
+      a.setAttribute("playsinline", "");
+      a.setAttribute("webkit-playsinline", "");
+      a.preload = "auto";
+      document.body.appendChild(a);
+    }
+    return a;
+  }
+
+  function unlockAudio() {
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = "play-and-record"; } catch (e) {}
+    }
     try {
-      const u = new SpeechSynthesisUtterance(" ");
-      u.volume = 0;
-      synth.speak(u);
-      synth.cancel();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        if (!audioCtx) audioCtx = new AC();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+      }
     } catch (e) {}
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      const a = getAudioEl();
+      a.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      const p = a.play();
+      if (p && p.then) p.then(function () { a.pause(); }).catch(function () {});
+    } catch (e) {}
+    if (synth) {
+      try {
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0;
+        synth.speak(u);
+      } catch (e) {}
+    }
   }
 
   function loadVoices() {
     if (!synth) return [];
-    const v = synth.getVoices() || [];
-    if (v.length) voicesReady = true;
-    return v;
+    return synth.getVoices() || [];
   }
-
-  if (synth) {
+  if (synth && typeof synth.onvoiceschanged !== "undefined") {
+    synth.onvoiceschanged = loadVoices;
     loadVoices();
-    if (typeof synth.onvoiceschanged !== "undefined") {
-      synth.onvoiceschanged = loadVoices;
-    }
   }
 
   function pickVoice(lang) {
     const voices = loadVoices();
     const want = String(lang || "").toLowerCase().replace("_", "-");
     const prefix = want.split("-")[0];
-    const scoreVoice = (v) => {
+    let best = null, bestN = 0;
+    voices.forEach(function (v) {
       const vl = (v.lang || "").toLowerCase().replace("_", "-");
       const name = (v.name || "").toLowerCase();
-      if (vl === want) return 3;
-      if (vl.startsWith(want)) return 2;
-      if (vl.startsWith(prefix)) return 1;
-      if (prefix === "zh" && /hk|yue|sinji|cantonese/.test(vl + " " + name)) return 3;
-      return 0;
-    };
-    let best = null, bestN = 0;
-    voices.forEach((v) => {
-      const n = scoreVoice(v);
+      if (/siri/.test(name)) return;
+      let n = 0;
+      if (vl === want) n = 4;
+      else if (vl.startsWith(want)) n = 3;
+      else if (vl.startsWith(prefix)) n = 1;
+      if (prefix === "zh" && /hk|yue|sin-?ji|sinji|cantonese|善怡/.test(vl + " " + name)) n = 5;
+      if (prefix === "ja" && /kyoko|きょうこ/.test(name)) n = 5;
+      if (prefix === "ko" && /yuna|유나/.test(name)) n = 5;
+      if (prefix === "fr" && /thomas|amélie|amelie/.test(name)) n = 5;
       if (n > bestN) { best = v; bestN = n; }
     });
     return best;
   }
 
-  function speak(text, lang, rate) {
+  function speakSynth(text, lang) {
     if (!synth || !text) return;
-    synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
-    u.rate = rate || 0.85;
+    u.rate = lang.indexOf("zh") === 0 ? 0.92 : 0.8;
     const voice = pickVoice(lang);
     if (voice) u.voice = voice;
-    synth.speak(u);
+    try { synth.speak(u); } catch (e) {}
+  }
+
+  function ttsUrl(text, tl, kind) {
+    const q = encodeURIComponent(text);
+    const t = encodeURIComponent(tl);
+    if (kind === 1) {
+      return "https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=" + t + "&q=" + q;
+    }
+    return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=" + t + "&q=" + q;
+  }
+
+  function stopTts() {
+    try {
+      const a = getAudioEl();
+      a.onended = null;
+      a.onerror = null;
+      a.pause();
+      try { a.currentTime = 0; } catch (e) {}
+    } catch (e) {}
+    if (synth) {
+      try { synth.cancel(); } catch (e) {}
+    }
+    setPlaying(false);
+  }
+
+  function setPlaying(on) {
+    ["explainBtn", "demoBtn"].forEach(function (id) {
+      const el = $(id);
+      if (el) el.classList.toggle("playing", !!on);
+    });
+  }
+
+  function playTts(text, lang, kind) {
+    ttsText = text;
+    ttsLang = lang;
+    ttsTry = 0;
+    stopTts();
+    unlockAudio();
+    if (!text) return;
+    setPlaying(true);
+    setMsg("🔊 正在播放…", "#666");
+    const i = String(cur).padStart(2, "0");
+    const local = "audio/" + CFG.key + "/" + kind + i + ".mp3";
+    const a = getAudioEl();
+    a.onended = function () {
+      setPlaying(false);
+      setMsg("", "");
+    };
+    a.onerror = function () {
+      startAudio(0);
+    };
+    a.src = local;
+    const p = a.play();
+    if (p && p.catch) {
+      p.catch(function () { startAudio(0); });
+    }
+  }
+
+  function startAudio(kind) {
+    const tl = TTS_TL[ttsLang] || ttsLang;
+    const a = getAudioEl();
+    a.onended = function () {
+      setPlaying(false);
+      setMsg("", "");
+    };
+    a.onerror = function () {
+      if (ttsTry === 0) {
+        ttsTry = 1;
+        startAudio(1);
+      } else {
+        setPlaying(false);
+        speakSynth(ttsText, ttsLang);
+        setMsg("", "");
+      }
+    };
+    a.src = ttsUrl(ttsText, tl, kind);
+    const p = a.play();
+    if (p && p.catch) {
+      p.catch(function () {
+        if (ttsTry === 0) {
+          ttsTry = 1;
+          startAudio(1);
+        } else {
+          setPlaying(false);
+          speakSynth(ttsText, ttsLang);
+          setMsg("", "");
+        }
+      });
+    }
   }
 
   function setMsg(text, color) {
@@ -548,7 +673,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function showBanner(text) {
-    document.querySelectorAll(".mic-banner").forEach((el) => {
+    document.querySelectorAll(".mic-banner").forEach(function (el) {
       if (!text) {
         el.classList.remove("show");
         el.textContent = "";
@@ -560,56 +685,54 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function initRec() {
-    if (!SpeechRec) return;
-    try { if (rec) rec.stop(); } catch (e) {}
+    if (!SpeechRec || rec) return;
     rec = new SpeechRec();
     rec.lang = CFG.recogLang;
     rec.continuous = false;
     rec.interimResults = false;
     rec.maxAlternatives = 5;
 
-    rec.onstart = () => {
+    rec.onstart = function () {
       listening = true;
       clearTimeout(micTimeout);
       $("micBtn").classList.add("recording");
       $("micBtn").textContent = "■ 正在聆聽… 請朗讀";
       setMsg(CFG.listenMsg, "#666");
       $("heard").textContent = "";
-      micTimeout = setTimeout(() => {
+      micTimeout = setTimeout(function () {
         try { rec.stop(); } catch (e) {}
         setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
       }, 8000);
     };
 
-    rec.onspeechend = () => {
+    rec.onspeechend = function () {
       try { rec.stop(); } catch (e) {}
     };
 
-    rec.onend = () => {
+    rec.onend = function () {
       listening = false;
       $("micBtn").classList.remove("recording");
       $("micBtn").textContent = CFG.btnMic;
       clearTimeout(micTimeout);
     };
 
-    rec.onerror = (ev) => {
+    rec.onerror = function (ev) {
       clearTimeout(micTimeout);
       listening = false;
       $("micBtn").classList.remove("recording");
       $("micBtn").textContent = CFG.btnMic;
       const err = (ev && ev.error) || "";
       if (err === "not-allowed" || err === "service-not-allowed") {
-        showBanner("未能使用麥克風。請用 Safari 開啟，並允許本網站使用麥克風。你仍然可以聽示範。");
+        showBanner("請允許使用麥克風。iPad／iPhone 請用 Safari 開啟本網站。你仍然可以聽廣東話同外語。");
         setMsg("未能開啟麥克風", "var(--fail)");
       } else if (err === "no-speech") {
         setMsg("⚠️ 沒偵測到聲音，請再按一次", "var(--fail)");
       } else if (err !== "aborted") {
         setMsg("請再按一次朗讀", "#666");
       }
-      setTimeout(initRec, 200);
     };
 
-    rec.onresult = (e) => {
+    rec.onresult = function (e) {
       clearTimeout(micTimeout);
       const alts = [];
       const res = e.results[0];
@@ -619,7 +742,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
 
       const target = fold(levels[cur][CFG.readField] || levels[cur][CFG.wordField]);
       let score = 0;
-      alts.forEach((t) => {
+      alts.forEach(function (t) {
         const speech = fold(t);
         if (!speech) return;
         let s = 0;
@@ -628,7 +751,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
         else {
           let matches = 0;
           const sArr = speech.split("");
-          target.split("").forEach((ch) => { if (sArr.indexOf(ch) >= 0) matches++; });
+          target.split("").forEach(function (ch) { if (sArr.indexOf(ch) >= 0) matches++; });
           const ratio = target.length ? matches / target.length : 0;
           if (ratio >= 0.4) s = 75;
           else if (ratio >= 0.1) s = 60;
@@ -647,29 +770,25 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     };
   }
 
-  async function ensureMic() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      return !!SpeechRec;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
-      return true;
-    } catch (e) {
-      return false;
-    }
+  function warmMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      stream.getTracks().forEach(function (t) { t.stop(); });
+    }).catch(function () {});
   }
 
-  async function toggleMic() {
-    unlockSpeech();
+  function toggleMic() {
+    stopTts();
+    unlockAudio();
     if (!SpeechRec) {
-      showBanner("此瀏覽器未能評分朗讀。請用 iPad／iPhone 的 Safari，或電腦的 Chrome。你仍然可以聽示範。");
+      showBanner("此瀏覽器未能評分朗讀。iPad／iPhone 請用 Safari。你仍然可以聽廣東話同外語。");
       return;
     }
     if (location.protocol === "file:") {
-      showBanner("從檔案直接開啟時，麥克風通常不能用。請用 Safari 開啟網站版本。");
+      showBanner("朗讀評分請用 Safari 開啟網站。你而家仍然可以聽廣東話同外語。");
     }
-    if (!rec) initRec();
+    initRec();
+    if (!rec) return;
     if (listening) {
       try { rec.stop(); } catch (e) {}
       return;
@@ -677,13 +796,10 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     try {
       rec.start();
     } catch (e) {
-      try { rec.stop(); } catch (err) {}
-      setTimeout(() => {
-        initRec();
-        try { rec.start(); } catch (err2) {
-          showBanner("未能開始聆聽。請再按一次，或改用 Safari。");
-        }
-      }, 280);
+      try { rec.abort(); } catch (err) {}
+      try { rec.start(); } catch (err2) {
+        showBanner("未能開始聆聽。請再按一次。iPad／iPhone 請用 Safari。");
+      }
     }
   }
 
@@ -697,7 +813,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     $("startBtn").disabled = !identityOk().ok;
   }
 
-  async function startGame() {
+  function startGame() {
     const id = identityOk();
     if (!id.ok) {
       setLoginWarn("請填寫班別，學號只可填 1 至 3 個數字。");
@@ -705,18 +821,16 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     }
     studentClass = id.class;
     studentNo = id.no;
-    unlockSpeech();
+    unlockAudio();
+    warmMic();
     $("login-screen").style.display = "none";
     $("game-area").classList.add("on");
     $("display-class").textContent = studentClass;
     $("display-no").textContent = studentNo;
     initScoreBoard();
     initRec();
-    const micOk = await ensureMic();
-    if (!micOk) {
-      showBanner("未能開啟麥克風。請用 Safari，並允許本網站使用麥克風。你仍然可以聽廣東話解釋和外語示範。");
-    } else if (isIOS() && !isSafari()) {
-      showBanner("建議用 Safari 開啟，朗讀評分會較穩定。");
+    if (isIOS() && !isSafari()) {
+      showBanner("iPad／iPhone 請用 Safari，朗讀同播音會較穩定。");
     }
   }
 
@@ -729,7 +843,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   function initScoreBoard() {
     const list = $("score-list");
     list.innerHTML = "";
-    levels.forEach((_, i) => {
+    levels.forEach(function (_, i) {
       const div = document.createElement("div");
       div.className = "score-item";
       div.id = "row-" + i;
@@ -740,7 +854,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function updateHighlight() {
-    document.querySelectorAll(".score-item").forEach((el) => el.classList.remove("current-row"));
+    document.querySelectorAll(".score-item").forEach(function (el) { el.classList.remove("current-row"); });
     const row = $("row-" + cur);
     if (row) {
       row.classList.add("current-row");
@@ -749,21 +863,18 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function playExplain() {
-    unlockSpeech();
     $("explain-text").textContent = levels[cur].explain;
-    speak(levels[cur].explain, "zh-HK", 0.92);
+    playTts(levels[cur].explain, "zh-HK", "e");
   }
 
   function playDemo() {
-    unlockSpeech();
     const text = levels[cur][CFG.readField] || levels[cur][CFG.wordField];
-    speak(text, CFG.speakLang, 0.8);
+    playTts(text, CFG.speakLang, "w");
   }
 
   function nextLevel() {
     if (cur < levels.length - 1) {
       cur++;
-      initRec();
       refreshUI();
     } else {
       showFinal();
@@ -772,7 +883,6 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   function prevLevel() {
     if (cur > 0) {
       cur--;
-      initRec();
       refreshUI();
     }
   }
@@ -783,6 +893,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   }
 
   function refreshUI() {
+    stopTts();
     $("progress").textContent = "關卡：" + (cur + 1) + " / " + levels.length;
     $("target-word").textContent = levels[cur][CFG.wordField];
     $("target-mean").textContent = levels[cur].mean;
@@ -803,11 +914,11 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
 
   function showFinal() {
     hideModal();
+    stopTts();
     try { if (rec) rec.stop(); } catch (e) {}
-    synth && synth.cancel();
     $("main-play-area").style.display = "none";
     $("final-area").style.display = "block";
-    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / levels.length);
+    const avg = Math.round(scores.reduce(function (a, b) { return a + b; }, 0) / levels.length);
     $("total-avg").textContent = avg;
     submitToGoogleForm(studentClass, studentNo, avg);
     submitToSheet(studentClass, studentNo, avg);
@@ -836,13 +947,13 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     }
     document.body.appendChild(form);
     form.submit();
-    setTimeout(() => { try { form.remove(); } catch (e) {} }, 2000);
-    setTimeout(() => { $("save-status").textContent = "✅ 成績已成功上傳！"; }, 1500);
+    setTimeout(function () { try { form.remove(); } catch (e) {} }, 2000);
+    setTimeout(function () { $("save-status").textContent = "✅ 成績已成功上傳！"; }, 1500);
   }
 
   function submitToSheet(cls, no, score) {
     if (!SCORE_URL) return;
-    const done = scores.filter((s) => s >= 60).length;
+    const done = scores.filter(function (s) { return s >= 60; }).length;
     const payload = {
       token: TOKEN,
       class: cls,
@@ -880,11 +991,8 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
   $("okSubmit").addEventListener("click", showFinal);
   $("againBtn").addEventListener("click", function () { location.reload(); });
 
-  if (!SpeechRec) {
-    showBanner("此瀏覽器未能評分朗讀。請用 iPad／iPhone 的 Safari，或電腦的 Chrome。");
-  } else if (location.protocol === "file:") {
-    showBanner("若朗讀評分未能使用，請用 Safari 開啟網站版本（需要麥克風）。");
-  }
+  document.addEventListener("touchstart", function () { unlockAudio(); }, { once: true, passive: true });
+  document.addEventListener("click", function () { unlockAudio(); }, { once: true });
 
   refreshGo();
 })();
