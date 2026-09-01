@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="小小工程師跳跳關" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>小小工程師跳跳關</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#1565c0; --yellow:#f4d35e; --ink:#1d2b1f; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden; background: #7eb8e8;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink); touch-action: manipulation; user-select: none;
+      overscroll-behavior: none;
+    }
+    #wrap {
+      position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+      width: 100dvw; height: 100dvh;
+    }
+    canvas { display: block; width: 100%; height: 100%; background: #7eb8e8; touch-action: none; }
+    .panel, .panel input { touch-action: auto; -webkit-user-select: text; user-select: text; }
+    .panel {
+      position: absolute; inset: 0; z-index: 5;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      background: linear-gradient(#8ec8f0, #d6e8ff);
+      padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+    }
+    .card {
+      background: #fffef6; border: 6px solid #1565c0; border-radius: 28px;
+      padding: 18px 16px 16px; max-width: 560px; width: 100%;
+      margin: 12px auto; box-shadow: 0 10px 0 #0d47a1;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(20px, 6vw, 28px); text-align: center; color: #0d47a1; }
+    p.lead { text-align: center; margin: 0 0 14px; font-size: 16px; line-height: 1.5; }
+    .chars { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+    .char-btn {
+      flex: 1; border: 4px solid #bbdefb; background: #fff; border-radius: 20px;
+      padding: 10px; cursor: pointer; font: inherit; font-weight: 700;
+    }
+    .char-btn img { width: 100%; max-height: 140px; object-fit: contain; display: block; }
+    .char-btn.pick { border-color: #1565c0; background: #e3f2fd; box-shadow: 0 0 0 3px #f4d35e; }
+    .primary {
+      width: 100%; border: 0; background: #1565c0; color: #fff; font: inherit;
+      font-weight: 900; font-size: 20px; padding: 14px; border-radius: 16px; cursor: pointer;
+    }
+    .primary.blue { background: #00897b; margin-top: 8px; }
+    .primary:disabled { background: #9aaa9b; }
+    .hud {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 7;
+      display: flex; justify-content: space-between; align-items: center;
+      pointer-events: none; text-shadow: 0 2px 0 rgba(0,0,0,.25);
+      color: #fff; font-weight: 900; font-size: 18px;
+    }
+    .hud span { background: rgba(0,0,0,.28); padding: 4px 10px; border-radius: 12px; }
+    #hudTime { min-width: 92px; text-align: center; }
+    #hudTime.warn { background: #e65100; }
+    #hudTime.hot { background: #c62828; }
+    .controls {
+      position: absolute; left: 0; right: 0; bottom: 12px; z-index: 4;
+      display: flex; justify-content: space-between; padding: 0 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      touch-action: none;
+    }
+    .pad, .jump { display: flex; gap: 10px; }
+    .ctrl {
+      width: 74px; height: 74px; min-width: 64px; min-height: 64px; border-radius: 18px; border: 0;
+      background: rgba(255,255,255,.55); color: #0d47a1; font-size: 32px; font-weight: 900;
+      box-shadow: 0 4px 0 rgba(0,0,0,.15); touch-action: none; -webkit-user-select: none;
+    }
+    .jump .ctrl { width: 96px; height: 74px; background: rgba(244,211,94,.85); }
+    @media (max-height: 500px) {
+      .ctrl { width: 58px; height: 58px; font-size: 26px; }
+      .jump .ctrl { width: 78px; height: 58px; }
+      .char-btn img { max-height: 72px; }
+      .card { padding: 12px; border-width: 4px; }
+    }
+    @media (max-width: 420px) {
+      .ctrl { width: 64px; height: 64px; }
+      .jump .ctrl { width: 84px; height: 64px; }
+    }
+    #quiz {
+      position: absolute; inset: 0; background: rgba(20,40,20,.55);
+      display: none; align-items: center; justify-content: center; z-index: 6; padding: 16px;
+    }
+    #quiz.show { display: flex; }
+    #quiz { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .qcard { background: #fffef6; border-radius: 24px; border: 6px solid #f4d35e; padding: 18px; max-width: 560px; width: 100%; margin: auto; }
+    .qcard h2 { margin: 0 0 8px; font-size: clamp(16px, 4.5vw, 20px); }
+    .qref { margin: 0 0 12px; font-size: 14px; color: #1565c0; font-weight: 700; }
+    .opt {
+      display: block; width: 100%; text-align: left; margin: 8px 0; padding: 14px 14px;
+      min-height: 48px; border-radius: 14px; border: 3px solid #bbdefb; background: #fff;
+      font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+    }
+    .opt:active { background: #e3f2fd; }
+    .hidden { display: none !important; }
+    .hint { font-size: 13px; text-align: center; color: #345a8a; margin-top: 10px; }
+    .ids { display: flex; gap: 10px; margin: 0 0 14px; }
+    .ids label { flex: 1; font-size: 13px; font-weight: 700; color: #0d47a1; }
+    .ids input {
+      width: 100%; margin-top: 4px; font: inherit; font-weight: 700; font-size: 18px;
+      padding: 12px; border: 3px solid #bbdefb; border-radius: 12px; background: #fff;
+      min-height: 48px;
+    }
+    .ids input:focus { outline: 0; border-color: #1565c0; background: #e3f2fd; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game"></canvas>
+    <div class="hud" id="hud"><span id="hudZone"></span><span id="hudTime">時間 50</span><span id="hudStar"></span></div>
+    <div class="controls" id="controls">
+      <div class="pad">
+        <button class="ctrl" type="button" data-k="left">←</button>
+        <button class="ctrl" type="button" data-k="right">→</button>
+      </div>
+      <div class="jump">
+        <button class="ctrl" type="button" data-k="jump">跳</button>
+      </div>
+    </div>
+
+    <div class="panel" id="start">
+      <div class="card">
+        <h1>小小工程師跳跳關</h1>
+        <p class="lead">四年級科學　《科學新領域》<br>課題：第 9 課 科學過程和演進、第 10 課 公平測試、第 11 課 能源、第 12 課 閉合電路、第 13 課 金屬和非金屬。<br>每關限時五十秒。請填寫班別及學號，無須填寫姓名。</p>
+        <div class="ids">
+          <label>班別<input id="klass" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 4A"></label>
+          <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
+        </div>
+        <div class="chars">
+          <button class="char-btn" id="pickBoy" type="button"><img src="assets/boy.png" alt="小志" />小志</button>
+          <button class="char-btn" id="pickGirl" type="button"><img src="assets/girl.png" alt="小蓮" />小蓮</button>
+        </div>
+        <button class="primary" id="go" type="button" disabled>開始遊戲</button>
+        <button class="primary blue hidden" id="cont" type="button">繼續遊戲</button>
+        <p class="hint">電腦：按 ← → 左右移動，按 ↑ 或空白鍵跳躍<br>平板電腦或智能電話：按畫面左下方左右移動，按右下方跳躍</p>
+      </div>
+    </div>
+
+    <div class="panel hidden" id="end">
+      <div class="card">
+        <h1 id="endTitle">完成！</h1>
+        <p class="lead" id="endMsg"></p>
+        <button class="primary" id="again" type="button">重玩本關</button>
+        <button class="primary blue hidden" id="nextLv" type="button">下一關</button>
+        <button class="primary hidden" id="homeBtn" type="button" style="margin-top:8px;background:#5a7aa8">返回開始</button>
+      </div>
+    </div>
+
+    <div id="quiz">
+      <div class="qcard">
+        <h2 id="qtext"></h2>
+        <p class="qref" id="qref"></p>
+        <div id="qopts"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const IMAGES = {};
+const loadImg = src => new Promise((res, rej) => {
+  const i = new Image();
+  i.onload = () => res(i);
+  i.onerror = rej;
+  i.src = src;
+});
+
+const SAVE = "chilin-jump-p4-steam-v1";
+const SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
+const SCORE_TOKEN = "chilin-edu-2026";
+const GROUND = 560;
+const PW = 54, PH = 82;
+const G = 0.55, JUMP = -15.2, SPEED = 4.6;
+const LEVEL_SECS = 50;
+
+function plat(x,y,w,h, extra){ return Object.assign({x,y,w,h, kind:"grass"}, extra||{}); }
+function en(x, min, max, extra){
+  return Object.assign({x, y:GROUND-36, w:54, h:36, vx:0.9, min, max, dead:false, kind:"walk"}, extra||{});
+}
+
+const QUESTION_BANK = {
+  method: [
+    { lesson: "四下　第 9 課 科學過程和演進", q: "課本指出，「假說」是：", right: "基於科學理論或生活經驗，對問題提出的暫時解釋", wrong: ["已經證明永遠正確的定律", "不用測試的答案", "只憑感覺寫下的結論"] },
+    { lesson: "四下　第 9 課 科學過程和演進", q: "假說不一定正確，所以我們需要：", right: "運用科學方法加以驗證", wrong: ["立刻當作真理", "把結果藏起來", "不再觀察"] },
+    { lesson: "四下　第 9 課 科學過程和演進", q: "當帆船逐漸駛離港口遠航時，岸上的觀察者會看到：", right: "船身首先消失，桅杆最後消失，說明海平面是彎曲的", wrong: ["整艘船同時變小最後消失，說明地球是平的", "桅杆首先消失，說明船正在下沉", "帆船上下顛簸然後消失，說明只有風浪"] },
+    { lesson: "四下　第 9 課 科學過程和演進", q: "人們後來提出「地圓說」，是因為「地平說」無法解釋：", right: "遠方的船會先看見桅杆，接近時才看見船身", wrong: ["為甚麼會下雨", "為甚麼石頭會下沉", "為甚麼蘋果會變色"] },
+    { lesson: "四下　第 9 課 科學過程和演進", q: "埃拉托色尼比較兩地日影長度的測試，為哪一個說法提供了支持？", right: "地圓說", wrong: ["地平說", "地心說", "地核說"] },
+    { lesson: "四下　第 9 課 科學過程和演進", q: "一個已為人接受的科學理論，在甚麼情況下可能被推翻？", right: "找到與舊理論不符的新證據，而新假說經得起測試", wrong: ["只要有人不同意就可以推翻", "永遠不可以推翻", "只要天氣轉變就可以推翻"] }
+  ],
+  fair: [
+    { lesson: "四下　第 10 課 公平測試", q: "公平測試時，應該：", right: "只改變要測試的因素，控制其他條件不變", wrong: ["同時改變所有條件", "不用量度", "只憑感覺比較"] },
+    { lesson: "四下　第 10 課 公平測試", q: "課本「公平測試要考慮的三個問題」是：", right: "測試甚麼因素、量度哪個變數、控制哪些其他因素", wrong: ["顏色、味道、聲音", "姓名、班別、學號", "電池、電線、燈泡"] },
+    { lesson: "四下　第 10 課 公平測試", q: "要測試「光的強度會不會影響幼苗生長」，哪一種方法最公平？", right: "把幼苗分別放在陽光下、室內和陰暗處，比較生長情況", wrong: ["只把一棵幼苗放在陽光下觀察", "一棵放陽光下，另一棵放陰暗處，但不比較光的強度", "每棵幼苗用不同泥土和不同水量"] },
+    { lesson: "四下　第 10 課 公平測試", q: "小明用紅蘋果塗檸檬汁，青蘋果不塗，來比較變色速度。這個測試：", right: "不公平，因為蘋果品種不相同", wrong: ["公平，因為都是蘋果", "公平，因為都塗了檸檬汁", "不用控制其他因素"] },
+    { lesson: "四下　第 10 課 公平測試", q: "小珠把塗了檸檬汁的蘋果放進冰箱，沒塗的放在窗台。這個測試：", right: "不公平，因為温度等其他因素也不相同", wrong: ["公平，因為等待時間相同", "公平，因為都是蘋果片", "公平，因為有對照"] },
+    { lesson: "四下　第 10 課 公平測試", q: "本課回顧指出，公平測試的三項要素是：", right: "只測試一種因素、量度受影響的變數、控制其他因素保持不變", wrong: ["畫畫、塗色、剪貼", "發電、煮食、照明", "金屬、非金屬、塑膠"] }
+  ],
+  energy: [
+    { lesson: "四下　第 11 課 能源", q: "課本填充：常用的能源來自煤、石油和天然氣。這些能源是有限的，屬於：", right: "不可再生能源", wrong: ["可再生能源", "二次能源中的水力能", "不是能源"] },
+    { lesson: "四下　第 11 課 能源", q: "太陽能、風能和水力能屬於：", right: "可再生能源，不會耗盡", wrong: ["不可再生能源，會耗盡", "不是能源", "只可以在地核使用"] },
+    { lesson: "四下　第 11 課 能源", q: "水力發電站是利用甚麼來發電？", right: "由高處流下的水的動力", wrong: ["只有煤", "只有石油", "只有電池"] },
+    { lesson: "四下　第 11 課 能源", q: "煤、石油、風能和太陽能直接來自大自然，稱為「一次能源」。發電廠把它們轉化成電能，電能屬於：", right: "二次能源", wrong: ["不是能源", "只有不可再生能源", "假說"] },
+    { lesson: "四下　第 11 課 能源", q: "港鐵列車通常使用甚麼能源？", right: "電", wrong: ["只有煤炭直接推動", "只有水力推動車卡", "不用能源"] },
+    { lesson: "四下　第 11 課 能源", q: "本課回顧：不可再生能源會耗盡，所以我們應該：", right: "珍惜和節約能源，有節制地使用", wrong: ["把所有電器整天開着", "只用石油，不用理會", "能源永遠不會用完"] }
+  ],
+  circuit: [
+    { lesson: "四下　第 12 課 閉合電路", q: "課本填充：提供電源，分為正極和負極的是：", right: "電池", wrong: ["燈泡", "開關", "燈罩"] },
+    { lesson: "四下　第 12 課 閉合電路", q: "燈泡的功用是：", right: "把電能轉換成光能", wrong: ["提供電源", "連接電線和電池", "量度温度"] },
+    { lesson: "四下　第 12 課 閉合電路", q: "電線的功用是：", right: "連接燈泡和乾電池", wrong: ["把電能轉換成光能", "提供正極和負極", "把水加熱"] },
+    { lesson: "四下　第 12 課 閉合電路", q: "要使燈泡亮起，需要連接乾電池和電線，組成：", right: "閉合電路", wrong: ["中斷的電路", "只有開關的電路", "沒有電池的電路"] },
+    { lesson: "四下　第 12 課 閉合電路", q: "日常電器用開關控制電路。開關打開時：", right: "電路中斷，燈泡不亮", wrong: ["電路閉合，燈泡一定更光", "電池會變成太陽能", "電線會消失"] },
+    { lesson: "四下　第 12 課 閉合電路", q: "缺少電池、電線或燈泡其中一個，結果通常是：", right: "燈泡不會亮起", wrong: ["燈泡一定更光", "不用組成電路", "開關會自己發光"] }
+  ],
+  design: [
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "功平看見電線外層是藍色，內裏是金棕色的線。外層和內裏分別是：", right: "外層是塑膠（非金屬），內裏是銅（金屬）", wrong: ["外層是銅，內裏是塑膠", "兩層都是金屬", "兩層都是非金屬"] },
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "測試後，課本總結：金屬能夠導電，是導電體；大部分非金屬不能導電，是：", right: "絕緣體", wrong: ["優良導熱體", "二次能源", "假說"] },
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "下列哪一組全部是導電體？", right: "鐵、銀、鋁", wrong: ["木、塑膠、橡皮", "布、紙、棉花", "木、塑膠、鋁"] },
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "電線一般用銅製造，是因為：", right: "銅導電性能很好，而且比銀便宜", wrong: ["銅完全不能導電", "銅是絕緣體", "銀最便宜所以不用銅"] },
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "水煲的煲身用金屬、手柄用塑膠，是因為：", right: "煲身是優良導熱體，手柄是不良導熱體，可避免燙傷", wrong: ["手柄要用金屬才不會燙", "煲身要用塑膠才能把水加熱", "兩部分都要用銅"] },
+    { lesson: "四下　第 13 課 金屬和非金屬", q: "活動冊製作保温袋時，工程設計過程是：", right: "界定問題、資料蒐集、繪畫設計圖、製作、測試、改良，並且是循環過程", wrong: ["只畫畫，不用製作和測試", "只製作一次，永遠不用改良", "不用界定問題"] }
+  ]
+};
+
+const LEVELS = [
+  {
+    name: "第1關　探究實驗室",
+    sky: ["#9fd0f0","#e8f4ff"],
+    worldW: 2300,
+    topic: "method",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 1000, 220),
+          plat(220, 470, 160, 26),
+          plat(460, 390, 160, 26),
+          {x:720, y:GROUND-100, w:56, h:100, kind:"pipe"},
+          plat(1120, GROUND, 1180, 220),
+          plat(1320, 485, 220, 26),
+          plat(1480, 425, 280, 26)
+        ],
+        enemies: [en(300, 80, 650), en(1300, 1160, 1480)],
+        stars: [{x:500, y:330, got:false, q:0}, {x:1580, y:365, got:false, q:1}],
+        flag: {x:2100, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:20, y:GROUND-70, t:"探究"}, {k:"hill", x:260, y:GROUND, c:"#6aa8d4"}]
+      };
+    }
+  },
+  {
+    name: "第2關　公平測試場",
+    sky: ["#b7d6c4","#e7f5ea"],
+    worldW: 2500,
+    topic: "fair",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 1780, 220, {kind:"metal"}),
+          plat(160, 480, 120, 22, {kind:"metal"}),
+          plat(300, 410, 120, 22, {kind:"metal"}),
+          plat(450, 340, 180, 22, {kind:"metal"}),
+          {x:1050, y:GROUND-110, w:58, h:110, kind:"pipe"},
+          plat(1260, 485, 180, 22, {kind:"metal"}),
+          plat(1420, 425, 260, 22, {kind:"metal"}),
+          plat(1900, GROUND, 600, 220, {kind:"metal"})
+        ],
+        enemies: [en(200, 40, 620, {vx:1.05}), en(1200, 860, 1450, {vx:1.1})],
+        stars: [{x:500, y:280, got:false, q:0}, {x:1520, y:365, got:false, q:1}],
+        flag: {x:2280, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"公平"}, {k:"hill", x:900, y:GROUND, c:"#7aaa8a"}]
+      };
+    }
+  },
+  {
+    name: "第3關　能源工場",
+    sky: ["#f0c27a","#f6e2b3"],
+    worldW: 2500,
+    topic: "energy",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 2500, 220, {kind:"wood"}),
+          plat(280, 508, 150, 24, {kind:"bounce"}),
+          plat(500, GROUND-8, 220, 16, {kind:"belt", belt:1.8}),
+          plat(430, 420, 160, 24, {kind:"wood"}),
+          plat(640, 350, 190, 24, {kind:"wood"}),
+          plat(1200, GROUND-8, 200, 16, {kind:"belt", belt:1.5}),
+          plat(1460, 480, 200, 24, {kind:"wood"}),
+          plat(1640, 420, 260, 24, {kind:"wood"})
+        ],
+        enemies: [en(200, 40, 250, {vx:0.7}), en(1300, 1080, 1600, {vx:0.9})],
+        stars: [{x:690, y:290, got:false, q:0}, {x:1740, y:360, got:false, q:1}],
+        flag: {x:2280, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"能源"}, {k:"hill", x:1400, y:GROUND, c:"#c9a06a"}]
+      };
+    }
+  },
+  {
+    name: "第4關　電路世界",
+    sky: ["#ffe082","#fff8e1"],
+    worldW: 2600,
+    topic: "circuit",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 560, 220, {kind:"metal"}),
+          plat(620, 470, 160, 24, {kind:"metal"}),
+          plat(820, 390, 180, 24, {kind:"metal"}),
+          plat(1060, GROUND, 420, 220, {kind:"metal"}),
+          plat(1480, 485, 180, 24, {kind:"metal", crumb:true}),
+          plat(1680, 425, 200, 24, {kind:"metal"}),
+          plat(1900, 365, 240, 24, {kind:"metal"}),
+          plat(2200, GROUND, 400, 220, {kind:"metal"}),
+          plat(2320, 508, 120, 22, {kind:"bounce"})
+        ],
+        enemies: [
+          en(180, 40, 420),
+          {x:2280, y:GROUND-36, w:54, h:36, vx:0.8, min:2220, max:2480, dead:false, kind:"walk"}
+        ],
+        stars: [{x:870, y:330, got:false, q:0}, {x:1980, y:305, got:false, q:1}],
+        flag: {x:2420, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"電路"}, {k:"hill", x:2300, y:GROUND, c:"#f4d35e"}]
+      };
+    }
+  },
+  {
+    name: "第5關　工程設計",
+    sky: ["#c9e7a8","#fff3b0"],
+    worldW: 2700,
+    topic: "design",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 1340, 220),
+          plat(220, 430, 140, 26),
+          {x:480, y:GROUND-96, w:56, h:96, kind:"pipe"},
+          plat(780, 470, 120, 22, {kind:"metal"}),
+          plat(920, 390, 160, 22, {kind:"metal"}),
+          plat(1320, GROUND, 1040, 220, {kind:"wood"}),
+          plat(1480, 508, 140, 24, {kind:"bounce"}),
+          plat(1680, GROUND-8, 140, 16, {kind:"belt", belt:1.6}),
+          plat(1880, 480, 180, 24, {kind:"cloud", crumb:true}),
+          plat(2060, 420, 260, 24, {kind:"cloud"}),
+          plat(2360, GROUND, 340, 220)
+        ],
+        enemies: [en(250, 40, 450), en(1500, 1360, 1750, {vx:1.0})],
+        stars: [{x:960, y:330, got:false, q:0}, {x:2140, y:360, got:false, q:1}],
+        flag: {x:2520, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"設計"}, {k:"hill", x:2400, y:GROUND, c:"#9ccc65"}]
+      };
+    }
+  }
+];
+
+let canvas, ctx, W, H, WORLD_W = 2300;
+let keys = {};
+let hold = { left:false, right:false, jump:false };
+let hero = "boy";
+let state = "menu";
+let quizId = null;
+let camX = 0;
+let t = 0;
+let player, enemies, stars, solids, flag, collected, decos;
+let levelIndex = 0;
+let lastAnswerSlot = -1;
+let liveQuestions = [];
+let levelQs = [];
+let maxCleared = 0;
+let wonAll = false;
+let timeLeft = LEVEL_SECS;
+let timerStart = 0;
+let studentClass = "";
+let studentNo = "";
+let scoreSent = false;
+
+function loadSave() {
+  try { return JSON.parse(localStorage.getItem(SAVE) || "{}"); } catch (e) { return {}; }
+}
+function writeSave() {
+  localStorage.setItem(SAVE, JSON.stringify({ maxCleared, hero }));
+}
+
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickLevelQuestions(topic, n) {
+  return shuffleArr(QUESTION_BANK[topic]).slice(0, n);
+}
+
+function shuffleQuestion(bank) {
+  const opts = [bank.right, ...bank.wrong];
+  let a = 0;
+  for (let n = 0; n < 12; n++) {
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    a = opts.indexOf(bank.right);
+    if (a !== lastAnswerSlot) break;
+  }
+  lastAnswerSlot = a;
+  return { q: bank.q, opts, a, lesson: bank.lesson || "" };
+}
+
+function layout() {
+  const L = LEVELS[levelIndex];
+  WORLD_W = L.worldW;
+  const b = L.build();
+  solids = b.solids;
+  enemies = b.enemies;
+  stars = b.stars;
+  flag = b.flag;
+  decos = b.decos;
+}
+
+function startLevel(i) {
+  levelIndex = i;
+  lastAnswerSlot = -1;
+  liveQuestions = [];
+  levelQs = pickLevelQuestions(LEVELS[i].topic, 2);
+  collected = 0;
+  wonAll = false;
+  scoreSent = false;
+  layout();
+  player = {x:80, y:GROUND-PH, w:PW, h:PH, vx:0, vy:0, onG:true, dir:1, alive:true, stand:null, bounceLock:0, coyote:8, jumpBuf:0};
+  camX = 0;
+  quizId = null;
+  timeLeft = LEVEL_SECS;
+  timerStart = performance.now();
+  state = "play";
+  document.getElementById("quiz").classList.remove("show");
+  document.getElementById("end").classList.add("hidden");
+  document.getElementById("start").classList.add("hidden");
+  updateHudTime();
+}
+
+function aabb(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function hitSolidsX() {
+  const box = {x:player.x, y:player.y, w:player.w, h:player.h};
+  for (const s of solids) {
+    if (s.fallen || s.kind === "bounce") continue;
+    if (s.h < 50) continue;
+    if (player._py + player.h <= s.y + 12) continue;
+    if (!aabb(box, s)) continue;
+    if (player.vx > 0) player.x = s.x - player.w;
+    else if (player.vx < 0) player.x = s.x + s.w;
+    player.vx = 0;
+  }
+}
+
+function hitSolidsY() {
+  const prevBottom = player._py + player.h;
+  const prevTop = player._py;
+  let best = null;
+  for (const s of solids) {
+    if (s.fallen) continue;
+    if (player.x + player.w <= s.x + 2 || player.x >= s.x + s.w - 2) continue;
+    if (player.vy >= 0 && prevBottom <= s.y + 8 && player.y + player.h >= s.y) {
+      if (!best || s.y < best.y) best = s;
+    } else if (player.vy < 0 && s.kind !== "bounce" && prevTop >= s.y + s.h - 8 && player.y <= s.y + s.h) {
+      player.y = s.y + s.h;
+      player.vy = 0;
+    }
+  }
+  if (best) {
+    player.y = best.y - player.h;
+    if (best.kind === "bounce") {
+      if (player.bounceLock <= 0) {
+        const holdJump = keys.ArrowUp || keys[" "] || keys.w || keys.W || hold.jump;
+        player.vy = holdJump ? -16 : -13.5;
+        player.bounceLock = 14;
+      } else {
+        player.vy = 0;
+        player.onG = true;
+        player.stand = best;
+      }
+      if (player.vy < 0) {
+        player.onG = false;
+        player.stand = null;
+      }
+    } else {
+      player.vy = 0;
+      player.onG = true;
+      player.stand = best;
+      if (best.crumb && !best.shake) best.shake = 1;
+    }
+  }
+}
+
+function showEnd(title, msg, kind) {
+  state = kind;
+  document.getElementById("endTitle").textContent = title;
+  document.getElementById("endMsg").innerHTML = msg;
+  document.getElementById("again").classList.toggle("hidden", kind === "winall");
+  document.getElementById("nextLv").classList.toggle("hidden", kind !== "win");
+  document.getElementById("homeBtn").classList.toggle("hidden", kind !== "winall" && kind !== "lose");
+  document.getElementById("end").classList.remove("hidden");
+  const result = kind === "winall" ? "全通關" : kind === "win" ? "過關" : "本關失敗";
+  reportScore(result);
+}
+
+function identityOk() {
+  const c = (document.getElementById("klass").value || "").trim();
+  const n = (document.getElementById("stuno").value || "").trim();
+  studentClass = c.slice(0, 8);
+  studentNo = n;
+  return studentClass.length >= 1 && /^\d{1,3}$/.test(studentNo);
+}
+
+function reportScore(result) {
+  if (scoreSent) return;
+  scoreSent = true;
+  if (!SCORE_URL || !identityOk()) return;
+  const payload = {
+    token: SCORE_TOKEN,
+    class: studentClass,
+    no: studentNo,
+    activity: "小小工程師跳跳關",
+    level: (LEVELS[levelIndex] && LEVELS[levelIndex].name) || "",
+    result: result,
+    stars: String(collected || 0),
+    hero: hero === "girl" ? "小蓮" : "小志",
+    seconds: String(usedSecs())
+  };
+  try {
+    fetch(SCORE_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
+  } catch (e) {}
+}
+
+function die(reason) {
+  showEnd("本關須重新開始", reason + "<br>答錯題目、碰到小蟲、掉進洞穴或時間完結，只須重玩本關。", "lose");
+}
+
+function usedSecs() {
+  return Math.max(1, Math.min(LEVEL_SECS, Math.ceil(LEVEL_SECS - timeLeft)));
+}
+
+function winLevel() {
+  if (levelIndex + 1 > maxCleared) maxCleared = levelIndex + 1;
+  writeSave();
+  const used = usedSecs();
+  if (levelIndex >= LEVELS.length - 1) {
+    wonAll = true;
+    showEnd("全部完成！", "你已通過五關，最後一關用了" + used + "秒。", "winall");
+  } else {
+    showEnd("過關了！", "你用了" + used + "秒。<br>下一關是「" + LEVELS[levelIndex + 1].name + "」。", "win");
+  }
+}
+
+function openQuiz(qid) {
+  quizId = qid;
+  state = "quiz";
+  if (player && player.stand && player.stand.crumb) player.stand.shake = 0;
+  const Q = liveQuestions[qid] = shuffleQuestion(levelQs[qid]);
+  document.getElementById("qtext").textContent = "科學題：" + Q.q;
+  document.getElementById("qref").textContent = Q.lesson ? "溫習課本：" + Q.lesson : "";
+  const box = document.getElementById("qopts");
+  box.innerHTML = "";
+  Q.opts.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.textContent = String.fromCharCode(65+i) + ".  " + t;
+    b.onclick = () => answer(i);
+    box.appendChild(b);
+  });
+  document.getElementById("quiz").classList.add("show");
+}
+
+function answer(i) {
+  const Q = liveQuestions[quizId];
+  document.getElementById("quiz").classList.remove("show");
+  if (i === Q.a) {
+    collected++;
+    state = "play";
+    quizId = null;
+  } else {
+    die("這題答錯了。正確答案是：「" + Q.opts[Q.a] + "」。");
+  }
+}
+
+function step() {
+  if (state !== "play") return;
+  t++;
+  const left = keys.ArrowLeft || keys.a || keys.A || hold.left;
+  const right = keys.ArrowRight || keys.d || keys.D || hold.right;
+  const jump = keys.ArrowUp || keys[" "] || keys.w || keys.W || hold.jump;
+
+  for (const s of solids) {
+    s._ox = s.x; s._oy = s.y;
+    if (s.mx) {
+      s.x += s.mvx;
+      if (s.x < s.mx[0] || s.x > s.mx[1]) s.mvx *= -1;
+    }
+    if (s.shake) {
+      s.shake++;
+      if (s.shake > 70) { s.fallen = true; s.shake = 0; s.y += 400; }
+    }
+  }
+
+  player.vx = 0;
+  if (left) { player.vx = -SPEED; player.dir = -1; }
+  if (right) { player.vx = SPEED; player.dir = 1; }
+  if (player.bounceLock > 0) player.bounceLock--;
+  if (player.onG) player.coyote = 8;
+  else if (player.coyote > 0) player.coyote--;
+  if (jump) player.jumpBuf = 8;
+  else if (player.jumpBuf > 0) player.jumpBuf--;
+  let didJump = false;
+  if (player.jumpBuf > 0 && player.coyote > 0) {
+    player.vy = JUMP;
+    player.onG = false;
+    player.stand = null;
+    player.coyote = 0;
+    player.jumpBuf = 0;
+    didJump = true;
+  }
+
+  player._px = player.x;
+  player._py = player.y;
+  player.x += player.vx;
+  hitSolidsX();
+  if (!didJump) player.vy += G;
+  player.y += player.vy;
+  player.onG = false;
+  player.stand = null;
+  hitSolidsY();
+  if (player.stand) {
+    player.x += (player.stand.x - (player.stand._ox || player.stand.x));
+    if (player.stand.belt) player.x += player.stand.belt;
+  }
+
+  if (player.x < 8) player.x = 8;
+  if (player.x > WORLD_W - player.w - 8) player.x = WORLD_W - player.w - 8;
+  if (player.y > GROUND + 200) { die("掉進洞穴了。"); return; }
+
+  const pb = {x:player.x+6, y:player.y+8, w:player.w-12, h:player.h-8};
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    if (e.kind === "hop") {
+      e.hop = (e.hop || 0) + 1;
+      if (e.hop === 1) e._gy = e.y;
+      if (!e.vy) e.vy = 0;
+      e.vy += 0.45;
+      e.y += e.vy;
+      if (e.y > e._gy) { e.y = e._gy; e.vy = 0; }
+      if (e.hop % 70 === 0) e.vy = -9;
+    } else {
+      e.x += e.vx;
+      if (e.x < e.min || e.x > e.max) e.vx *= -1;
+    }
+    const eb = {x:e.x, y:e.y, w:e.w, h:e.h};
+    if (!aabb(pb, eb)) continue;
+    if (player.vy > 0 && player.y + player.h - e.y < 24) {
+      e.dead = true;
+      player.vy = -8;
+    } else {
+      die("碰到小蟲了。請從上方踏下才安全。");
+      return;
+    }
+  }
+
+  for (const s of stars) {
+    if (s.got) continue;
+    if (aabb(pb, {x:s.x, y:s.y, w:40, h:40})) {
+      s.got = true;
+      openQuiz(s.q);
+      return;
+    }
+  }
+
+  if (collected >= stars.length && aabb(pb, {x:flag.x, y:flag.y, w:flag.w, h:flag.h})) {
+    winLevel();
+  }
+
+  camX = Math.max(0, Math.min(WORLD_W - W, player.x - W * 0.35));
+}
+
+function drawSky() {
+  const [c0, c1] = LEVELS[levelIndex].sky;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, c0);
+  g.addColorStop(1, c1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,.82)";
+  for (const c of [[180,70,55],[620,48,78],[1100,80,50],[1700,40,70],[2200,76,52]]) {
+    const x = c[0] - camX * 0.45;
+    ctx.beginPath();
+    ctx.arc(x, c[1], c[2], 0, Math.PI * 2);
+    ctx.arc(x + 38, c[1] + 8, c[2] * 0.7, 0, Math.PI * 2);
+    ctx.arc(x - 34, c[1] + 10, c[2] * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawSolid(s) {
+  if (s.fallen) return;
+  const jx = s.shake ? Math.sin(s.shake) * 3 : 0;
+  const x = s.x + jx;
+  if (s.kind === "pipe") {
+    ctx.fillStyle = "#2e9c3a";
+    ctx.fillRect(x + 7, s.y + 18, s.w - 14, s.h - 18);
+    ctx.fillStyle = "#43b64c";
+    ctx.fillRect(x, s.y, s.w, 22);
+    ctx.strokeStyle = "#1b5e20"; ctx.lineWidth = 3;
+    ctx.strokeRect(x, s.y, s.w, 22);
+    return;
+  }
+  let top, body;
+  if (s.kind === "metal") { top = "#8aa0b8"; body = "#5d7186"; }
+  else if (s.kind === "wood") { top = "#d2a15a"; body = "#a06a32"; }
+  else if (s.kind === "bounce") { top = "#ff6b6b"; body = "#c44545"; }
+  else if (s.kind === "belt") { top = "#f4d35e"; body = "#c9a227"; }
+  else if (s.kind === "cloud") { top = "#ffffff"; body = "#dbe7ff"; }
+  else { top = "#7bc45b"; body = "#c48a4a"; }
+  ctx.fillStyle = body;
+  ctx.fillRect(x, s.y + 10, s.w, Math.max(s.h - 10, 12));
+  ctx.fillStyle = top;
+  ctx.fillRect(x, s.y, s.w, 14);
+  if (s.kind === "bounce") {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x + 8, s.y + 4, s.w - 16, 5);
+  }
+  if (s.kind === "belt") {
+    ctx.fillStyle = "#1565c0";
+    for (let i = 0; i < s.w; i += 22) ctx.fillRect(x + ((t * 2 + i) % s.w), s.y + 3, 10, 6);
+  }
+  if (s.kind === "metal") {
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    ctx.fillRect(x + 6, s.y + 3, 18, 6);
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawSky();
+  ctx.save();
+  ctx.translate(-camX, 0);
+  for (const d of decos) {
+    if (d.k === "hill") {
+      ctx.fillStyle = d.c;
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y + 10, 160, 70, 0, Math.PI, 0);
+      ctx.fill();
+    }
+    if (d.k === "sign") {
+      ctx.fillStyle = "#8d5a2b";
+      ctx.fillRect(d.x + 28, d.y + 22, 8, 48);
+      ctx.fillStyle = "#fff8dc";
+      ctx.fillRect(d.x, d.y, 64, 30);
+      ctx.strokeStyle = "#5a3a18"; ctx.lineWidth = 2;
+      ctx.strokeRect(d.x, d.y, 64, 30);
+      ctx.fillStyle = "#3a2a10";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(d.t, d.x + 32, d.y + 20);
+    }
+  }
+  for (const s of solids) drawSolid(s);
+  if (IMAGES.flag) ctx.drawImage(IMAGES.flag, flag.x, flag.y, 86, 150);
+  for (const s of stars) {
+    if (s.got) continue;
+    ctx.drawImage(IMAGES.star, s.x, s.y + Math.sin(t / 12 + s.x) * 6, 44, 44);
+  }
+  for (const e of enemies) {
+    if (e.dead) continue;
+    ctx.save();
+    if (e.vx < 0) { ctx.translate(e.x + e.w, e.y); ctx.scale(-1, 1); ctx.drawImage(IMAGES.enemy, 0, 0, e.w, e.h); }
+    else ctx.drawImage(IMAGES.enemy, e.x, e.y, e.w, e.h);
+    ctx.restore();
+  }
+  if (player) {
+    const img = IMAGES[hero];
+    const bob = player.onG && player.vx ? Math.sin(t / 4) * 2 : 0;
+    ctx.save();
+    ctx.translate(player.x + player.w / 2, player.y + player.h);
+    ctx.scale(player.dir, 1);
+    ctx.drawImage(img, -player.w / 2, -player.h - bob, player.w, player.h);
+    ctx.restore();
+  }
+  ctx.restore();
+  document.getElementById("hudZone").textContent = LEVELS[levelIndex].name;
+  document.getElementById("hudStar").textContent = "星星 " + collected + " / " + stars.length;
+  updateHudTime();
+}
+
+function updateHudTime() {
+  const el = document.getElementById("hudTime");
+  if (!el) return;
+  const secs = Math.max(0, Math.ceil(timeLeft));
+  el.textContent = "時間 " + secs;
+  el.classList.toggle("warn", secs <= 10 && secs > 5);
+  el.classList.toggle("hot", secs <= 5);
+}
+
+function tickTimer() {
+  if (state !== "play" && state !== "quiz") return;
+  timeLeft = LEVEL_SECS - (performance.now() - timerStart) / 1000;
+  if (timeLeft > 0) return;
+  timeLeft = 0;
+  document.getElementById("quiz").classList.remove("show");
+  die("時間到了。每關須於五十秒內過關。");
+}
+
+function loop() {
+  tickTimer();
+  step();
+  if (state === "play" || state === "quiz") draw();
+  else updateHudTime();
+  requestAnimationFrame(loop);
+}
+
+function viewSize() {
+  const vv = window.visualViewport;
+  return {
+    w: Math.max(320, Math.round(vv ? vv.width : window.innerWidth)),
+    h: Math.max(280, Math.round(vv ? vv.height : window.innerHeight)),
+    x: vv ? Math.round(vv.offsetLeft) : 0,
+    y: vv ? Math.round(vv.offsetTop) : 0
+  };
+}
+
+function resize() {
+  if (!canvas || !ctx) return;
+  const v = viewSize();
+  const wrap = document.getElementById("wrap");
+  wrap.style.left = v.x + "px";
+  wrap.style.top = v.y + "px";
+  wrap.style.width = v.w + "px";
+  wrap.style.height = v.h + "px";
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(v.w * dpr);
+  canvas.height = Math.floor(v.h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = v.w;
+  H = v.h;
+}
+
+function bindViewport() {
+  window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", () => setTimeout(resize, 250));
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", resize);
+    visualViewport.addEventListener("scroll", resize);
+  }
+}
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+});
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+function bindHold(el, k) {
+  let pointer = false;
+  el.addEventListener("pointerdown", ev => {
+    pointer = true;
+    ev.preventDefault();
+    try { el.setPointerCapture(ev.pointerId); } catch (err) {}
+    hold[k] = true;
+  });
+  const off = ev => { if (ev) ev.preventDefault(); hold[k] = false; };
+  el.addEventListener("pointerup", off);
+  el.addEventListener("pointercancel", off);
+  el.addEventListener("lostpointercapture", () => { hold[k] = false; });
+  el.addEventListener("touchstart", ev => {
+    if (pointer) return;
+    ev.preventDefault();
+    hold[k] = true;
+  }, { passive: false });
+  el.addEventListener("touchend", ev => {
+    if (pointer) return;
+    ev.preventDefault();
+    hold[k] = false;
+  }, { passive: false });
+  el.addEventListener("touchcancel", () => { if (!pointer) hold[k] = false; }, { passive: true });
+}
+document.querySelectorAll(".ctrl").forEach(b => bindHold(b, b.dataset.k));
+
+function enableStart() {
+  const picked = document.querySelector(".char-btn.pick");
+  const ok = identityOk() && !!picked;
+  document.getElementById("go").disabled = !ok;
+  const s = loadSave();
+  document.getElementById("cont").classList.toggle("hidden", !(ok && s.maxCleared > 0 && s.maxCleared < LEVELS.length));
+}
+
+document.getElementById("pickBoy").onclick = () => {
+  hero = "boy";
+  document.getElementById("pickBoy").classList.add("pick");
+  document.getElementById("pickGirl").classList.remove("pick");
+  enableStart();
+};
+document.getElementById("pickGirl").onclick = () => {
+  hero = "girl";
+  document.getElementById("pickGirl").classList.add("pick");
+  document.getElementById("pickBoy").classList.remove("pick");
+  enableStart();
+};
+document.getElementById("klass").addEventListener("input", enableStart);
+document.getElementById("stuno").addEventListener("input", enableStart);
+document.getElementById("go").onclick = () => {
+  if (!identityOk()) return;
+  maxCleared = loadSave().maxCleared || 0;
+  startLevel(0);
+};
+document.getElementById("cont").onclick = () => {
+  if (!identityOk()) return;
+  const s = loadSave();
+  maxCleared = s.maxCleared || 0;
+  startLevel(Math.min(maxCleared, LEVELS.length - 1));
+};
+document.getElementById("again").onclick = () => startLevel(levelIndex);
+document.getElementById("nextLv").onclick = () => startLevel(levelIndex + 1);
+document.getElementById("homeBtn").onclick = () => {
+  document.getElementById("end").classList.add("hidden");
+  document.getElementById("start").classList.remove("hidden");
+  state = "menu";
+  enableStart();
+};
+
+(async function init(){
+  canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
+  resize();
+  bindViewport();
+  IMAGES.boy = await loadImg("assets/boy.png");
+  IMAGES.girl = await loadImg("assets/girl.png");
+  IMAGES.star = await loadImg("assets/star.png");
+  IMAGES.enemy = await loadImg("assets/enemy.png");
+  IMAGES.flag = await loadImg("assets/flag.png");
+  const s = loadSave();
+  if (s.hero === "girl" || s.hero === "boy") {
+    hero = s.hero;
+    document.getElementById(hero === "girl" ? "pickGirl" : "pickBoy").classList.add("pick");
+    enableStart();
+  }
+  layout();
+  loop();
+})();
+</script>
+</body>
+</html>
