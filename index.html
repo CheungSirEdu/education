@@ -103,10 +103,16 @@
     }
     .qrbox {
       background: #fff; border-radius: 24px; border: 5px solid var(--yellow);
-      padding: 14px; text-align: center;
+      padding: 14px; text-align: center; margin-bottom: 14px;
     }
-    .qrbox img { width: min(100%, 420px); height: auto; }
+    .qrbox img { width: min(100%, 280px); height: auto; }
     .qrbox p { margin: 8px 0 0; font-weight: 700; font-size: 14px; }
+    .label-bit { margin: 4px 0 8px; font-size: 15px; font-weight: 900; color: var(--green-dark); }
+    .url-line {
+      text-align: center; font-size: 13px; font-weight: 700; color: var(--muted);
+      margin: -4px 0 14px; word-break: break-all;
+    }
+    .basics { margin-bottom: 8px; }
     footer {
       text-align: center; padding: 8px 16px 28px; color: var(--green-dark);
       font-size: 13px; font-weight: 700; line-height: 1.6;
@@ -177,7 +183,7 @@
           <img src="assets/boy.png" alt="小志">
           <img src="assets/girl.png" alt="小蓮">
         </div>
-        <p class="note">請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結及二維碼。</p>
+        <p class="note">請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結、二維碼及成績紀錄。</p>
         <div class="grid">
           ${SUBJECTS.map(s => `
             <a class="card" href="#/s/${s.id}">
@@ -190,6 +196,31 @@
       `;
     }
 
+    function itemBasics(it) {
+      return `
+        <div class="basics">
+          <div class="item" style="cursor:default;margin-bottom:14px">
+            <h2>${it.title}</h2>
+            <p>${it.description || it.blurb || ""}</p>
+          </div>
+          <p class="label-bit">連結</p>
+          <a class="btn btn-play" href="${it.play}">立即遊玩</a>
+          <p class="url-line">${it.play}</p>
+          ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲檔案</a>` : ""}
+          <p class="label-bit">二維碼</p>
+          <div class="qrbox">
+            <img src="${it.qr}" alt="二維碼：${it.title}">
+            <p>請用相機掃描二維碼即可遊玩。</p>
+          </div>
+          <p class="label-bit">成績</p>
+          <div class="note">
+            開始前請填寫班別及學號（例如：4A、12）。無須填寫姓名。<br>
+            完成後，分數會自動交給老師。本頁不顯示成績，學生及家長亦不會看到其他同學的分數。
+          </div>
+        </div>
+      `;
+    }
+
     function renderSubject(id) {
       const s = SUBJECTS.find(x => x.id === id);
       if (!s) return renderHome();
@@ -198,12 +229,7 @@
       $("app").innerHTML = `
         <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
         <h3 class="sec">${s.emoji} ${s.title}</h3>
-        ${items.length ? `<div class="grid">${items.map(it => `
-          <a class="card" href="#/i/${it.id}">
-            <div class="emoji">${it.type === "game" ? "🎮" : "📝"}</div>
-            <h2>${it.title}</h2>
-            <p>${it.description || it.blurb || ""}</p>
-          </a>`).join("")}</div>` : `<div class="empty">此部分教材即將推出。</div>`}
+        ${items.length ? items.map(it => itemBasics(it)).join("") : `<div class="empty">此部分教材即將推出。</div>`}
       `;
     }
 
@@ -217,17 +243,7 @@
           <a class="btn btn-back" href="#/">← 返回目錄</a>
           <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? s.title : "返回"}</a>
         </div>
-        <div class="item" style="cursor:default;margin-bottom:14px">
-          <h2>${it.title}</h2>
-          <p>${it.description || it.blurb || ""}</p>
-          <p style="margin-top:8px">開始前請填寫班別及學號（例如：4C、12）。無須填寫姓名。成績只供教師查閱。</p>
-        </div>
-        <a class="btn btn-play" href="${it.play}">立即遊玩</a>
-        ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲檔案</a>` : ""}
-        <div class="qrbox">
-          <img src="${it.qr}" alt="二維碼：${it.title}">
-          <p>請用相機掃描二維碼即可遊玩。</p>
-        </div>
+        ${itemBasics(it)}
       `;
     }
 

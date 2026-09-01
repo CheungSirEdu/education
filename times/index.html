@@ -308,6 +308,13 @@ async function saveScore(mode, score, total, percent, misses) {
   const prev = JSON.parse(localStorage.getItem(key) || "[]");
   prev.push(row);
   localStorage.setItem(key, JSON.stringify(prev.slice(-200)));
+  let handed = false;
+  function markHanded() {
+    if (handed) return;
+    handed = true;
+    const el = $("result-msg");
+    if (el) el.textContent = (el.textContent || "") + "　成績已交給老師。";
+  }
   try {
     fetch(SCORE_URL, {
       method: "POST",
@@ -325,6 +332,7 @@ async function saveScore(mode, score, total, percent, misses) {
         seconds: String(secs)
       })
     }).catch(function () {});
+    if (SCORE_URL) markHanded();
   } catch (e) {}
   try {
     const r = await fetch("/api/score", {
@@ -332,10 +340,7 @@ async function saveScore(mode, score, total, percent, misses) {
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify(row)
     });
-    if (r.ok) {
-      const el = $("result-msg");
-      if (el) el.textContent = (el.textContent || "") + "　成績已交給老師。";
-    }
+    if (r.ok) markHanded();
   } catch (e) {}
 }
 
