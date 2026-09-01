@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="乘數表">
-<title>乘數表小遊戲 · 四年班</title>
+<title>乘數表小遊戲 · 四年級</title>
 <link rel="stylesheet" href="school-ui.css">
 <style>
   /* 呢個遊戲獨有：金色底線 + × 裝飾。之後其他測驗請換顏色／圖案，唔好原樣複製。 */
@@ -101,30 +101,30 @@
   <header class="bar theme-times">
     <div class="bar-motif" aria-hidden="true">× × ×</div>
     <h1>乘數表小遊戲</h1>
-    <p>四年班溫習 · 二至九的乘數表</p>
+    <p>四年級數學　二至九的乘數表</p>
   </header>
 
   <section id="home" class="card">
     <div class="desk">
       <div>
         <div class="who">
-          <input id="klass" placeholder="班別（必填）" maxlength="8" autocomplete="off" aria-label="班別" value="">
-          <input id="stuname" placeholder="姓名或座號（必填）" maxlength="20" autocomplete="off" aria-label="姓名或座號">
+          <input id="klass" placeholder="班別，例如 4A" maxlength="8" autocomplete="off" aria-label="班別" value="">
+          <input id="stuno" placeholder="學號，例如 12" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="學號">
         </div>
         <div class="modes">
-          <button class="mode-btn" data-mode="type">快速答題<small>看見 3 × 4，用數字鍵盤輸入答案</small></button>
-          <button class="mode-btn" data-mode="mc">四揀一<small>四個答案揀一個，唔熟都敢玩</small></button>
-          <button class="mode-btn" data-mode="fill">填一份乘數表<small>揀一條，由 ×2 填到 ×9</small></button>
-          <button class="mode-btn" data-mode="timed">一分鐘挑戰<small>60 秒盡量答啱，睇自己進步</small></button>
-          <button class="mode-btn hidden" id="btn-wrong" data-mode="wrong">錯題重練<small>只重做頭先錯嗰啲</small></button>
+          <button class="mode-btn" data-mode="type">快速答題<small>看見算式後，用數字鍵輸入答案</small></button>
+          <button class="mode-btn" data-mode="mc">四揀一<small>從四個答案中選出正確的一項</small></button>
+          <button class="mode-btn" data-mode="fill">填一份乘數表<small>選一條乘數表，由 ×2 填至 ×9</small></button>
+          <button class="mode-btn" data-mode="timed">一分鐘挑戰<small>限時六十秒，盡量答對</small></button>
+          <button class="mode-btn hidden" id="btn-wrong" data-mode="wrong">錯題重練<small>只重做剛才答錯的題目</small></button>
         </div>
         <div style="height:12px"></div>
-        <button class="ghost" id="btn-settings">設定（揀乘數表、題數）</button>
-        <a class="tiny" href="teacher.html">老師睇成績</a>
+        <button class="ghost" id="btn-settings">設定（選擇乘數表、題數）</button>
+        <a class="tiny hidden" id="teacher-link" href="teacher.html">老師查看成績</a>
       </div>
       <div class="qrbox" id="qrbox">
-        <img id="qrimg" alt="QR code">
-        <div>學生掃呢個 QR 開始</div>
+        <img id="qrimg" alt="二維碼：乘數表小遊戲">
+        <div>請用相機掃描二維碼即可遊玩。</div>
         <div class="u" id="qrurl"></div>
       </div>
     </div>
@@ -184,6 +184,7 @@ let settings = { tables: [...ALL], n: 20 };
 let wrongBank = [];
 let lastMode = "type";
 let state = {};
+let fillSent = false;
 
 try {
   const s = JSON.parse(localStorage.getItem(STORE) || "null");
@@ -259,28 +260,33 @@ function mcChoices(ans) {
 }
 
 function praise(pct) {
-  if (pct === 100) return "全部啱！好叻！";
-  if (pct >= 80) return "好叻，差少少就滿分。";
-  if (pct >= 60) return "有進步！錯嗰啲可以再練。";
-  return "唔緊要，揀錯題重練，慢慢就熟。";
+  if (pct === 100) return "全部答對了。";
+  if (pct >= 80) return "很好，接近滿分。";
+  if (pct >= 60) return "有進步。答錯的題目可以再練習。";
+  return "不要緊。可以選「錯題重練」，多加練習。";
 }
+
+const SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
+const SCORE_TOKEN = "chilin-edu-2026";
+const ACTIVITY = "乘數表小遊戲";
+const MODE_NAME = { type: "快速答題", mc: "四揀一", fill: "填一份乘數表", timed: "一分鐘挑戰", wrong: "錯題重練" };
 
 function who() {
   return {
-    klass: $("klass").value.trim(),
-    name: $("stuname").value.trim()
+    klass: $("klass").value.trim().slice(0, 8),
+    no: $("stuno").value.trim()
   };
 }
 function needName() {
   const w = who();
   if (!w.klass) {
-    alert("請先填班別，例如 4A、4B、4C。");
+    alert("請先填寫班別，例如 4A。");
     $("klass").focus();
     return false;
   }
-  if (!w.name) {
-    alert("請先寫姓名或座號，老師先睇到成績。");
-    $("stuname").focus();
+  if (!/^\d{1,3}$/.test(w.no)) {
+    alert("請填寫學號，只須數字，無須填寫姓名。");
+    $("stuno").focus();
     return false;
   }
   localStorage.setItem(STORE + "-who", JSON.stringify(w));
@@ -288,10 +294,12 @@ function needName() {
 }
 async function saveScore(mode, score, total, percent, misses) {
   const w = who();
+  const secs = (state && state.start) ? Math.max(1, Math.round((Date.now() - state.start) / 1000)) : "";
+  const result = mode === "timed" ? (score + " 題") : (score + " / " + total);
   const row = {
     ts: new Date().toISOString(),
     klass: w.klass,
-    name: w.name || "未填名",
+    name: w.no,
     mode, score, total, percent,
     tables: tables(),
     misses: misses || []
@@ -301,6 +309,24 @@ async function saveScore(mode, score, total, percent, misses) {
   prev.push(row);
   localStorage.setItem(key, JSON.stringify(prev.slice(-200)));
   try {
+    fetch(SCORE_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        token: SCORE_TOKEN,
+        class: w.klass,
+        no: w.no,
+        activity: ACTIVITY,
+        level: MODE_NAME[mode] || mode,
+        result: result,
+        stars: String(percent),
+        hero: tables().join(","),
+        seconds: String(secs)
+      })
+    }).catch(function () {});
+  } catch (e) {}
+  try {
     const r = await fetch("/api/score", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -308,7 +334,7 @@ async function saveScore(mode, score, total, percent, misses) {
     });
     if (r.ok) {
       const el = $("result-msg");
-      if (el) el.textContent = (el.textContent || "") + "　成績已傳俾老師。";
+      if (el) el.textContent = (el.textContent || "") + "　成績已交給老師。";
     }
   } catch (e) {}
 }
@@ -376,7 +402,7 @@ function submit(val) {
   state.log.push({ ...q, ok, given: val });
   $("answer").textContent = val === "" ? "?" : val;
   $("answer").className = "answer " + (ok ? "ok" : "bad");
-  $("msg").textContent = ok ? "啱！" : ("答案係 " + q.ans);
+  $("msg").textContent = ok ? "答對了。" : ("答案是 " + q.ans);
   $("msg").style.color = ok ? "var(--ok)" : "var(--bad)";
   if (state.mode === "mc") {
     [...$("choices").children].forEach(b => {
@@ -410,17 +436,18 @@ function finish() {
     ? ("<b>錯題：</b><br>" + misses.map(x =>
         '<div class="wrong">' + x.a + " × " + x.b + " = " + x.ans + "（你答 " + x.given + "）</div>"
       ).join(""))
-    : "冇錯題。";
+    : "沒有錯題。";
   $("btn-wrong").classList.toggle("hidden", wrongBank.length === 0);
   saveScore(state.mode, state.score, total, pct, misses.map(x => x.a + "×" + x.b));
 }
 
 function startFill(n) {
+  fillSent = false;
   const t = tables();
   const pick = $("fill-pick");
   pick.innerHTML = "";
   if (t.length > 1 && n == null) {
-    $("fill-title").textContent = "先揀要填邊一條乘數表";
+    $("fill-title").textContent = "請先選擇要填寫的乘數表";
     $("fill-grid").innerHTML = "";
     $("fill-check").classList.add("hidden");
     t.forEach(x => {
@@ -465,10 +492,13 @@ function checkFill() {
     if (good) ok++;
     else if (inp.value.trim() === "") inp.classList.add("bad");
   });
-  $("fill-msg").textContent = ok === all ? "全部啱！呢條乘數表好熟。" : ("啱咗 " + ok + " / " + all + "。紅色嗰格再睇一次。");
+  $("fill-msg").textContent = ok === all ? "全部答對了。" : ("答對 " + ok + " / " + all + "。紅色的空格請再檢查。");
   $("fill-msg").style.color = ok === all ? "var(--ok)" : "var(--bad)";
   const pct = all ? Math.round(100 * ok / all) : 0;
-  saveScore("fill", ok, all, pct, []);
+  if (!fillSent) {
+    fillSent = true;
+    saveScore("fill", ok, all, pct, []);
+  }
 }
 
 function buildPad() {
@@ -506,7 +536,10 @@ buildTablePicks();
 $("klass").value = "";
 try {
   const w = JSON.parse(localStorage.getItem(STORE + "-who") || "null");
-  if (w) $("stuname").value = w.name || "";
+  if (w) {
+    if (w.klass) $("klass").value = w.klass;
+    if (w.no) $("stuno").value = w.no;
+  }
 } catch(e) {}
 const PUBLIC_URL = "https://cheungsiredu.github.io/education/times/";
 function showQr(url, imgSrc) {
@@ -517,6 +550,8 @@ function showQr(url, imgSrc) {
 }
 fetch("/api/info").then(r => r.json()).then(info => {
   showQr(info.url, info.qr + "?t=" + Date.now());
+  const t = $("teacher-link");
+  if (t) t.classList.remove("hidden");
 }).catch(function () {
   showQr(PUBLIC_URL, "qr.png");
 });
