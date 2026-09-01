@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="乘數表">
+<title>乘數表小遊戲 · 四年班</title>
+<link rel="stylesheet" href="school-ui.css">
+<style>
+  /* 呢個遊戲獨有：金色底線 + × 裝飾。之後其他測驗請換顏色／圖案，唔好原樣複製。 */
+  :root { --accent: #0f4c5c; --accent-2: #167384; --gold: #e8c15a; }
+  header.bar.theme-times { box-shadow: inset 0 -4px 0 var(--gold); }
+  header.bar.theme-times .bar-motif {
+    letter-spacing: .55em;
+    color: var(--gold);
+    font-weight: 800;
+    font-size: 13px;
+    margin-bottom: 2px;
+    opacity: .95;
+  }
+  .modes { display: grid; gap: 10px; }
+  .mode-btn, .key, .choice {
+    border: 0;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 16px;
+  }
+  .mode-btn {
+    background: #fff;
+    color: var(--accent);
+    border: 2px solid var(--line);
+    text-align: left;
+  }
+  .mode-btn small { display: block; font-weight: 500; color: var(--muted); margin-top: 4px; font-size: 13px; }
+  .mode-btn:active, .key:active, .choice:active { transform: scale(.98); }
+  .tables { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 14px; }
+  .tables-2 { grid-template-columns: 1fr 1fr; }
+  .tbl {
+    border: 2px solid #c5d8dc;
+    background: #fff;
+    border-radius: 12px;
+    font-size: 20px;
+    font-weight: 800;
+    padding: 12px 0;
+    color: var(--accent);
+  }
+  .tbl.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .qbox { text-align: center; padding: 10px 0 6px; }
+  .question { font-size: 52px; font-weight: 800; letter-spacing: .04em; margin: 8px 0; }
+  .answer {
+    min-height: 56px;
+    font-size: 40px;
+    font-weight: 800;
+    background: #fff;
+    border-radius: 12px;
+    border: 3px solid var(--line);
+    margin: 0 auto 12px;
+    max-width: 280px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .answer.ok { border-color: var(--ok); color: var(--ok); }
+  .answer.bad { border-color: var(--bad); color: var(--bad); }
+  .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 360px; margin: 0 auto; }
+  .key { background: #fff; border: 2px solid var(--line); font-size: 26px; padding: 16px 0; }
+  .key.ok { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .key.del { color: var(--bad); }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .choice { background: #fff; border: 2px solid var(--line); font-size: 28px; }
+  .choice.right { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .choice.wrong { background: var(--bad); color: #fff; border-color: var(--bad); }
+  .fill-grid { display: grid; gap: 8px; }
+  .fill-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; align-items: center; }
+  .fill-row span { font-size: 22px; font-weight: 800; text-align: right; padding-right: 6px; }
+  .fill-row input {
+    font-size: 24px; font-weight: 800; text-align: center;
+    padding: 10px; border-radius: 12px; border: 2px solid var(--line);
+    width: 100%;
+  }
+  .fill-row input.ok { border-color: var(--ok); }
+  .fill-row input.bad { border-color: var(--bad); }
+  .result-list { text-align: left; font-size: 16px; line-height: 1.7; }
+  .wrong { color: var(--bad); font-weight: 700; }
+  @media (max-width: 430px) {
+    .question { font-size: 40px; }
+    .mode-btn { font-size: 16px; padding: 14px; }
+    .key { font-size: 22px; padding: 13px 0; }
+    .choice { font-size: 22px; }
+    .tbl { font-size: 16px; }
+  }
+  @media (min-width: 700px) {
+    .question { font-size: 64px; }
+    .mode-btn { font-size: 20px; padding: 18px 20px; }
+    .desk { display: grid; grid-template-columns: 1fr 200px; gap: 14px; align-items: start; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar theme-times">
+    <div class="bar-motif" aria-hidden="true">× × ×</div>
+    <h1>乘數表小遊戲</h1>
+    <p>四年班溫習 · 二至九的乘數表</p>
+  </header>
+
+  <section id="home" class="card">
+    <div class="desk">
+      <div>
+        <div class="who">
+          <input id="klass" placeholder="班別（必填）" maxlength="8" autocomplete="off" aria-label="班別" value="">
+          <input id="stuname" placeholder="姓名或座號（必填）" maxlength="20" autocomplete="off" aria-label="姓名或座號">
+        </div>
+        <div class="modes">
+          <button class="mode-btn" data-mode="type">快速答題<small>看見 3 × 4，用數字鍵盤輸入答案</small></button>
+          <button class="mode-btn" data-mode="mc">四揀一<small>四個答案揀一個，唔熟都敢玩</small></button>
+          <button class="mode-btn" data-mode="fill">填一份乘數表<small>揀一條，由 ×2 填到 ×9</small></button>
+          <button class="mode-btn" data-mode="timed">一分鐘挑戰<small>60 秒盡量答啱，睇自己進步</small></button>
+          <button class="mode-btn hidden" id="btn-wrong" data-mode="wrong">錯題重練<small>只重做頭先錯嗰啲</small></button>
+        </div>
+        <div style="height:12px"></div>
+        <button class="ghost" id="btn-settings">設定（揀乘數表、題數）</button>
+        <a class="tiny" href="teacher.html">老師睇成績</a>
+      </div>
+      <div class="qrbox" id="qrbox">
+        <img id="qrimg" alt="QR code">
+        <div>學生掃呢個 QR 開始</div>
+        <div class="u" id="qrurl"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="settings" class="card hidden">
+    <div class="label">揀要練習的乘數表（可多選）</div>
+    <div class="tables" id="table-picks"></div>
+    <div class="label">快速答題／四揀一 題數</div>
+    <div class="row" style="margin:10px 0 16px">
+      <button class="tbl" data-n="10">10 題</button>
+      <button class="tbl" data-n="20">20 題</button>
+      <button class="tbl" data-n="30">30 題</button>
+    </div>
+    <button class="primary" id="save-settings">儲存，返回</button>
+  </section>
+
+  <section id="play" class="card hidden">
+    <div class="meta"><span id="progress-text">1 / 10</span><span id="score-text">0 分</span></div>
+    <div class="barline"><i id="bar"></i></div>
+    <div class="qbox">
+      <div class="question" id="question">3 × 4</div>
+      <div class="answer" id="answer">?</div>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div id="pad" class="pad"></div>
+    <div id="choices" class="choices hidden"></div>
+    <div style="height:10px"></div>
+    <button class="ghost" id="quit">結束，返回</button>
+  </section>
+
+  <section id="fill" class="card hidden">
+    <div class="label" id="fill-title">先揀要填邊一條乘數表</div>
+    <div class="tables tables-2" id="fill-pick"></div>
+    <div class="fill-grid" id="fill-grid"></div>
+    <div class="msg" id="fill-msg"></div>
+    <button class="primary" id="fill-check">檢查答案</button>
+    <div style="height:8px"></div>
+    <button class="ghost" id="fill-back">返回</button>
+  </section>
+
+  <section id="result" class="card hidden">
+    <div class="question" id="result-score">10 / 10</div>
+    <div class="msg" id="result-msg">好叻！</div>
+    <div class="result-list" id="result-list"></div>
+    <div style="height:12px"></div>
+    <button class="primary" id="again">再玩一次</button>
+    <div style="height:8px"></div>
+    <button class="ghost" id="home-btn">返回主頁</button>
+  </section>
+</div>
+
+<script>
+const STORE = "p4-times-v1";
+const ALL = [2,3,4,5,6,7,8,9];
+let settings = { tables: [...ALL], n: 20 };
+let wrongBank = [];
+let lastMode = "type";
+let state = {};
+
+try {
+  const s = JSON.parse(localStorage.getItem(STORE) || "null");
+  if (s && s.tables && s.tables.length) settings = s;
+} catch(e) {}
+
+function save() { localStorage.setItem(STORE, JSON.stringify(settings)); }
+function $(id) { return document.getElementById(id); }
+function show(id) {
+  ["home","settings","play","fill","result"].forEach(x => $(x).classList.toggle("hidden", x !== id));
+}
+
+function buildTablePicks() {
+  const box = $("table-picks");
+  box.innerHTML = "";
+  ALL.forEach(n => {
+    const b = document.createElement("button");
+    b.className = "tbl" + (settings.tables.includes(n) ? " on" : "");
+    b.textContent = String(n);
+    b.setAttribute("aria-label", n + " 的乘數表");
+    b.onclick = () => {
+      if (settings.tables.includes(n)) {
+        if (settings.tables.length === 1) return;
+        settings.tables = settings.tables.filter(x => x !== n);
+      } else settings.tables = [...settings.tables, n].sort((a,b)=>a-b);
+      save(); buildTablePicks();
+    };
+    box.appendChild(b);
+  });
+  document.querySelectorAll("[data-n]").forEach(b => {
+    b.classList.toggle("on", Number(b.dataset.n) === settings.n);
+    b.onclick = () => { settings.n = Number(b.dataset.n); save(); buildTablePicks(); };
+  });
+}
+
+function rand(a,b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function shuffle(a) { for (let i=a.length-1;i>0;i--) { const j=rand(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function tables() { return settings.tables.length ? settings.tables : [...ALL]; }
+
+function makeQ(fromWrong) {
+  if (fromWrong && fromWrong.length) {
+    const w = fromWrong[rand(0, fromWrong.length-1)];
+    return { a: w.a, b: w.b, ans: w.a * w.b };
+  }
+  const t = tables();
+  const a = t[rand(0, t.length-1)];
+  const b = rand(2, 9);
+  if (Math.random() < 0.5) return { a, b, ans: a*b };
+  return { a: b, b: a, ans: a*b };
+}
+
+function uniqueQs(n, fromWrong) {
+  const out = [], seen = new Set();
+  let guard = 0;
+  while (out.length < n && guard++ < 400) {
+    const q = makeQ(fromWrong);
+    const k = q.a + "x" + q.b;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(q);
+  }
+  while (out.length < n) out.push(makeQ(fromWrong));
+  return out;
+}
+
+function mcChoices(ans) {
+  const set = new Set([ans]);
+  while (set.size < 4) {
+    const d = [ans+1, ans-1, ans+2, ans-2, ans+ans%10, Math.max(4, ans + rand(-8,8))];
+    set.add(d[rand(0, d.length-1)]);
+  }
+  return shuffle([...set]).slice(0,4);
+}
+
+function praise(pct) {
+  if (pct === 100) return "全部啱！好叻！";
+  if (pct >= 80) return "好叻，差少少就滿分。";
+  if (pct >= 60) return "有進步！錯嗰啲可以再練。";
+  return "唔緊要，揀錯題重練，慢慢就熟。";
+}
+
+function who() {
+  return {
+    klass: $("klass").value.trim(),
+    name: $("stuname").value.trim()
+  };
+}
+function needName() {
+  const w = who();
+  if (!w.klass) {
+    alert("請先填班別，例如 4A、4B、4C。");
+    $("klass").focus();
+    return false;
+  }
+  if (!w.name) {
+    alert("請先寫姓名或座號，老師先睇到成績。");
+    $("stuname").focus();
+    return false;
+  }
+  localStorage.setItem(STORE + "-who", JSON.stringify(w));
+  return true;
+}
+async function saveScore(mode, score, total, percent, misses) {
+  const w = who();
+  const row = {
+    ts: new Date().toISOString(),
+    klass: w.klass,
+    name: w.name || "未填名",
+    mode, score, total, percent,
+    tables: tables(),
+    misses: misses || []
+  };
+  const key = STORE + "-local";
+  const prev = JSON.parse(localStorage.getItem(key) || "[]");
+  prev.push(row);
+  localStorage.setItem(key, JSON.stringify(prev.slice(-200)));
+  try {
+    const r = await fetch("/api/score", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(row)
+    });
+    if (r.ok) {
+      const el = $("result-msg");
+      if (el) el.textContent = (el.textContent || "") + "　成績已傳俾老師。";
+    }
+  } catch (e) {}
+}
+
+function start(mode) {
+  if (!needName()) return;
+  lastMode = mode;
+  if (mode === "fill") return startFill();
+  const fromWrong = mode === "wrong" ? wrongBank : null;
+  const n = mode === "timed" ? 99 : (mode === "wrong" ? Math.max(wrongBank.length, 1) : settings.n);
+  state = {
+    mode, i: 0, score: 0, typed: "",
+    qs: uniqueQs(mode === "timed" ? 80 : n, fromWrong),
+    log: [], start: Date.now(), left: 60, tick: null, locked: false
+  };
+  if (!state.qs.length) state.qs = uniqueQs(10);
+  show("play");
+  $("choices").classList.toggle("hidden", mode !== "mc");
+  $("pad").classList.toggle("hidden", mode === "mc");
+  $("answer").classList.toggle("hidden", mode === "mc");
+  if (mode === "timed") {
+    state.tick = setInterval(() => {
+      state.left = Math.max(0, 60 - Math.floor((Date.now() - state.start)/1000));
+      $("score-text").textContent = state.score + " 分 · " + state.left + " 秒";
+      if (state.left <= 0) { clearInterval(state.tick); finish(); }
+    }, 200);
+  }
+  renderQ();
+}
+
+function renderQ() {
+  const q = state.qs[state.i];
+  state.typed = "";
+  state.locked = false;
+  $("question").textContent = q.a + "  ×  " + q.b;
+  $("answer").textContent = "?";
+  $("answer").className = "answer";
+  $("msg").textContent = "";
+  const total = state.mode === "timed" ? "—" : state.qs.length;
+  $("progress-text").textContent = (state.i + 1) + " / " + (state.mode === "timed" ? "∞" : total);
+  $("score-text").textContent = state.mode === "timed"
+    ? (state.score + " 分 · " + state.left + " 秒")
+    : (state.score + " 分");
+  const pct = state.mode === "timed" ? (state.left/60)*100 : (state.i / state.qs.length)*100;
+  $("bar").style.width = pct + "%";
+  if (state.mode === "mc") {
+    $("choices").innerHTML = "";
+    mcChoices(q.ans).forEach(c => {
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.textContent = c;
+      b.onclick = () => submit(c);
+      $("choices").appendChild(b);
+    });
+  }
+}
+
+function submit(val) {
+  if (state.locked) return;
+  const q = state.qs[state.i];
+  const ok = Number(val) === q.ans;
+  state.locked = true;
+  if (ok) state.score++;
+  else wrongBank.push(q);
+  state.log.push({ ...q, ok, given: val });
+  $("answer").textContent = val === "" ? "?" : val;
+  $("answer").className = "answer " + (ok ? "ok" : "bad");
+  $("msg").textContent = ok ? "啱！" : ("答案係 " + q.ans);
+  $("msg").style.color = ok ? "var(--ok)" : "var(--bad)";
+  if (state.mode === "mc") {
+    [...$("choices").children].forEach(b => {
+      const n = Number(b.textContent);
+      if (n === q.ans) b.classList.add("right");
+      else if (n === Number(val) && !ok) b.classList.add("wrong");
+    });
+  }
+  setTimeout(() => {
+    state.i++;
+    if (state.mode === "timed") {
+      if (state.left <= 0) return finish();
+      if (state.i >= state.qs.length) state.qs.push(makeQ());
+      renderQ();
+    } else if (state.i >= state.qs.length) finish();
+    else renderQ();
+  }, ok ? 450 : 900);
+}
+
+function finish() {
+  if (state.tick) clearInterval(state.tick);
+  show("result");
+  const total = state.mode === "timed" ? state.log.length : state.qs.length;
+  const pct = total ? Math.round(100 * state.score / total) : 0;
+  $("result-score").textContent = state.mode === "timed"
+    ? (state.score + " 題")
+    : (state.score + " / " + total);
+  $("result-msg").textContent = praise(pct);
+  const misses = state.log.filter(x => !x.ok);
+  $("result-list").innerHTML = misses.length
+    ? ("<b>錯題：</b><br>" + misses.map(x =>
+        '<div class="wrong">' + x.a + " × " + x.b + " = " + x.ans + "（你答 " + x.given + "）</div>"
+      ).join(""))
+    : "冇錯題。";
+  $("btn-wrong").classList.toggle("hidden", wrongBank.length === 0);
+  saveScore(state.mode, state.score, total, pct, misses.map(x => x.a + "×" + x.b));
+}
+
+function startFill(n) {
+  const t = tables();
+  const pick = $("fill-pick");
+  pick.innerHTML = "";
+  if (t.length > 1 && n == null) {
+    $("fill-title").textContent = "先揀要填邊一條乘數表";
+    $("fill-grid").innerHTML = "";
+    $("fill-check").classList.add("hidden");
+    t.forEach(x => {
+      const b = document.createElement("button");
+      b.className = "tbl on";
+      b.textContent = x + " 的乘數表";
+      b.onclick = () => startFill(x);
+      pick.appendChild(b);
+    });
+    $("fill-msg").textContent = "";
+    show("fill");
+    return;
+  }
+  if (n == null) n = t[0];
+  $("fill-check").classList.remove("hidden");
+  pick.innerHTML = "";
+  $("fill-title").textContent = n + " 的乘數表　（" + n + " × 2 至 " + n + " × 9）";
+  const grid = $("fill-grid");
+  grid.innerHTML = "";
+  for (let i = 2; i <= 9; i++) {
+    const row = document.createElement("div");
+    row.className = "fill-row";
+    row.innerHTML = "<span>" + n + "  ×  " + i + "  =</span>";
+    const inp = document.createElement("input");
+    inp.inputMode = "numeric";
+    inp.pattern = "[0-9]*";
+    inp.dataset.ans = String(n * i);
+    inp.setAttribute("aria-label", n + " 乘 " + i);
+    row.appendChild(inp);
+    grid.appendChild(row);
+  }
+  $("fill-msg").textContent = "";
+  show("fill");
+}
+
+function checkFill() {
+  let ok = 0, all = 0;
+  $("fill-grid").querySelectorAll("input").forEach(inp => {
+    all++;
+    const good = inp.value.trim() === inp.dataset.ans;
+    inp.className = good ? "ok" : "bad";
+    if (good) ok++;
+    else if (inp.value.trim() === "") inp.classList.add("bad");
+  });
+  $("fill-msg").textContent = ok === all ? "全部啱！呢條乘數表好熟。" : ("啱咗 " + ok + " / " + all + "。紅色嗰格再睇一次。");
+  $("fill-msg").style.color = ok === all ? "var(--ok)" : "var(--bad)";
+  const pct = all ? Math.round(100 * ok / all) : 0;
+  saveScore("fill", ok, all, pct, []);
+}
+
+function buildPad() {
+  const keys = ["7","8","9","4","5","6","1","2","3","⌫","0","✓"];
+  const pad = $("pad");
+  pad.innerHTML = "";
+  keys.forEach(k => {
+    const b = document.createElement("button");
+    b.className = "key" + (k === "✓" ? " ok" : k === "⌫" ? " del" : "");
+    b.textContent = k;
+    b.onclick = () => {
+      if (state.locked) return;
+      if (k === "⌫") state.typed = state.typed.slice(0, -1);
+      else if (k === "✓") return submit(state.typed);
+      else if (state.typed.length < 3) state.typed += k;
+      $("answer").textContent = state.typed || "?";
+    };
+    pad.appendChild(b);
+  });
+}
+
+document.querySelectorAll("#home .mode-btn").forEach(b => {
+  b.onclick = () => start(b.dataset.mode);
+});
+$("btn-settings").onclick = () => { buildTablePicks(); show("settings"); };
+$("save-settings").onclick = () => show("home");
+$("quit").onclick = () => { if (state.tick) clearInterval(state.tick); show("home"); };
+$("again").onclick = () => start(lastMode === "wrong" ? "type" : lastMode);
+$("home-btn").onclick = () => show("home");
+$("fill-back").onclick = () => show("home");
+$("fill-check").onclick = checkFill;
+
+buildPad();
+buildTablePicks();
+$("klass").value = "";
+try {
+  const w = JSON.parse(localStorage.getItem(STORE + "-who") || "null");
+  if (w) $("stuname").value = w.name || "";
+} catch(e) {}
+const PUBLIC_URL = "https://cheungsiredu.github.io/education/times/";
+function showQr(url, imgSrc) {
+  $("qrurl").textContent = url;
+  $("qrimg").src = imgSrc;
+  $("qrimg").onerror = function () { this.src = "qr.png"; };
+  $("qrbox").style.display = "";
+}
+fetch("/api/info").then(r => r.json()).then(info => {
+  showQr(info.url, info.qr + "?t=" + Date.now());
+}).catch(function () {
+  showQr(PUBLIC_URL, "qr.png");
+});
+</script>
+</body>
+</html>
