@@ -149,6 +149,8 @@
         id: "jump",
         subject: "p2-sci",
         type: "game",
+        emoji: "🦘",
+        blurb: "二年級科學小遊戲",
         title: "小小發明家跳跳關",
         description: "二年級科學　《科學新領域》課本 二上。單元一　動物和植物：第 1 課 生物和非生物、第 2 課 觀察動物、第 3 課 動手種植物。單元二　人與環境：第 4 課 愛護環境。單元三　變幻的天氣：第 5 課 天氣與我、第 6 課 四季的變化。",
         play: "https://cheungsiredu.github.io/chilin-jump-game/",
@@ -160,6 +162,8 @@
         id: "engineer",
         subject: "p4-sci",
         type: "game",
+        emoji: "🔧",
+        blurb: "四年級科學跳跳關",
         title: "小小工程師跳跳關",
         description: "四年級科學　《科學新領域》。第 9 課 科學過程和演進、第 10 課 公平測試、第 11 課 能源、第 12 課 閉合電路、第 13 課 金屬和非金屬。每關限時五十秒。",
         play: "https://cheungsiredu.github.io/education/engineer/",
@@ -171,6 +175,8 @@
         id: "drift",
         subject: "p4-sci",
         type: "game",
+        emoji: "🏎️",
+        blurb: "摩擦力漂移車",
         title: "摩擦力挑戰",
         description: "四年級科學　摩擦力。在晴天、細雨、大雨中駕駛，感受路面摩擦力變化。撞黃色問號箱答科學題，答對可加速。適用於電腦、iPad、iPhone。",
         play: "https://cheungsiredu.github.io/education/drift/",
@@ -180,6 +186,8 @@
         id: "times",
         subject: "p4-math",
         type: "game",
+        emoji: "✖️",
+        blurb: "乘數表練習",
         title: "乘數表小遊戲",
         description: "四年級數學　乘數表練習。可練習二至九的乘數表：快速答題、四揀一、填一份乘數表、一分鐘挑戰。",
         play: "https://cheungsiredu.github.io/education/times/",
@@ -189,6 +197,8 @@
         id: "jp",
         subject: "lang",
         type: "game",
+        emoji: "🇯🇵",
+        blurb: "聽、跟讀、評分",
         title: "日文小學堂",
         description: "外語　日文體驗。聽廣東話解釋、聽日文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/jp.html",
@@ -198,6 +208,8 @@
         id: "fr",
         subject: "lang",
         type: "game",
+        emoji: "🇫🇷",
+        blurb: "聽、跟讀、評分",
         title: "法文小學堂",
         description: "外語　法文體驗。聽廣東話解釋、聽法文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/fr.html",
@@ -207,6 +219,8 @@
         id: "ko",
         subject: "lang",
         type: "game",
+        emoji: "🇰🇷",
+        blurb: "聽、跟讀、評分",
         title: "韓文小學堂",
         description: "外語　韓文體驗。聽廣東話解釋、聽韓文示範，然後用麥克風朗讀。適用於電腦、iPad、iPhone。共 20 題。",
         play: "https://cheungsiredu.github.io/education/languages/ko.html",
@@ -280,7 +294,18 @@
       $("app").innerHTML = `
         <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
         <h3 class="sec">${s.emoji} ${s.title}</h3>
-        ${items.length ? items.map(it => itemBasics(it)).join("") : `<div class="empty">此部分教材即將推出。</div>`}
+        ${items.length ? `
+          <p class="note">請選擇遊戲。撳入去先見到連結、二維碼同成績說明。</p>
+          <div class="grid">
+            ${items.map(it => `
+              <a class="card" href="#/i/${it.id}">
+                <div class="emoji">${it.emoji || "🎮"}</div>
+                <h2>${it.title}</h2>
+                <p>${it.blurb || "撳入去遊玩"}</p>
+              </a>
+            `).join("")}
+          </div>
+        ` : `<div class="empty">此部分教材即將推出。</div>`}
       `;
     }
 
