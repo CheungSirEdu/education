@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="摩擦力挑戰">
@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#1a1a1a">
 <title>摩擦力　變幻天氣大挑戰</title>
 <style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body {
   margin: 0;
@@ -44,7 +44,7 @@ canvas {
   height: min(100dvh, calc(100vw * 700 / 440));
   max-width: 100%;
   max-height: 100%;
-  touch-action: none;
+  touch-action: manipulation;
 }
 .ui-panel, .timer-panel, #weather-indicator, #mini-map {
   pointer-events: none;
@@ -200,7 +200,7 @@ canvas {
   width: 100%;
   justify-content: center;
   padding: 0 16px;
-  touch-action: none;
+  touch-action: manipulation;
 }
 .control-btn {
   width: 92px;
@@ -218,7 +218,7 @@ canvas {
   user-select: none;
   -webkit-user-select: none;
   font-weight: 800;
-  touch-action: none;
+  touch-action: manipulation;
 }
 .control-btn .big { font-size: 28px; line-height: 1; }
 .control-btn .small { font-size: 11px; opacity: .9; margin-top: 2px; }
@@ -1073,6 +1073,17 @@ canvas {
     keys['ArrowLeft'] = false;
     keys['ArrowRight'] = false;
   });
+
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+  });
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", function (e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener("dblclick", function (e) { e.preventDefault(); }, { passive: false });
 
   initTrack();
   initRain();
