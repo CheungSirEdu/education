@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="摩擦力挑戰">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#1a1a1a">
+<title>摩擦力　變幻天氣大挑戰</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body {
+  margin: 0;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #121212;
+  font-family: "PingFang TC", "Noto Sans TC", "Heiti TC", "Microsoft JhengHei", sans-serif;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+#game-container {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+}
+canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a4d2e;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  width: min(100vw, calc(100dvh * 440 / 700));
+  height: min(100dvh, calc(100vw * 700 / 440));
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+}
+.ui-panel, .timer-panel, #weather-indicator, #mini-map {
+  pointer-events: none;
+  z-index: 20;
+  text-shadow: 0 2px 4px #000;
+  color: #fff;
+}
+.ui-panel {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+}
+.timer-panel {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  color: #ff5252;
+}
+#player-info-display { font-size: 13px; font-weight: 800; color: #f8b4b4; margin-bottom: 2px; }
+#score-line { font-size: clamp(22px, 6vw, 30px); font-weight: 900; }
+.badge {
+  display: inline-block;
+  margin-top: 4px;
+  background: rgba(198, 40, 40, .85);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.timer-box {
+  background: rgba(0,0,0,.35);
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: clamp(22px, 6vw, 30px);
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,.12);
+}
+#weather-indicator {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 78px);
+  left: max(12px, env(safe-area-inset-left));
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.5);
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#mini-map {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: calc(max(10px, env(safe-area-inset-top)) + 78px);
+  width: 36px;
+  height: min(200px, 28vh);
+  background: rgba(0,0,0,.55);
+  border: 2px solid rgba(255,255,255,.2);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+}
+#map-progress {
+  position: absolute;
+  bottom: 8px;
+  width: 6px;
+  background: #3498db;
+  border-radius: 3px;
+}
+#car-icon {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #ff0000;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  bottom: 8px;
+  transform: translateY(50%);
+}
+.instruction-hint {
+  position: absolute;
+  bottom: calc(108px + env(safe-area-inset-bottom));
+  right: max(12px, env(safe-area-inset-right));
+  background: rgba(0,0,0,.6);
+  color: #ffeb3b;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  pointer-events: none;
+  z-index: 25;
+  text-align: center;
+  line-height: 1.35;
+}
+#question-modal, #game-over-modal {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fffef8;
+  padding: 20px 16px;
+  border-radius: 24px;
+  width: min(92%, 400px);
+  max-height: min(80vh, 620px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0,0,0,.7);
+  z-index: 100;
+  border: 6px solid #e74c3c;
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.q-tag {
+  display: inline-block;
+  background: #fff3cd;
+  color: #7a5b00;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+#question-text { font-size: 18px; font-weight: 800; margin: 0 0 14px; color: #222; line-height: 1.4; }
+.option-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 14px 12px;
+  min-height: 52px;
+  background: #e74c3c;
+  color: #fff;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.option-btn:active { transform: scale(.97); background: #c0392b; }
+.controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 18px;
+  z-index: 30;
+  width: 100%;
+  justify-content: center;
+  padding: 0 16px;
+  touch-action: none;
+}
+.control-btn {
+  width: 92px;
+  height: 92px;
+  min-width: 80px;
+  min-height: 80px;
+  background: rgba(255,255,255,.18);
+  border: 3px solid rgba(255,255,255,.55);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  font-weight: 800;
+  touch-action: none;
+}
+.control-btn .big { font-size: 28px; line-height: 1; }
+.control-btn .small { font-size: 11px; opacity: .9; margin-top: 2px; }
+.control-btn:active, .control-btn.held { background: rgba(255,255,255,.4); transform: scale(.96); }
+#shoot-btn { background: rgba(231, 76, 60, .45); border-color: rgba(231, 76, 60, .9); }
+#start-screen {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 50;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.start-card {
+  background: rgba(0,0,0,.72);
+  padding: 24px 18px;
+  border-radius: 32px;
+  border: 1px solid rgba(255,255,255,.2);
+  text-align: center;
+  color: #fff;
+  width: min(100%, 420px);
+  margin: auto;
+}
+.start-card h1 { margin: 0; font-size: clamp(28px, 8vw, 36px); color: #ef5350; font-style: italic; }
+.start-card h2 { margin: 4px 0 16px; font-size: clamp(18px, 5vw, 24px); }
+.ids { text-align: left; margin-bottom: 14px; }
+.ids label { display: block; font-size: 13px; font-weight: 800; color: #f8b4b4; margin: 8px 0 4px; }
+.ids input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  text-align: center;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+}
+.ids input:disabled { opacity: .5; }
+.note-box {
+  background: rgba(33, 150, 243, .18);
+  border: 1px solid rgba(33, 150, 243, .35);
+  border-radius: 16px;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.note-box .ttl { color: #90caf9; margin-bottom: 4px; }
+#start-btn, #restart-btn {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 16px;
+  background: #e53935;
+  color: #fff;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #b71c1c;
+}
+#start-btn:disabled { background: #6d6d6d; box-shadow: none; }
+#start-btn:active, #restart-btn:active { transform: translateY(2px); }
+#fire-mode-label {
+  position: absolute;
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(231, 76, 60, .85);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 14px;
+  display: none;
+  z-index: 25;
+  animation: blink .2s infinite;
+}
+#weather-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  transition: background 2s;
+}
+#result-title { font-size: 26px; font-weight: 900; margin: 0 0 8px; }
+#result-text { font-size: 15px; color: #555; font-weight: 700; white-space: pre-line; margin: 0 0 12px; }
+.score-box {
+  background: #fff0f0;
+  padding: 12px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #ffcdd2;
+}
+#final-player-info { color: #c62828; font-weight: 800; margin-bottom: 4px; }
+.score-box .tiny { font-size: 11px; color: #888; font-weight: 800; }
+#final-score { font-size: 40px; font-weight: 900; color: #e53935; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+@media (min-width: 768px) {
+  .control-btn { width: 84px; height: 84px; }
+}
+@media (max-height: 500px) {
+  .control-btn { width: 58px; height: 58px; }
+  .control-btn .big { font-size: 22px; }
+  .instruction-hint { display: none; }
+  #mini-map { height: 120px; }
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <div id="weather-overlay"></div>
+  <div id="fire-mode-label">🔥 自動連發模式!</div>
+  <div id="weather-indicator">
+    <span id="weather-icon">☀️</span>
+    <span id="weather-text">晴天</span>
+  </div>
+  <div class="instruction-hint">
+    <div>用下面三粒掣</div>
+    <div>電腦可用 ← → 同 Z</div>
+  </div>
+  <div class="ui-panel">
+    <div id="player-info-display">班別: - 學號: -</div>
+    <div id="score-line">得分: <span id="score">0</span></div>
+    <div class="badge">答對: <span id="correct-count">0</span> / 4</div>
+  </div>
+  <div class="timer-panel">
+    <div class="timer-box">⏳ <span id="timer">40</span>s</div>
+  </div>
+  <div id="mini-map">
+    <div style="font-size:10px;margin-bottom:4px;">🏁</div>
+    <div style="flex-grow:1;width:4px;background:rgba(255,255,255,.12);border-radius:2px;position:relative;">
+      <div id="map-progress" style="height:0%;"></div>
+      <div id="car-icon" style="bottom:0%;"></div>
+    </div>
+    <div style="font-size:10px;margin-top:4px;">🚩</div>
+  </div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="question-modal">
+    <div class="q-tag">🧪 科學挑戰</div>
+    <h2 id="question-text"></h2>
+    <div id="options-container"></div>
+  </div>
+  <div id="game-over-modal">
+    <h2 id="result-title"></h2>
+    <p id="result-text"></p>
+    <div class="score-box">
+      <div id="final-player-info"></div>
+      <div class="tiny">總得分</div>
+      <div id="final-score">0</div>
+      <div style="font-size:14px;font-weight:800;color:#666;">答對: <span id="final-correct">0</span> 題</div>
+    </div>
+    <button id="restart-btn" type="button">再試一次</button>
+  </div>
+  <div class="controls">
+    <div class="control-btn" id="left-btn"><span class="big">←</span><span class="small">左轉</span></div>
+    <div class="control-btn" id="shoot-btn"><span class="big">Z</span><span class="small">發射</span></div>
+    <div class="control-btn" id="right-btn"><span class="big">→</span><span class="small">右轉</span></div>
+  </div>
+  <div id="start-screen">
+    <div class="start-card">
+      <h1>摩擦力</h1>
+      <h2>變幻天氣大挑戰</h2>
+      <div class="ids">
+        <label>班別 (例如: 4C)
+          <input type="text" id="class-input" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="請輸入班別">
+        </label>
+        <label>學號 (例如: 12)
+          <input type="text" id="id-input" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="請輸入學號">
+        </label>
+      </div>
+      <div class="note-box">
+        <div class="ttl">🎮 注意天氣變化：</div>
+        <div>• ☀️ 晴天：最好控制，努力加速！</div>
+        <div>• 🌦️ 細雨：路面濕滑，摩擦力減少</div>
+        <div>• ⛈️ 大雨：極度滑手，請小心駕駛</div>
+        <div style="margin-top:8px;color:#ffe082;">iPad／iPhone 請用 Safari。用下面三粒掣：左轉、發射、右轉。</div>
+      </div>
+      <button id="start-btn" type="button" disabled>開始比賽!</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreElement = document.getElementById('score');
+  const correctCountElement = document.getElementById('correct-count');
+  const timerElement = document.getElementById('timer');
+  const carIcon = document.getElementById('car-icon');
+  const mapProgress = document.getElementById('map-progress');
+  const questionModal = document.getElementById('question-modal');
+  const gameOverModal = document.getElementById('game-over-modal');
+  const resultTitle = document.getElementById('result-title');
+  const resultText = document.getElementById('result-text');
+  const finalScoreElement = document.getElementById('final-score');
+  const finalCorrectElement = document.getElementById('final-correct');
+  const finalPlayerInfo = document.getElementById('final-player-info');
+  const playerInfoDisplay = document.getElementById('player-info-display');
+  const questionText = document.getElementById('question-text');
+  const optionsContainer = document.getElementById('options-container');
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-btn');
+  const restartBtn = document.getElementById('restart-btn');
+  const classInput = document.getElementById('class-input');
+  const idInput = document.getElementById('id-input');
+  const fireModeLabel = document.getElementById('fire-mode-label');
+  const weatherOverlay = document.getElementById('weather-overlay');
+  const weatherIcon = document.getElementById('weather-icon');
+  const weatherText = document.getElementById('weather-text');
+
+  canvas.width = 440;
+  canvas.height = 700;
+
+  const WEATHERS = {
+    SUNNY: { name: '晴天', icon: '☀️', friction: 0.94, rainIntensity: 0, bg: 'rgba(0,0,0,0)' },
+    LIGHT_RAIN: { name: '細雨', icon: '🌦️', friction: 0.85, rainIntensity: 25, bg: 'rgba(0, 30, 60, 0.2)' },
+    HEAVY_RAIN: { name: '大雨', icon: '⛈️', friction: 0.65, rainIntensity: 70, bg: 'rgba(0, 20, 40, 0.5)' }
+  };
+  let currentWeather = WEATHERS.SUNNY;
+  let weatherChangeTimer = 400;
+  let score = 0;
+  let correctAnswers = 0;
+  let gameActive = false;
+  let isPaused = false;
+  let speed = 0;
+  const baseMaxSpeed = 2.1;
+  const turboMaxSpeed = baseMaxSpeed * 2.1;
+  const finishLineDistance = 4500;
+  let currentMaxSpeed = baseMaxSpeed;
+  let turboTimer = 0;
+  let fireTimer = 0;
+  let shootCooldown = 0;
+  let bullets = [];
+  let particles = [];
+  let rainDrops = [];
+  let timeLeft = 40;
+  let timerInterval = null;
+  let distanceCount = 0;
+  let realDistanceTravelled = 0;
+  let isSpinning = false;
+  let playerData = { className: '', studentId: '' };
+  let finishLineSpawned = false;
+  let isCrossingFinish = false;
+  let finishCrossTimer = 0;
+  let carX = canvas.width / 2 - 22;
+  let carVelocityX = 0;
+  let steeringAngle = 0;
+  const steeringResponsiveness = 0.055;
+  let segments = [];
+  const segmentLength = 25;
+  const totalSegments = 45;
+  let trackCurve = 0;
+  let nextCurve = 0;
+  let curveTimer = 0;
+
+  function initRain() {
+    rainDrops = [];
+    for (let i = 0; i < 100; i++) {
+      rainDrops.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        l: Math.random() * 20 + 10,
+        v: Math.random() * 5 + 10
+      });
+    }
+  }
+
+  function updateWeather() {
+    if (!gameActive || isPaused) return;
+    weatherChangeTimer--;
+    if (weatherChangeTimer <= 0) {
+      const r = Math.random();
+      if (r < 0.4) currentWeather = WEATHERS.SUNNY;
+      else if (r < 0.8) currentWeather = WEATHERS.LIGHT_RAIN;
+      else currentWeather = WEATHERS.HEAVY_RAIN;
+      weatherIcon.innerText = currentWeather.icon;
+      weatherText.innerText = currentWeather.name;
+      weatherOverlay.style.background = currentWeather.bg;
+      weatherChangeTimer = 280 + Math.random() * 220;
+    }
+  }
+
+  function drawRain() {
+    if (currentWeather.rainIntensity <= 0) return;
+    ctx.strokeStyle = 'rgba(180,210,255,0.55)';
+    ctx.lineWidth = 1.2;
+    const count = currentWeather.rainIntensity;
+    for (let i = 0; i < count; i++) {
+      const drop = rainDrops[i];
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x, drop.y + drop.l);
+      ctx.stroke();
+      drop.y += drop.v;
+      if (drop.y > canvas.height) {
+        drop.y = -20;
+        drop.x = Math.random() * canvas.width;
+      }
+    }
+  }
+
+  function initTrack() {
+    segments = [];
+    for (let i = 0; i < totalSegments; i++) {
+      segments.push({ x: 0, curve: 0, isFinishLine: false });
+    }
+  }
+
+  let items = [];
+  const allQuestions = [
+    { q: "在下列哪一種地面上開車，產生的摩擦力最小？", a: ["草地", "柏油路", "冰面"], correct: "冰面" },
+    { q: "為什麼運動鞋底部要有凹凸不平的花紋？", a: ["為了美觀", "增加摩擦力防止滑倒", "減輕重量"], correct: "增加摩擦力防止滑倒" },
+    { q: "如果在腳踏車的鏈條上塗抹潤滑油，摩擦力會？", a: ["變大", "變小", "不變"], correct: "變小" },
+    { q: "下列哪一個是摩擦力對生活造成的「缺點」？", a: ["零件磨損變熱", "讓我們走路不滑倒", "煞車系統運作"], correct: "零件磨損變熱" },
+    { q: "當物體在另一表面滑動時，阻礙運動的力叫？", a: ["重力", "磁力", "摩擦力"], correct: "摩擦力" },
+    { q: "推動重箱子，在下面放滾輪會？", a: ["更難推動", "摩擦力變小更好推", "沒有影響"], correct: "摩擦力變小更好推" },
+    { q: "下雨路滑是因為水填補了縫隙，導致摩擦力？", a: ["增加", "減少", "消失"], correct: "減少" }
+  ];
+  let questionPool = [];
+  let questionIndex = 0;
+
+  function shuffleQuestions() {
+    questionPool = allQuestions.slice();
+    for (let i = questionPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = questionPool[i];
+      questionPool[i] = questionPool[j];
+      questionPool[j] = tmp;
+    }
+    questionIndex = 0;
+  }
+
+  const keys = {};
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyZ' || e.code === 'Space') e.preventDefault();
+    keys[e.code] = true;
+    if (e.code === 'KeyZ' || e.code === 'Space') fireBullet();
+  });
+  window.addEventListener('keyup', function (e) { keys[e.code] = false; });
+
+  function fireBullet() {
+    if (!gameActive || isPaused || isSpinning || isCrossingFinish) return;
+    if (shootCooldown > 0) return;
+    bullets.push({ x: carX + 22, y: canvas.height - 140, speed: 18 });
+    shootCooldown = (turboTimer > 0) ? 6 : 12;
+  }
+
+  function createItem() {
+    if (!gameActive || isCrossingFinish) return;
+    if (Math.random() < 0.22) {
+      const rand = Math.random();
+      let type = 'box';
+      if (rand < 0.25) type = 'box';
+      else if (rand < 0.65) type = 'banana';
+      else type = 'rock';
+      const lastSegment = segments[segments.length - 1];
+      const roadCenterX = canvas.width / 2 + lastSegment.x;
+      let itemX;
+      if (type === 'box') {
+        const side = Math.random() > 0.5 ? 1 : -1;
+        itemX = roadCenterX + (side * (80 + Math.random() * 45));
+      } else {
+        itemX = roadCenterX + (Math.random() - 0.5) * 200;
+      }
+      items.push({ x: itemX, y: -50, type: type, width: 35, height: 35 });
+    }
+  }
+
+  function createExplosion(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 8,
+        vy: (Math.random() - 0.5) * 8,
+        life: 1.0,
+        color: color
+      });
+    }
+  }
+
+  function updateTrack() {
+    if (isPaused) return;
+    const effectiveSpeed = gameActive ? speed : 0.8;
+    distanceCount += effectiveSpeed;
+    if (gameActive) realDistanceTravelled += effectiveSpeed;
+    if (distanceCount >= segmentLength) {
+      distanceCount = 0;
+      curveTimer--;
+      if (curveTimer <= 0) {
+        nextCurve = (isCrossingFinish || !gameActive) ? 0 : (Math.random() - 0.5) * 2.2;
+        curveTimer = 20 + Math.random() * 40;
+      }
+      trackCurve += (nextCurve - trackCurve) * 0.12;
+      const lastX = segments[segments.length - 1].x;
+      let isFinish = false;
+      if (gameActive && realDistanceTravelled >= finishLineDistance && !finishLineSpawned) {
+        isFinish = true;
+        finishLineSpawned = true;
+      }
+      segments.shift();
+      let newX = (isCrossingFinish || !gameActive) ? lastX * 0.95 : lastX + trackCurve;
+      if (newX > 90) newX = 90;
+      if (newX < -90) newX = -90;
+      segments.push({ x: newX, curve: trackCurve, isFinishLine: isFinish });
+      if (gameActive) createItem();
+    }
+  }
+
+  function drawTrack() {
+    ctx.fillStyle = '#1A4D2E';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i];
+      const nextSeg = segments[i + 1];
+      const y1 = canvas.height - (i * segmentLength) + distanceCount;
+      const y2 = canvas.height - ((i + 1) * segmentLength) + distanceCount;
+      const x1 = canvas.width / 2 + seg.x;
+      const x2 = canvas.width / 2 + nextSeg.x;
+      const roadWidth = 270;
+      if (currentWeather === WEATHERS.SUNNY) ctx.fillStyle = (i % 2 === 0) ? '#2C3E50' : '#34495E';
+      else ctx.fillStyle = (i % 2 === 0) ? '#1A252F' : '#23303D';
+      ctx.beginPath();
+      ctx.moveTo(x1 - roadWidth / 2, y1);
+      ctx.lineTo(x2 - roadWidth / 2, y2);
+      ctx.lineTo(x2 + roadWidth / 2, y2);
+      ctx.lineTo(x1 + roadWidth / 2, y1);
+      ctx.fill();
+      if (seg.isFinishLine) drawFinishLine(x1, y1, roadWidth);
+      ctx.fillStyle = (Math.floor(i + (distanceCount / segmentLength)) % 2 === 0) ? '#BDC3C7' : '#C0392B';
+      ctx.beginPath();
+      ctx.moveTo(x1 - roadWidth / 2 - 12, y1); ctx.lineTo(x2 - roadWidth / 2 - 12, y2);
+      ctx.lineTo(x2 - roadWidth / 2, y2); ctx.lineTo(x1 - roadWidth / 2, y1); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x1 + roadWidth / 2, y1); ctx.lineTo(x2 + roadWidth / 2, y2);
+      ctx.lineTo(x2 + roadWidth / 2 + 12, y2); ctx.lineTo(x1 + roadWidth / 2 + 12, y1); ctx.fill();
+    }
+  }
+
+  function drawFinishLine(x, y, width) {
+    const cellSize = 22;
+    const rows = 6;
+    const cols = Math.ceil(width / cellSize);
+    ctx.save();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(x - width / 2, y - (rows * cellSize), width, rows * cellSize);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if ((r + c) % 2 === 1) {
+          ctx.fillRect(x - width / 2 + (c * cellSize), y - (r * cellSize) - cellSize, cellSize, cellSize);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawCar() {
+    const carY = canvas.height - 140;
+    const w = 48;
+    const h = 55;
+    ctx.save();
+    ctx.translate(carX + 22, carY + h / 2);
+    let rotation = steeringAngle * 0.8;
+    if (isSpinning) rotation = (Date.now() / 60);
+    ctx.rotate(rotation);
+    ctx.translate(-(carX + 22), -(carY + h / 2));
+    if (turboTimer > 0) {
+      ctx.fillStyle = '#E67E22';
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.arc(carX + 10 + Math.random() * 24, carY + h + Math.random() * 20, 6 + Math.random() * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(carX + 22, carY + h, 20, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.fillRect(carX, carY + 15, 10, 15);
+    ctx.fillRect(carX + 34, carY + 15, 10, 15);
+    ctx.fillRect(carX - 2, carY + 38, 12, 18);
+    ctx.fillRect(carX + 34, carY + 38, 12, 18);
+    ctx.fillStyle = '#E74C3C';
+    ctx.beginPath();
+    ctx.moveTo(carX + 12, carY + 10);
+    ctx.lineTo(carX + 32, carY + 10);
+    ctx.lineTo(carX + 38, carY + 45);
+    ctx.lineTo(carX + 6, carY + 45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ECF0F1';
+    ctx.fillRect(carX + 16, carY + 12, 12, 8);
+    ctx.restore();
+  }
+
+  function updatePhysics() {
+    if (isPaused) return;
+    updateWeather();
+    if (shootCooldown > 0) shootCooldown--;
+    if (fireTimer > 0) {
+      fireTimer -= 16.6;
+      fireModeLabel.style.display = 'block';
+      if (shootCooldown <= 0) fireBullet();
+    } else {
+      fireModeLabel.style.display = 'none';
+    }
+    if (turboTimer > 0) {
+      turboTimer -= 16;
+      currentMaxSpeed = turboMaxSpeed;
+    } else {
+      currentMaxSpeed = isCrossingFinish ? 4.5 : baseMaxSpeed;
+    }
+    if (!gameActive && !isCrossingFinish) {
+      speed = 0;
+      steeringAngle = Math.sin(Date.now() / 500) * 0.15;
+    } else {
+      if (speed < currentMaxSpeed) speed += 0.045;
+      else if (speed > currentMaxSpeed) speed -= 0.06;
+      if (!isSpinning && !isCrossingFinish) {
+        if (keys['ArrowLeft']) steeringAngle = Math.max(steeringAngle - steeringResponsiveness, -0.4);
+        else if (keys['ArrowRight']) steeringAngle = Math.min(steeringAngle + steeringResponsiveness, 0.4);
+        else steeringAngle *= 0.7;
+      }
+    }
+    const roadSegIdx = 5;
+    const currentTrackX = canvas.width / 2 + segments[roadSegIdx].x;
+    const isOnRoad = Math.abs(carX + 22 - currentTrackX) < 135;
+    let currentFriction = currentWeather.friction;
+    if (!isOnRoad && !isCrossingFinish) {
+      currentFriction *= 0.7;
+      speed *= 0.95;
+    }
+    carVelocityX += steeringAngle * 4.2;
+    carX += carVelocityX;
+    if (gameActive || isCrossingFinish) {
+      carX -= segments[roadSegIdx].curve * speed * 0.45;
+    }
+    if (isCrossingFinish) {
+      carX += (currentTrackX - 22 - carX) * 0.05;
+    }
+    carVelocityX *= currentFriction;
+    if (carX < 8) carX = 8;
+    if (carX > canvas.width - 52) carX = canvas.width - 52;
+    if (gameActive || isCrossingFinish) {
+      const carRect = { x: carX, y: canvas.height - 140, w: 44, h: 70 };
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.y -= b.speed;
+        if (b.y < -50) bullets.splice(i, 1);
+      }
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.05;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += speed;
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          if (b.x > item.x && b.x < item.x + item.width && b.y > item.y && b.y < item.y + item.height) {
+            if (item.type !== 'box') {
+              createExplosion(item.x + 17, item.y + 17, item.type === 'banana' ? '#FFF176' : '#FF0000');
+              items.splice(i, 1);
+              bullets.splice(j, 1);
+              score += 100;
+              break;
+            }
+          }
+        }
+        if (!isCrossingFinish && carRect.x < item.x + item.width && carRect.x + carRect.w > item.x &&
+            carRect.y < item.y + item.height && carRect.y + carRect.h > item.y) {
+          if (item.type === 'box') {
+            items.splice(i, 1);
+            triggerQuestion();
+          } else if (item.type === 'banana') {
+            items.splice(i, 1);
+            isSpinning = true;
+            speed *= 0.6;
+            setTimeout(function () { isSpinning = false; }, 850);
+          } else {
+            items.splice(i, 1);
+            speed *= 0.4;
+            turboTimer = 0;
+          }
+        }
+        if (item.y > canvas.height + 100) items.splice(i, 1);
+      }
+      if (finishLineSpawned) {
+        const finishIdx = segments.findIndex(function (s) { return s.isFinishLine; });
+        if (finishIdx !== -1) {
+          const finishY = canvas.height - (finishIdx * segmentLength) + distanceCount;
+          if (finishY > carRect.y && !isCrossingFinish) {
+            isCrossingFinish = true;
+            gameActive = false;
+            finishCrossTimer = Date.now();
+          }
+        }
+      }
+      if (isCrossingFinish && Date.now() - finishCrossTimer > 1000) {
+        isCrossingFinish = false;
+        endGame(true);
+      }
+      if (gameActive) {
+        score += Math.floor(speed / 1.2);
+        scoreElement.innerText = score;
+        correctCountElement.innerText = correctAnswers;
+        const progress = (realDistanceTravelled / finishLineDistance) * 100;
+        carIcon.style.bottom = Math.min(100, progress) + '%';
+        mapProgress.style.height = Math.min(100, progress) + '%';
+      }
+    }
+  }
+
+  function triggerQuestion() {
+    isPaused = true;
+    if (questionIndex >= questionPool.length) shuffleQuestions();
+    const q = questionPool[questionIndex];
+    questionIndex++;
+    questionText.innerText = q.q;
+    optionsContainer.innerHTML = '';
+    const shuffledOptions = q.a.slice().sort(function () { return Math.random() - 0.5; });
+    shuffledOptions.forEach(function (optText) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'option-btn';
+      btn.innerText = optText;
+      btn.onclick = function () {
+        if (optText === q.correct) {
+          score += 2500;
+          correctAnswers++;
+          turboTimer = 3500;
+          fireTimer = 3500;
+        }
+        isPaused = false;
+        questionModal.style.display = 'none';
+      };
+      optionsContainer.appendChild(btn);
+    });
+    questionModal.style.display = 'block';
+  }
+
+  function startTimer() {
+    timeLeft = 40;
+    timerElement.innerText = timeLeft;
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(function () {
+      if (gameActive && !isPaused) {
+        timeLeft -= 0.1;
+        timerElement.innerText = Math.max(0, Math.ceil(timeLeft));
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          if (!isCrossingFinish) endGame(false);
+        }
+      }
+    }, 100);
+  }
+
+  function endGame(isWin) {
+    gameActive = false;
+    clearInterval(timerInterval);
+    finalScoreElement.innerText = score;
+    finalCorrectElement.innerText = correctAnswers;
+    finalPlayerInfo.innerText = '選手: ' + playerData.className + ' 班 ' + playerData.studentId + ' 號';
+    if (isWin) {
+      resultTitle.innerText = '🏁 傳說級賽車手！';
+      resultTitle.style.color = '#c62828';
+      resultText.innerText = '你在各種天氣下都展現了驚人的控車能力！\n總得分: ' + score;
+    } else {
+      resultTitle.innerText = '⏰ 比賽時間結束！';
+      resultTitle.style.color = '#555';
+      resultText.innerText = '天氣變化讓你很難維持速度嗎？\n記得答對問題才能獲得對抗路面阻力的 Turbo！';
+    }
+    gameOverModal.style.display = 'block';
+    submitScore(isWin);
+  }
+
+  function submitScore(isWin) {
+    try {
+      fetch("https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          token: "chilin-edu-2026",
+          class: playerData.className,
+          no: String(playerData.studentId || ""),
+          activity: "摩擦力挑戰",
+          level: isWin ? "完成" : "時間到",
+          result: String(score),
+          stars: String(correctAnswers),
+          hero: "",
+          seconds: ""
+        })
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  function resetGame() {
+    score = 0; correctAnswers = 0; timeLeft = 40; speed = 0;
+    realDistanceTravelled = 0; distanceCount = 0; turboTimer = 0; fireTimer = 0;
+    carX = canvas.width / 2 - 22; carVelocityX = 0; steeringAngle = 0;
+    items = []; bullets = []; particles = []; finishLineSpawned = false; isCrossingFinish = false;
+    currentWeather = WEATHERS.SUNNY; weatherChangeTimer = 400;
+    weatherIcon.innerText = WEATHERS.SUNNY.icon;
+    weatherText.innerText = WEATHERS.SUNNY.name;
+    weatherOverlay.style.background = WEATHERS.SUNNY.bg;
+    carIcon.style.bottom = '0%';
+    mapProgress.style.height = '0%';
+    initTrack();
+    shuffleQuestions();
+    gameOverModal.style.display = 'none';
+    gameActive = true;
+    startTimer();
+  }
+
+  function drawItems() {
+    bullets.forEach(function (b) {
+      ctx.fillStyle = '#ff6b6b';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#ff0000';
+      ctx.fillRect(b.x - 2, b.y, 4, 25);
+      ctx.shadowBlur = 0;
+    });
+    particles.forEach(function (p) {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, 4, 4);
+    });
+    ctx.globalAlpha = 1.0;
+    items.forEach(function (item) {
+      ctx.save();
+      if (item.type === 'box') {
+        ctx.fillStyle = '#F1C40F';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(item.x, item.y, 35, 35, 8);
+        else ctx.rect(item.x, item.y, 35, 35);
+        ctx.fill();
+        ctx.fillStyle = '#FFF';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('?', item.x + 17.5, item.y + 26);
+      } else if (item.type === 'banana') {
+        ctx.fillStyle = '#F1C40F';
+        ctx.beginPath();
+        ctx.ellipse(item.x + 17.5, item.y + 17.5, 15, 6, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (item.type === 'rock') {
+        const centerX = item.x + 17.5;
+        const centerY = item.y + 17.5;
+        const grad = ctx.createRadialGradient(centerX - 5, centerY - 5, 2, centerX, centerY, 16);
+        grad.addColorStop(0, '#FF5252');
+        grad.addColorStop(1, '#B71C1C');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updateTrack();
+    updatePhysics();
+    drawTrack();
+    drawItems();
+    drawCar();
+    drawRain();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function identityOk() {
+    const c = (classInput.value || '').trim().slice(0, 8);
+    const n = (idInput.value || '').trim();
+    return { ok: c.length >= 1 && /^\d{1,3}$/.test(n), class: c, no: n };
+  }
+  function refreshGo() {
+    startBtn.disabled = !identityOk().ok;
+  }
+  classInput.addEventListener('input', refreshGo);
+  idInput.addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').slice(0, 3);
+    refreshGo();
+  });
+
+  startBtn.onclick = function () {
+    const id = identityOk();
+    if (!id.ok) {
+      classInput.style.border = '2px solid #ef4444';
+      idInput.style.border = '2px solid #ef4444';
+      return;
+    }
+    playerData = { className: id.class, studentId: id.no };
+    playerInfoDisplay.innerText = '班別: ' + id.class + ' 學號: ' + id.no;
+    startScreen.style.display = 'none';
+    score = 0;
+    realDistanceTravelled = 0;
+    speed = 0;
+    gameActive = true;
+    startTimer();
+  };
+  restartBtn.onclick = resetGame;
+
+  function setupControl(id, key) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const down = function (e) {
+      e.preventDefault();
+      btn.classList.add('held');
+      try { btn.setPointerCapture(e.pointerId); } catch (err) {}
+      if (key === 'KeyZ') fireBullet();
+      else keys[key] = true;
+    };
+    const up = function (e) {
+      e.preventDefault();
+      btn.classList.remove('held');
+      if (key !== 'KeyZ') keys[key] = false;
+    };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('lostpointercapture', up);
+    btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  }
+  setupControl('left-btn', 'ArrowLeft');
+  setupControl('right-btn', 'ArrowRight');
+  setupControl('shoot-btn', 'KeyZ');
+
+  window.addEventListener('blur', function () {
+    keys['ArrowLeft'] = false;
+    keys['ArrowRight'] = false;
+  });
+
+  initTrack();
+  initRain();
+  shuffleQuestions();
+  refreshGo();
+  gameLoop();
+})();
+</script>
+</body>
+</html>
