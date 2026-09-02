@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="志蓮跳跳小遊戲" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>二年班科學志蓮跳跳小遊戲</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root { --green:#2f7d32; --yellow:#f4d35e; --ink:#1d2b1f; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden; background: #7ec8e3;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink); touch-action: manipulation; user-select: none;
+      overscroll-behavior: none;
+    }
+    #wrap {
+      position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+      width: 100dvw; height: 100dvh;
+    }
+    canvas { display: block; width: 100%; height: 100%; background: #7ec8e3; touch-action: none; }
+    .panel { touch-action: auto; }
+    .panel {
+      position: absolute; inset: 0; z-index: 5;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      background: linear-gradient(#8fd3f0, #c8f0c0);
+      padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+    }
+    .card {
+      background: #fffef6; border: 6px solid #2f7d32; border-radius: 28px;
+      padding: 18px 16px 16px; max-width: 560px; width: 100%;
+      margin: 12px auto; box-shadow: 0 10px 0 #1b5e20;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(18px, 5.2vw, 28px); line-height: 1.3; text-align: center; color: #1b5e20; }
+    p.lead { text-align: center; margin: 0 0 14px; font-size: 16px; line-height: 1.5; }
+    .chars { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+    .char-btn {
+      flex: 1; border: 4px solid #c5dcc6; background: #fff; border-radius: 20px;
+      padding: 10px; cursor: pointer; font: inherit; font-weight: 700;
+    }
+    .char-btn img { width: 100%; max-height: 140px; object-fit: contain; display: block; }
+    .char-btn.pick { border-color: #2f7d32; background: #e8f6e9; box-shadow: 0 0 0 3px #f4d35e; }
+    .primary {
+      width: 100%; border: 0; background: #2f7d32; color: #fff; font: inherit;
+      font-weight: 900; font-size: 20px; padding: 14px; border-radius: 16px; cursor: pointer;
+    }
+    .primary.blue { background: #1565c0; margin-top: 8px; }
+    .primary:disabled { background: #9aaa9b; }
+    .hud {
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 7;
+      display: flex; justify-content: space-between; align-items: center; gap: 6px;
+      pointer-events: none; text-shadow: 0 2px 0 rgba(0,0,0,.25);
+      color: #fff; font-weight: 900; font-size: 13px;
+    }
+    .hud span { background: rgba(0,0,0,.28); padding: 4px 8px; border-radius: 12px; white-space: nowrap; }
+    #hudZone { overflow: hidden; text-overflow: ellipsis; max-width: 42%; }
+    #hudTime { min-width: 92px; text-align: center; }
+    #hudTime.warn { background: #e65100; }
+    #hudTime.hot { background: #c62828; }
+    .controls {
+      position: absolute; left: 0; right: 0; bottom: 12px; z-index: 4;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      padding: 0 8px; padding-bottom: max(10px, env(safe-area-inset-bottom));
+      touch-action: none; max-width: 100%;
+    }
+    .pad, .jump { display: flex; gap: 8px; }
+    .ctrl {
+      width: 58px; height: 58px; min-width: 52px; min-height: 52px; border-radius: 16px; border: 0;
+      background: rgba(255,255,255,.55); color: #1b5e20; font-size: 26px; font-weight: 900;
+      box-shadow: 0 4px 0 rgba(0,0,0,.15); touch-action: none; -webkit-user-select: none;
+    }
+    .jump .ctrl { width: 58px; height: 58px; }
+    .jump .ctrl[data-k="jump"] { background: rgba(244,211,94,.85); width: 72px; }
+    .jump .ctrl[data-k="down"] { background: rgba(187,222,251,.85); }
+    @media (min-width: 500px) {
+      .hud { font-size: 18px; left: 12px; right: 12px; }
+      .ctrl { width: 74px; height: 74px; min-width: 64px; min-height: 64px; font-size: 32px; border-radius: 18px; }
+      .jump .ctrl { width: 74px; height: 74px; }
+      .jump .ctrl[data-k="jump"] { width: 96px; }
+      .controls { padding: 0 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+      .pad, .jump { gap: 10px; }
+    }
+    @media (max-height: 500px) {
+      .ctrl { width: 52px; height: 52px; font-size: 22px; }
+      .jump .ctrl { width: 52px; height: 52px; }
+      .jump .ctrl[data-k="jump"] { width: 68px; }
+      .char-btn img { max-height: 72px; }
+      .card { padding: 12px; border-width: 4px; }
+    }
+    #quiz {
+      position: absolute; inset: 0; background: rgba(20,40,20,.55);
+      display: none; align-items: center; justify-content: center; z-index: 6; padding: 16px;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    #quiz.show { display: flex; }
+    .qcard { background: #fffef6; border-radius: 24px; border: 6px solid #f4d35e; padding: 18px; max-width: 560px; width: 100%; margin: auto; }
+    .qcard h2 { margin: 0 0 8px; font-size: clamp(16px, 4.5vw, 20px); }
+    .qref { margin: 0 0 12px; font-size: 14px; color: #2f7d32; font-weight: 700; }
+    .opt {
+      display: block; width: 100%; text-align: left; margin: 8px 0; padding: 14px 14px;
+      min-height: 48px; border-radius: 14px; border: 3px solid #c5dcc6; background: #fff;
+      font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+    }
+    .opt:active { background: #e8f6e9; }
+    .hidden { display: none !important; }
+    .hint { font-size: 13px; text-align: center; color: #3d5c40; margin-top: 10px; line-height: 1.45; padding: 0 4px; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game"></canvas>
+    <div class="hud hidden" id="hud"><span id="hudZone"></span><span id="hudTime">時間 50</span><span id="hudStar"></span></div>
+    <div class="controls hidden" id="controls">
+      <div class="pad">
+        <button class="ctrl" type="button" data-k="left">←</button>
+        <button class="ctrl" type="button" data-k="right">→</button>
+      </div>
+      <div class="jump">
+        <button class="ctrl" type="button" data-k="down">↓</button>
+        <button class="ctrl" type="button" data-k="jump">跳</button>
+      </div>
+    </div>
+
+    <div class="panel" id="start">
+      <div class="card">
+        <h1>二年班科學<br>志蓮跳跳小遊戲</h1>
+        <p class="lead">二年級科學　《科學新領域》<br>第 5 課 天氣與我（雨水收集器）、第 12 課 奇思妙想、第 13 課 小小發明家。<br>食星星答題。答錯、碰到小蟲、掉進洞穴或時間完結，須重玩本關。</p>
+        <div class="chars">
+          <button class="char-btn" id="pickBoy" type="button"><img src="assets/boy.png" alt="小志" />小志</button>
+          <button class="char-btn" id="pickGirl" type="button"><img src="assets/girl.png" alt="小蓮" />小蓮</button>
+        </div>
+        <button class="primary" id="go" type="button" disabled>開始遊戲</button>
+        <button class="primary blue hidden" id="cont" type="button">繼續遊戲</button>
+        <p class="hint">電腦：← → 移動　↑／空白跳躍　↓蹲低或入喉管<br>平板／電話：左下移動　右下↓蹲低／入喉管　跳</p>
+      </div>
+    </div>
+
+    <div class="panel hidden" id="end">
+      <div class="card">
+        <h1 id="endTitle">完成！</h1>
+        <p class="lead" id="endMsg"></p>
+        <button class="primary" id="again" type="button">重玩本關</button>
+        <button class="primary blue hidden" id="nextLv" type="button">下一關</button>
+        <button class="primary hidden" id="homeBtn" type="button" style="margin-top:8px;background:#6b7c6c">返回開始</button>
+      </div>
+    </div>
+
+    <div id="quiz">
+      <div class="qcard">
+        <h2 id="qtext"></h2>
+        <p class="qref" id="qref"></p>
+        <div id="qopts"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const IMAGES = {};
+const loadImg = src => new Promise((res, rej) => {
+  const i = new Image();
+  i.onload = () => res(i);
+  i.onerror = rej;
+  i.src = src;
+});
+
+const SAVE = "chilin-p2-steam-jump-v1";
+const GROUND = 560;
+const PW = 54, STAND_H = 82, DUCK_H = 48;
+const G = 0.55, JUMP = -15.2, SPEED = 4.6;
+const LEVEL_SECS = 50;
+
+function plat(x,y,w,h, extra){ return Object.assign({x,y,w,h, kind:"grass"}, extra||{}); }
+function en(x, min, max, extra){
+  return Object.assign({x, y:GROUND-36, w:54, h:36, vx:0.9, min, max, dead:false, kind:"walk"}, extra||{});
+}
+
+const QUESTION_BANK = {
+  recycle: [
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "嘉年華後剩下的紙杯，同學用來做甚麼？", right: "製作雨水收集器，用來灌溉校園植物", wrong: ["立刻全部丟掉", "用來煮飯", "全部燒掉"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "收集到的雨水可以用來：", right: "灌溉校園裏的植物", wrong: ["代替食水來飲用", "用來發電", "把杯子變成磁鐵"] },
+    { lesson: "二上　第 5 課 天氣與我", q: "水知園的雨水回收系統，把雨水變成：", right: "可再用的非飲用水", wrong: ["汽水", "食鹽", "石油"] },
+    { lesson: "二上　第 5 課 天氣與我", q: "雨水是寶貴資源，我們應該：", right: "循環再用，減少浪費淨水", wrong: ["把雨水全部倒進渠裏", "不要收集雨水", "用雨水煮飯"] },
+    { lesson: "二上　第 5 課 天氣與我", q: "一個地方長期不下雨，植物會怎樣？", right: "沒有水灌溉，植物會枯萎", wrong: ["植物會變成石頭", "植物會自己製造雨水", "植物完全不需要水"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "製作雨水收集器時，使用剪刀要注意：", right: "小心，不要割傷自己", wrong: ["把剪刀拋向同學", "閉起眼睛剪", "用剪刀剪手"] }
+  ],
+  rain: [
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "雨水收集器可分為哪兩部分？", right: "收集雨水部分和儲水部分", wrong: ["車輪和車燈", "根、莖、葉", "磁極和電池"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "收集雨水部分應該像：", right: "漏斗", wrong: ["一支筆", "一塊磁鐵", "一扇窗"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "收集雨水部分要做得較闊還是較窄，才能收集更多雨水？", right: "較闊", wrong: ["較窄", "越尖越好，完全沒有開口", "完全密封"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "儲水部分的形狀通常是：", right: "一般的杯狀", wrong: ["一把雨傘", "一張紙", "一塊石頭"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "用 3 個紙杯做一個收集器，目標是收集的雨水要比：", right: "3 個紙杯分開收集還要多", wrong: ["1 滴水更少", "完全收集不到水", "一桶油更多"] },
+    { lesson: "二上　第 5 課 天氣與我　活動冊 7", q: "做完後應該怎樣比較哪組的雨水收集器較好？", right: "看哪組收集到最多雨水", wrong: ["看哪組的杯子最新", "看哪組站得最高", "看哪組最安靜"] }
+  ],
+  inquiry: [
+    { lesson: "二下　第 12 課 奇思妙想", q: "科學探究源於：", right: "觀察", wrong: ["亂猜", "把實驗藏起來", "不記錄"] },
+    { lesson: "二下　第 12 課 奇思妙想", q: "科學知識的建立，應該基於：", right: "證據", wrong: ["不觀察", "把結果藏起來", "只憑感覺亂說"] },
+    { lesson: "二下　第 12 課 奇思妙想", q: "探究時發現結果和猜想不同，應該：", right: "記錄結果，再想辦法", wrong: ["把結果藏起來", "改數據變成自己想要的", "不再觀察"] },
+    { lesson: "二下　第 12 課 奇思妙想", q: "奇思妙想鼓勵我們：", right: "提出問題和想法", wrong: ["不肯發問", "只抄答案", "把問題藏起來"] },
+    { lesson: "二上　第 5 課　活動冊 7", q: "匯報雨水收集器時，應該：", right: "解釋設計，並收集同學和老師的意見", wrong: ["不肯說話", "把作品藏起來", "取笑別組"] },
+    { lesson: "二下　第 12 課 奇思妙想", q: "觀察天氣和降雨，屬於：", right: "科學探究的起點", wrong: ["把杯子丟掉", "不需要記錄", "只可以亂猜"] }
+  ],
+  design: [
+    { lesson: "二下　第 13 課 小小發明家", q: "日常生活中的一些物品是：", right: "由人設計和製造出來的", wrong: ["自己從天上掉下來", "全部是石頭", "動物畫出來的"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "良好的設計最應該：", right: "切合人的需要，便利生活", wrong: ["只求最貴", "只求最重", "不理會安全"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "小小發明家設計作品時，第一步應該：", right: "辨別需要和問題", wrong: ["立刻塗顏色", "把材料丟掉", "不肯觀察"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "設計前要想一想：", right: "這個作品要來做甚麼", wrong: ["立刻塗顏色就完成", "把材料丟掉", "不肯觀察"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "人們會按甚麼來設計和製造生活物品？", right: "需要", wrong: ["只求最貴", "只求最重", "不理會用途"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "好的設計應該兼顧：", right: "美觀和實用", wrong: ["只求最醜", "一定要最重", "完全不能用"] }
+  ],
+  invent: [
+    { lesson: "二下　第 13 課 小小發明家", q: "做完作品後，應該怎樣改進？", right: "進行測試與改良", wrong: ["立刻丟掉", "不再理會", "把說明書藏起來"] },
+    { lesson: "二上　第 5 課　活動冊 7", q: "測試雨水收集器時，主要看：", right: "相同時間內收集到多少雨水", wrong: ["杯子上有沒有簽名", "剪刀是否新的", "顏色是否最鮮艷"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "測試作品時，可以檢查：", right: "會不會變形、會不會倒下", wrong: ["能不能變成食物", "會不會自己飛走", "能不能發出香味"] },
+    { lesson: "二上　第 5 課　活動冊 7", q: "怎樣改良雨水收集器？", right: "改良設計，令相同時間內收集到更多雨水", wrong: ["立刻丟掉作品", "不再測試", "把說明書藏起來"] },
+    { lesson: "二上　第 5 課　活動冊 7", q: "不使用雨水收集器時，可以：", right: "把它蓋上", wrong: ["把它剪爛", "把它埋進土裏不理", "用來當足球"] },
+    { lesson: "二下　第 13 課 小小發明家", q: "聽取同學和老師的意見，是為了：", right: "幫助改良設計", wrong: ["把意見丟掉", "取笑別人", "不再改進"] }
+  ]
+};
+
+const LEVELS = [
+  {
+    name: "第1關　回收工場",
+    sky: ["#7ec8e3","#d7f3c8"],
+    worldW: 2300,
+    topic: "recycle",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 980, 220),
+          plat(220, 470, 160, 26),
+          plat(460, 390, 160, 26),
+          {x:720, y:GROUND-100, w:56, h:100, kind:"pipe", dest:{x:1180, y:GROUND-STAND_H}},
+          plat(1120, GROUND, 1180, 220),
+          plat(1320, 485, 220, 26),
+          plat(1480, 425, 280, 26)
+        ],
+        enemies: [en(300, 80, 650), en(1300, 1160, 1480)],
+        stars: [{x:500, y:330, got:false, q:0}, {x:1580, y:365, got:false, q:1}],
+        flag: {x:2100, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:20, y:GROUND-70, t:"回收"}, {k:"hill", x:260, y:GROUND, c:"#6bb36a"}]
+      };
+    }
+  },
+  {
+    name: "第2關　雨水收集器",
+    sky: ["#6bb8e0","#c5e8f8"],
+    worldW: 2500,
+    topic: "rain",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 2500, 220),
+          plat(200, 480, 140, 24),
+          plat(380, 410, 150, 24),
+          {x:620, y:GROUND-90, w:220, h:24, kind:"lowbar"},
+          plat(920, 470, 160, 24),
+          plat(1140, 390, 180, 24),
+          {x:1500, y:GROUND-96, w:56, h:96, kind:"pipe", dest:{x:1760, y:GROUND-STAND_H}},
+          plat(1720, GROUND, 780, 220),
+          plat(1860, 485, 200, 24),
+          plat(2040, 420, 240, 24)
+        ],
+        enemies: [en(180, 40, 520, {vx:1.0}), en(1780, 1740, 2100, {vx:1.05})],
+        stars: [{x:430, y:350, got:false, q:0}, {x:2120, y:360, got:false, q:1}],
+        flag: {x:2320, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"雨水"}, {k:"hill", x:800, y:GROUND, c:"#5aa0c8"}]
+      };
+    }
+  },
+  {
+    name: "第3關　奇思妙想",
+    sky: ["#c9b8f0","#efe6ff"],
+    worldW: 2500,
+    topic: "inquiry",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 1780, 220, {kind:"wood"}),
+          plat(180, 480, 130, 22, {kind:"wood"}),
+          plat(340, 400, 140, 22, {kind:"wood"}),
+          plat(520, 330, 180, 22, {kind:"wood"}),
+          {x:980, y:GROUND-110, w:58, h:110, kind:"pipe", dest:{x:1280, y:GROUND-STAND_H}},
+          plat(1220, 485, 180, 22, {kind:"wood"}),
+          plat(1420, 425, 260, 22, {kind:"wood"}),
+          plat(1900, GROUND, 600, 220, {kind:"wood"})
+        ],
+        enemies: [en(200, 40, 620, {vx:1.05}), en(1260, 900, 1500, {vx:1.1})],
+        stars: [{x:580, y:270, got:false, q:0}, {x:1520, y:365, got:false, q:1}],
+        flag: {x:2280, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"觀察"}, {k:"hill", x:900, y:GROUND, c:"#9b84d4"}]
+      };
+    }
+  },
+  {
+    name: "第4關　設計工作坊",
+    sky: ["#f0c27a","#f6e2b3"],
+    worldW: 2500,
+    topic: "design",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 2500, 220, {kind:"wood"}),
+          plat(280, 508, 150, 24, {kind:"bounce"}),
+          plat(500, GROUND-8, 220, 16, {kind:"belt", belt:1.8}),
+          {x:780, y:GROUND-90, w:200, h:24, kind:"lowbar"},
+          plat(430, 420, 160, 24, {kind:"wood"}),
+          plat(1080, 350, 190, 24, {kind:"wood"}),
+          plat(1460, 480, 200, 24, {kind:"wood"}),
+          plat(1640, 420, 260, 24, {kind:"wood"})
+        ],
+        enemies: [en(200, 40, 250, {vx:0.7}), en(1300, 1080, 1600, {vx:0.9})],
+        stars: [{x:1140, y:290, got:false, q:0}, {x:1740, y:360, got:false, q:1}],
+        flag: {x:2280, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"設計"}, {k:"hill", x:1400, y:GROUND, c:"#c9a06a"}]
+      };
+    }
+  },
+  {
+    name: "第5關　小小發明家",
+    sky: ["#c9e7a8","#fff3b0"],
+    worldW: 2700,
+    topic: "invent",
+    build() {
+      return {
+        solids: [
+          plat(0, GROUND, 1340, 220),
+          plat(220, 430, 140, 26),
+          {x:480, y:GROUND-96, w:56, h:96, kind:"pipe", dest:{x:820, y:GROUND-STAND_H}},
+          {x:620, y:GROUND-90, w:180, h:24, kind:"lowbar"},
+          plat(920, 390, 160, 22, {kind:"metal"}),
+          plat(1320, GROUND, 1040, 220, {kind:"wood"}),
+          plat(1480, 508, 140, 24, {kind:"bounce"}),
+          plat(1680, GROUND-8, 140, 16, {kind:"belt", belt:1.6}),
+          plat(1880, 480, 180, 24, {kind:"cloud", crumb:true}),
+          plat(2060, 420, 260, 24, {kind:"cloud"}),
+          plat(2360, GROUND, 340, 220)
+        ],
+        enemies: [en(250, 40, 430), en(1500, 1360, 1750, {vx:1.0})],
+        stars: [{x:980, y:330, got:false, q:0}, {x:2140, y:360, got:false, q:1}],
+        flag: {x:2520, y:GROUND-150, w:70, h:150},
+        decos: [{k:"sign", x:40, y:GROUND-70, t:"發明"}, {k:"hill", x:2400, y:GROUND, c:"#9ccc65"}]
+      };
+    }
+  }
+];
+
+let canvas, ctx, W, H, WORLD_W = 2300;
+let keys = {};
+let hold = { left:false, right:false, jump:false, down:false };
+let hero = "boy";
+let state = "menu";
+let quizId = null;
+let camX = 0;
+let t = 0;
+let player, enemies, stars, solids, flag, collected, decos;
+let levelIndex = 0;
+let lastAnswerSlot = -1;
+let liveQuestions = [];
+let levelQs = [];
+let maxCleared = 0;
+let wonAll = false;
+let timeLeft = LEVEL_SECS;
+let timerStart = 0;
+
+function loadSave() {
+  try { return JSON.parse(localStorage.getItem(SAVE) || "{}"); } catch (e) { return {}; }
+}
+function writeSave() {
+  localStorage.setItem(SAVE, JSON.stringify({ maxCleared, hero }));
+}
+
+function shuffleArr(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickLevelQuestions(topic, n) {
+  return shuffleArr(QUESTION_BANK[topic]).slice(0, n);
+}
+
+function shuffleQuestion(bank) {
+  const opts = [bank.right, ...bank.wrong];
+  let a = 0;
+  for (let n = 0; n < 12; n++) {
+    for (let i = opts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [opts[i], opts[j]] = [opts[j], opts[i]];
+    }
+    a = opts.indexOf(bank.right);
+    if (a !== lastAnswerSlot) break;
+  }
+  lastAnswerSlot = a;
+  return { q: bank.q, opts, a, lesson: bank.lesson || "" };
+}
+
+function layout() {
+  const L = LEVELS[levelIndex];
+  WORLD_W = L.worldW;
+  const b = L.build();
+  solids = b.solids;
+  enemies = b.enemies;
+  stars = b.stars;
+  flag = b.flag;
+  decos = b.decos;
+}
+
+function startLevel(i) {
+  levelIndex = i;
+  lastAnswerSlot = -1;
+  liveQuestions = [];
+  levelQs = pickLevelQuestions(LEVELS[i].topic, 2);
+  collected = 0;
+  wonAll = false;
+  layout();
+  player = {x:80, y:GROUND-STAND_H, w:PW, h:STAND_H, vx:0, vy:0, onG:true, dir:1, alive:true, stand:null, bounceLock:0, coyote:8, jumpBuf:0, duck:false, pipeLock:0};
+  camX = 0;
+  quizId = null;
+  timeLeft = LEVEL_SECS;
+  timerStart = performance.now();
+  state = "play";
+  document.getElementById("quiz").classList.remove("show");
+  document.getElementById("end").classList.add("hidden");
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("hud").classList.remove("hidden");
+  document.getElementById("controls").classList.remove("hidden");
+  updateHudTime();
+}
+
+function aabb(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function hitSolidsX() {
+  const box = {x:player.x, y:player.y, w:player.w, h:player.h};
+  for (const s of solids) {
+    if (s.fallen || s.kind === "bounce") continue;
+    if (s.kind === "lowbar") {
+      if (player.y >= s.y + s.h - 2) continue;
+    } else if (s.h < 50) {
+      continue;
+    }
+    if (player._py + player.h <= s.y + 12) continue;
+    if (!aabb(box, s)) continue;
+    if (player.vx > 0) player.x = s.x - player.w;
+    else if (player.vx < 0) player.x = s.x + s.w;
+    player.vx = 0;
+  }
+}
+
+function hitSolidsY() {
+  const prevBottom = player._py + player.h;
+  const prevTop = player._py;
+  let best = null;
+  for (const s of solids) {
+    if (s.fallen) continue;
+    if (player.x + player.w <= s.x + 2 || player.x >= s.x + s.w - 2) continue;
+    if (player.vy >= 0 && prevBottom <= s.y + 8 && player.y + player.h >= s.y) {
+      if (!best || s.y < best.y) best = s;
+    } else if (player.vy < 0 && s.kind !== "bounce" && s.kind !== "lowbar" && prevTop >= s.y + s.h - 8 && player.y <= s.y + s.h) {
+      player.y = s.y + s.h;
+      player.vy = 0;
+    }
+  }
+  if (best) {
+    player.y = best.y - player.h;
+    if (best.kind === "bounce") {
+      if (player.bounceLock <= 0) {
+        const holdJump = keys.ArrowUp || keys[" "] || keys.w || keys.W || hold.jump;
+        player.vy = holdJump ? -16 : -13.5;
+        player.bounceLock = 14;
+      } else {
+        player.vy = 0;
+        player.onG = true;
+        player.stand = best;
+      }
+      if (player.vy < 0) {
+        player.onG = false;
+        player.stand = null;
+      }
+    } else {
+      player.vy = 0;
+      player.onG = true;
+      player.stand = best;
+      if (best.crumb && !best.shake) best.shake = 1;
+    }
+  }
+}
+
+function tryDuck(wantDuck) {
+  if (wantDuck && player.onG) {
+    if (!player.duck) {
+      player.duck = true;
+      player.y += STAND_H - DUCK_H;
+      player.h = DUCK_H;
+    }
+    return;
+  }
+  if (!player.duck) return;
+  const tryY = player.y - (STAND_H - DUCK_H);
+  const tryBox = {x:player.x + 4, y:tryY, w:player.w - 8, h:STAND_H};
+  for (const s of solids) {
+    if (s.fallen) continue;
+    if (s.kind === "bounce") continue;
+    if (!aabb(tryBox, s)) continue;
+    if (s.y >= tryY + STAND_H - 10) continue;
+    if (s.y + s.h <= tryY + 4) continue;
+    return;
+  }
+  player.duck = false;
+  player.y = tryY;
+  player.h = STAND_H;
+}
+
+function tryPipe() {
+  if (player.pipeLock > 0) return;
+  if (!player.onG) return;
+  for (const s of solids) {
+    if (s.kind !== "pipe" || !s.dest) continue;
+    const over = player.x + player.w > s.x + 10 && player.x < s.x + s.w - 10;
+    const onTop = player.stand === s || Math.abs((player.y + player.h) - s.y) < 10;
+    if (over && onTop) {
+      player.x = s.dest.x;
+      player.y = s.dest.y;
+      player.h = STAND_H;
+      player.duck = false;
+      player.vy = 0;
+      player.pipeLock = 28;
+      player.onG = false;
+      player.stand = null;
+      return;
+    }
+  }
+}
+
+function showEnd(title, msg, kind) {
+  state = kind;
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("controls").classList.add("hidden");
+  document.getElementById("endTitle").textContent = title;
+  document.getElementById("endMsg").innerHTML = msg;
+  document.getElementById("again").classList.toggle("hidden", kind === "winall");
+  document.getElementById("nextLv").classList.toggle("hidden", kind !== "win");
+  document.getElementById("homeBtn").classList.toggle("hidden", kind !== "winall" && kind !== "lose");
+  document.getElementById("end").classList.remove("hidden");
+}
+
+function die(reason) {
+  showEnd("本關須重新開始", reason + "<br>答錯題目、碰到小蟲、掉進洞穴或時間完結，只須重玩本關。", "lose");
+}
+
+function usedSecs() {
+  return Math.max(1, Math.min(LEVEL_SECS, Math.ceil(LEVEL_SECS - timeLeft)));
+}
+
+function winLevel() {
+  if (levelIndex + 1 > maxCleared) maxCleared = levelIndex + 1;
+  writeSave();
+  const used = usedSecs();
+  if (levelIndex >= LEVELS.length - 1) {
+    wonAll = true;
+    showEnd("全部完成！", "你已通過五關，最後一關用了" + used + "秒。", "winall");
+  } else {
+    showEnd("過關了！", "你用了" + used + "秒。<br>下一關是「" + LEVELS[levelIndex + 1].name + "」。", "win");
+  }
+}
+
+function openQuiz(qid) {
+  quizId = qid;
+  state = "quiz";
+  if (player && player.stand && player.stand.crumb) player.stand.shake = 0;
+  const Q = liveQuestions[qid] = shuffleQuestion(levelQs[qid]);
+  document.getElementById("qtext").textContent = "科學題：" + Q.q;
+  document.getElementById("qref").textContent = Q.lesson ? "溫習課本：" + Q.lesson : "";
+  const box = document.getElementById("qopts");
+  box.innerHTML = "";
+  Q.opts.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.textContent = String.fromCharCode(65+i) + ".  " + t;
+    b.onclick = () => answer(i);
+    box.appendChild(b);
+  });
+  document.getElementById("quiz").classList.add("show");
+}
+
+function answer(i) {
+  const Q = liveQuestions[quizId];
+  document.getElementById("quiz").classList.remove("show");
+  if (i === Q.a) {
+    collected++;
+    state = "play";
+    quizId = null;
+  } else {
+    die("這題答錯了。正確答案是：「" + Q.opts[Q.a] + "」。");
+  }
+}
+
+function step() {
+  if (state !== "play") return;
+  t++;
+  const left = keys.ArrowLeft || keys.a || keys.A || hold.left;
+  const right = keys.ArrowRight || keys.d || keys.D || hold.right;
+  const jump = keys.ArrowUp || keys[" "] || keys.w || keys.W || hold.jump;
+  const down = keys.ArrowDown || keys.s || keys.S || hold.down;
+
+  for (const s of solids) {
+    s._ox = s.x; s._oy = s.y;
+    if (s.mx) {
+      s.x += s.mvx;
+      if (s.x < s.mx[0] || s.x > s.mx[1]) s.mvx *= -1;
+    }
+    if (s.shake) {
+      s.shake++;
+      if (s.shake > 70) { s.fallen = true; s.shake = 0; s.y += 400; }
+    }
+  }
+
+  if (player.pipeLock > 0) player.pipeLock--;
+
+  player.vx = 0;
+  if (left) { player.vx = -SPEED; player.dir = -1; }
+  if (right) { player.vx = SPEED; player.dir = 1; }
+  if (player.bounceLock > 0) player.bounceLock--;
+  if (player.onG) player.coyote = 8;
+  else if (player.coyote > 0) player.coyote--;
+  if (jump) player.jumpBuf = 8;
+  else if (player.jumpBuf > 0) player.jumpBuf--;
+  let didJump = false;
+  if (player.jumpBuf > 0 && player.coyote > 0) {
+    tryDuck(false);
+    player.vy = JUMP;
+    player.onG = false;
+    player.stand = null;
+    player.coyote = 0;
+    player.jumpBuf = 0;
+    didJump = true;
+  }
+
+  if (down && !didJump) tryPipe();
+  tryDuck(down && player.onG && !didJump);
+
+  player._px = player.x;
+  player._py = player.y;
+  player.x += player.vx;
+  hitSolidsX();
+  if (!didJump) player.vy += down && !player.onG ? G * 2.1 : G;
+  player.y += player.vy;
+  player.onG = false;
+  player.stand = null;
+  hitSolidsY();
+  if (player.stand) {
+    player.x += (player.stand.x - (player.stand._ox || player.stand.x));
+    if (player.stand.belt) player.x += player.stand.belt;
+  }
+
+  if (player.x < 8) player.x = 8;
+  if (player.x > WORLD_W - player.w - 8) player.x = WORLD_W - player.w - 8;
+  if (player.y > GROUND + 200) { die("掉進洞穴了。"); return; }
+
+  const pb = {x:player.x+6, y:player.y+8, w:player.w-12, h:player.h-8};
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    if (e.kind === "hop") {
+      e.hop = (e.hop || 0) + 1;
+      if (e.hop === 1) e._gy = e.y;
+      if (!e.vy) e.vy = 0;
+      e.vy += 0.45;
+      e.y += e.vy;
+      if (e.y > e._gy) { e.y = e._gy; e.vy = 0; }
+      if (e.hop % 70 === 0) e.vy = -9;
+    } else {
+      e.x += e.vx;
+      if (e.x < e.min || e.x > e.max) e.vx *= -1;
+    }
+    const eb = {x:e.x, y:e.y, w:e.w, h:e.h};
+    if (!aabb(pb, eb)) continue;
+    if (player.vy > 0 && player.y + player.h - e.y < 24) {
+      e.dead = true;
+      player.vy = -8;
+    } else {
+      die("碰到小蟲了。請從上方踏下才安全。");
+      return;
+    }
+  }
+
+  for (const s of stars) {
+    if (s.got) continue;
+    if (aabb(pb, {x:s.x, y:s.y, w:40, h:40})) {
+      s.got = true;
+      openQuiz(s.q);
+      return;
+    }
+  }
+
+  if (collected >= stars.length && aabb(pb, {x:flag.x, y:flag.y, w:flag.w, h:flag.h})) {
+    winLevel();
+  }
+
+  camX = Math.max(0, Math.min(WORLD_W - W, player.x - W * 0.35));
+}
+
+function drawSky() {
+  const [c0, c1] = LEVELS[levelIndex].sky;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, c0);
+  g.addColorStop(1, c1);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,.82)";
+  for (const c of [[180,70,55],[620,48,78],[1100,80,50],[1700,40,70],[2200,76,52]]) {
+    const x = c[0] - camX * 0.45;
+    ctx.beginPath();
+    ctx.arc(x, c[1], c[2], 0, Math.PI * 2);
+    ctx.arc(x + 38, c[1] + 8, c[2] * 0.7, 0, Math.PI * 2);
+    ctx.arc(x - 34, c[1] + 10, c[2] * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawSolid(s) {
+  if (s.fallen) return;
+  const jx = s.shake ? Math.sin(s.shake) * 3 : 0;
+  const x = s.x + jx;
+  if (s.kind === "pipe") {
+    ctx.fillStyle = "#2e9c3a";
+    ctx.fillRect(x + 7, s.y + 18, s.w - 14, s.h - 18);
+    ctx.fillStyle = "#43b64c";
+    ctx.fillRect(x, s.y, s.w, 22);
+    ctx.strokeStyle = "#1b5e20"; ctx.lineWidth = 3;
+    ctx.strokeRect(x, s.y, s.w, 22);
+    return;
+  }
+  if (s.kind === "lowbar") {
+    ctx.fillStyle = "#8d5a2b";
+    ctx.fillRect(x, s.y, s.w, s.h);
+    ctx.fillStyle = "#c48a4a";
+    ctx.fillRect(x, s.y, s.w, 8);
+    return;
+  }
+  let top, body;
+  if (s.kind === "metal") { top = "#8aa0b8"; body = "#5d7186"; }
+  else if (s.kind === "wood") { top = "#d2a15a"; body = "#a06a32"; }
+  else if (s.kind === "bounce") { top = "#ff6b6b"; body = "#c44545"; }
+  else if (s.kind === "belt") { top = "#f4d35e"; body = "#c9a227"; }
+  else if (s.kind === "cloud") { top = "#ffffff"; body = "#dbe7ff"; }
+  else { top = "#7bc45b"; body = "#c48a4a"; }
+  ctx.fillStyle = body;
+  ctx.fillRect(x, s.y + 10, s.w, Math.max(s.h - 10, 12));
+  ctx.fillStyle = top;
+  ctx.fillRect(x, s.y, s.w, 14);
+  if (s.kind === "bounce") {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(x + 8, s.y + 4, s.w - 16, 5);
+  }
+  if (s.kind === "belt") {
+    ctx.fillStyle = "#2f7d32";
+    for (let i = 0; i < s.w; i += 22) ctx.fillRect(x + ((t * 2 + i) % s.w), s.y + 3, 10, 6);
+  }
+  if (s.kind === "metal") {
+    ctx.fillStyle = "rgba(255,255,255,.35)";
+    ctx.fillRect(x + 6, s.y + 3, 18, 6);
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawSky();
+  ctx.save();
+  ctx.translate(-camX, 0);
+  for (const d of decos) {
+    if (d.k === "hill") {
+      ctx.fillStyle = d.c;
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y + 10, 160, 70, 0, Math.PI, 0);
+      ctx.fill();
+    }
+    if (d.k === "sign") {
+      ctx.fillStyle = "#8d5a2b";
+      ctx.fillRect(d.x + 28, d.y + 22, 8, 48);
+      ctx.fillStyle = "#fff8dc";
+      ctx.fillRect(d.x, d.y, 64, 30);
+      ctx.strokeStyle = "#5a3a18"; ctx.lineWidth = 2;
+      ctx.strokeRect(d.x, d.y, 64, 30);
+      ctx.fillStyle = "#3a2a10";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(d.t, d.x + 32, d.y + 20);
+    }
+  }
+  for (const s of solids) drawSolid(s);
+  if (IMAGES.flag) ctx.drawImage(IMAGES.flag, flag.x, flag.y, 86, 150);
+  for (const s of stars) {
+    if (s.got) continue;
+    ctx.drawImage(IMAGES.star, s.x, s.y + Math.sin(t / 12 + s.x) * 6, 44, 44);
+  }
+  for (const e of enemies) {
+    if (e.dead) continue;
+    ctx.save();
+    if (e.vx < 0) { ctx.translate(e.x + e.w, e.y); ctx.scale(-1, 1); ctx.drawImage(IMAGES.enemy, 0, 0, e.w, e.h); }
+    else ctx.drawImage(IMAGES.enemy, e.x, e.y, e.w, e.h);
+    ctx.restore();
+  }
+  if (player) {
+    const img = IMAGES[hero];
+    const bob = player.onG && player.vx ? Math.sin(t / 4) * 2 : 0;
+    ctx.save();
+    ctx.translate(player.x + player.w / 2, player.y + player.h);
+    ctx.scale(player.dir, player.duck ? 0.62 : 1);
+    ctx.drawImage(img, -player.w / 2, -STAND_H - bob, player.w, STAND_H);
+    ctx.restore();
+  }
+  ctx.restore();
+  document.getElementById("hudZone").textContent = LEVELS[levelIndex].name;
+  document.getElementById("hudStar").textContent = "星星 " + collected + "/" + stars.length;
+  updateHudTime();
+}
+
+function updateHudTime() {
+  const el = document.getElementById("hudTime");
+  if (!el) return;
+  const secs = Math.max(0, Math.ceil(timeLeft));
+  el.textContent = "時間 " + secs;
+  el.classList.toggle("warn", secs <= 10 && secs > 5);
+  el.classList.toggle("hot", secs <= 5);
+}
+
+function tickTimer() {
+  if (state !== "play" && state !== "quiz") return;
+  timeLeft = LEVEL_SECS - (performance.now() - timerStart) / 1000;
+  if (timeLeft > 0) return;
+  timeLeft = 0;
+  document.getElementById("quiz").classList.remove("show");
+  die("時間到了。每關須於五十秒內過關。");
+}
+
+function loop() {
+  tickTimer();
+  step();
+  if (state === "play" || state === "quiz") draw();
+  else updateHudTime();
+  requestAnimationFrame(loop);
+}
+
+function viewSize() {
+  const vv = window.visualViewport;
+  return {
+    w: Math.max(320, Math.round(vv ? vv.width : window.innerWidth)),
+    h: Math.max(280, Math.round(vv ? vv.height : window.innerHeight)),
+    x: vv ? Math.round(vv.offsetLeft) : 0,
+    y: vv ? Math.round(vv.offsetTop) : 0
+  };
+}
+
+function resize() {
+  if (!canvas || !ctx) return;
+  const v = viewSize();
+  const wrap = document.getElementById("wrap");
+  wrap.style.left = v.x + "px";
+  wrap.style.top = v.y + "px";
+  wrap.style.width = v.w + "px";
+  wrap.style.height = v.h + "px";
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(v.w * dpr);
+  canvas.height = Math.floor(v.h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = v.w;
+  H = v.h;
+}
+
+function bindViewport() {
+  window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", () => setTimeout(resize, 250));
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", resize);
+    visualViewport.addEventListener("scroll", resize);
+  }
+}
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+});
+window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+function bindHold(el, k) {
+  let pointer = false;
+  el.addEventListener("pointerdown", ev => {
+    pointer = true;
+    ev.preventDefault();
+    try { el.setPointerCapture(ev.pointerId); } catch (err) {}
+    hold[k] = true;
+  });
+  const off = ev => { if (ev) ev.preventDefault(); hold[k] = false; };
+  el.addEventListener("pointerup", off);
+  el.addEventListener("pointercancel", off);
+  el.addEventListener("lostpointercapture", () => { hold[k] = false; });
+  el.addEventListener("touchstart", ev => {
+    if (pointer) return;
+    ev.preventDefault();
+    hold[k] = true;
+  }, { passive: false });
+  el.addEventListener("touchend", ev => {
+    if (pointer) return;
+    ev.preventDefault();
+    hold[k] = false;
+  }, { passive: false });
+  el.addEventListener("touchcancel", () => { if (!pointer) hold[k] = false; }, { passive: true });
+}
+document.querySelectorAll(".ctrl").forEach(b => bindHold(b, b.dataset.k));
+
+function enableStart() {
+  const picked = document.querySelector(".char-btn.pick");
+  document.getElementById("go").disabled = !picked;
+  const s = loadSave();
+  document.getElementById("cont").classList.toggle("hidden", !(picked && s.maxCleared > 0 && s.maxCleared < LEVELS.length));
+}
+
+document.getElementById("pickBoy").onclick = () => {
+  hero = "boy";
+  document.getElementById("pickBoy").classList.add("pick");
+  document.getElementById("pickGirl").classList.remove("pick");
+  enableStart();
+};
+document.getElementById("pickGirl").onclick = () => {
+  hero = "girl";
+  document.getElementById("pickGirl").classList.add("pick");
+  document.getElementById("pickBoy").classList.remove("pick");
+  enableStart();
+};
+document.getElementById("go").onclick = () => {
+  maxCleared = loadSave().maxCleared || 0;
+  startLevel(0);
+};
+document.getElementById("cont").onclick = () => {
+  const s = loadSave();
+  maxCleared = s.maxCleared || 0;
+  startLevel(Math.min(maxCleared, LEVELS.length - 1));
+};
+document.getElementById("again").onclick = () => startLevel(levelIndex);
+document.getElementById("nextLv").onclick = () => startLevel(levelIndex + 1);
+document.getElementById("homeBtn").onclick = () => {
+  document.getElementById("end").classList.add("hidden");
+  document.getElementById("start").classList.remove("hidden");
+  document.getElementById("hud").classList.add("hidden");
+  document.getElementById("controls").classList.add("hidden");
+  state = "menu";
+  enableStart();
+};
+
+(async function init(){
+  canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
+  resize();
+  bindViewport();
+  IMAGES.boy = await loadImg("assets/boy.png");
+  IMAGES.girl = await loadImg("assets/girl.png");
+  IMAGES.star = await loadImg("assets/star.png");
+  IMAGES.enemy = await loadImg("assets/enemy.png");
+  IMAGES.flag = await loadImg("assets/flag.png");
+  const s = loadSave();
+  if (s.hero === "girl" || s.hero === "boy") {
+    hero = s.hero;
+    document.getElementById(hero === "girl" ? "pickGirl" : "pickBoy").classList.add("pick");
+    enableStart();
+  }
+  layout();
+  const params = new URLSearchParams(location.search);
+  if (params.get("play") === "1") {
+    hero = params.get("hero") === "girl" ? "girl" : "boy";
+    startLevel(Math.max(0, Math.min(LEVELS.length - 1, parseInt(params.get("lv") || "0", 10) || 0)));
+  }
+  loop();
+})();
+</script>
+</body>
+</html>
