@@ -894,6 +894,7 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     $("total-avg").textContent = avg;
     submitToGoogleForm(studentClass, studentNo, avg);
     submitToSheet(studentClass, studentNo, avg);
+    $("save-status").textContent = "✅ 成績已交給老師！";
   }
 
   function submitToGoogleForm(cls, no, score) {
@@ -920,7 +921,6 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
     document.body.appendChild(form);
     form.submit();
     setTimeout(function () { try { form.remove(); } catch (e) {} }, 2000);
-    setTimeout(function () { $("save-status").textContent = "✅ 成績已成功上傳！"; }, 1500);
   }
 
   function submitToSheet(cls, no, score) {
@@ -932,18 +932,28 @@ window.SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsb
       no: no,
       activity: CFG.activity,
       level: "平均",
-      result: String(score),
+      result: String(score) + "分 " + done + "/" + levels.length + "合格",
       stars: String(done),
       hero: "",
       seconds: ""
     };
+    const body = JSON.stringify(payload);
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(SCORE_URL, new Blob([body], { type: "text/plain;charset=utf-8" }));
+      }
+    } catch (e) {}
     try {
       fetch(SCORE_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
+        body: body
       }).catch(function () {});
+    } catch (e) {}
+    try {
+      const img = new Image();
+      img.src = SCORE_URL + "?" + new URLSearchParams(payload).toString();
     } catch (e) {}
   }
 
