@@ -141,7 +141,8 @@
       { id: "p4-pe", title: "四年級體育", emoji: "⚽", blurb: "教材即將推出" },
       { id: "p4-ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
       { id: "p5-ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" },
-      { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" }
+      { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" },
+      { id: "bett", title: "BETT SHOW", emoji: "🇬🇧", blurb: "英國遊學團", href: "bett/" }
     ];
 
     const ITEMS = [
@@ -264,7 +265,7 @@
         <p class="note">請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結、二維碼及成績紀錄。</p>
         <div class="grid">
           ${SUBJECTS.map(s => `
-            <a class="card" href="#/s/${s.id}">
+            <a class="card" href="${s.href || `#/s/${s.id}`}">
               <div class="emoji">${s.emoji}</div>
               <h2>${s.title}</h2>
               <p>${s.blurb}</p>
@@ -302,6 +303,7 @@
     function renderSubject(id) {
       const s = SUBJECTS.find(x => x.id === id);
       if (!s) return renderHome();
+      if (s.href) { location.replace(s.href); return; }
       const items = ITEMS.filter(x => x.subject === id);
       document.title = s.title + "　張老師教學資源";
       $("app").innerHTML = `
