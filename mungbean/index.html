@@ -225,22 +225,26 @@
     #ghost img, #ghost .mini-pot { width: 100%; height: 100%; object-fit: contain; }
 
     #dayFx {
-      position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center;
-      background: rgba(20,30,50,.28); flex-direction: column; gap: 12px;
+      display: none; flex-shrink: 0; align-items: center; gap: 10px;
+      margin: 0 0 6px; padding: 8px 10px; border-radius: 16px;
+      background: #fffef6; border: 4px solid var(--yellow);
     }
     #dayFx.show { display: flex; }
     .clock {
-      width: min(70vw, 280px); background: #fffef6; border: 6px solid var(--green);
-      border-radius: 24px; padding: 16px; text-align: center; box-shadow: 0 10px 0 var(--green-dark);
+      flex: 1; min-width: 0; text-align: left;
     }
-    .clock h2 { margin: 0 0 8px; font-size: 20px; color: var(--green-dark); }
-    .bar-out { height: 16px; background: #e8f5e9; border-radius: 99px; overflow: hidden; }
+    .clock h2 { margin: 0 0 6px; font-size: 15px; color: var(--green-dark); }
+    .bar-out { height: 12px; background: #e8f5e9; border-radius: 99px; overflow: hidden; }
     .bar-in { height: 100%; width: 0; background: linear-gradient(90deg, #ffb300, #ef6c00); }
     .sun-move {
-      width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 8px;
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
       background: radial-gradient(circle at 35% 35%, #fff59d, #ffb300);
-      box-shadow: 0 0 20px #ffd54f;
+      box-shadow: 0 0 12px #ffd54f;
     }
+    .sprouts svg path, .sprouts svg ellipse, .sprouts svg circle {
+      transition: none;
+    }
+    .bean-dot { transition: width .6s, height .6s, background .6s; }
 
     .modal {
       position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,.4);
@@ -292,7 +296,7 @@
         <div class="step"><b>3</b><img src="assets/water.png" alt="" draggable="false"><span>拖動水杯，加啲水落去。</span></div>
         <div class="step"><b>4</b><img src="assets/cotton.png" alt="" draggable="false"><span>拖動棉花，扮泥土俾綠豆生長。</span></div>
         <div class="step"><b>5</b><span style="grid-column:2/-1">一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。</span></div>
-        <div class="step"><b>6</b><span style="grid-column:2/-1">撳「過一日」，大約 10 秒就過一日。重點睇第 1、2、4、9 日（冊入面嘅觀察日）。</span></div>
+        <div class="step"><b>6</b><span style="grid-column:2/-1">撳「過一日」，大約 10 秒內會慢慢見到綠豆長高。重點睇第 1、2、4、9 日。</span></div>
       </div>
       <button class="primary" id="startBtn">開始種植</button>
     </div>
@@ -306,6 +310,13 @@
       <button class="hud-btn" id="resetBtn">重來</button>
     </div>
     <div id="hint"></div>
+    <div id="dayFx">
+      <div class="sun-move" id="sunMove"></div>
+      <div class="clock">
+        <h2 id="fxTitle">綠豆慢慢成長緊…</h2>
+        <div class="bar-out"><div class="bar-in" id="fxBar"></div></div>
+      </div>
+    </div>
     <div id="scene">
       <div class="zone" id="z-window" data-zone="window">
         <div class="sun"></div>
@@ -334,14 +345,6 @@
   </section>
 
   <img id="ghost" alt="">
-  <div id="dayFx">
-    <div class="clock">
-      <div class="sun-move" id="sunMove"></div>
-      <h2 id="fxTitle">太陽移動緊…過緊一日</h2>
-      <div class="bar-out"><div class="bar-in" id="fxBar"></div></div>
-      <p style="margin:8px 0 0;font-weight:700;font-size:14px">大約 10 秒 = 1 日</p>
-    </div>
-  </div>
   <div class="modal" id="logModal">
     <div class="sheet" id="logSheet"></div>
   </div>
@@ -403,17 +406,48 @@
       else stage = 0;
 
       let h = 0;
-      if (age >= 2) h = 22 + (age - 2) * (light > 0.7 ? 5.0 : light > 0.2 ? 6.0 : 8.4);
+      if (age >= 1.2) h = 8 + Math.max(0, age - 1.2) * (light > 0.7 ? 5.0 : light > 0.2 ? 6.0 : 8.4);
       if (stage === 6) h *= 0.65;
       h = Math.min(h, light > 0.7 ? 88 : 132);
+      const leafT = Math.max(0, Math.min(1, (age - 3.2) / 3));
 
       return {
         stage, beans: p.beans, cotton: p.cotton, moisture: p.moisture,
-        age, health: p.health, light, h,
-        stemW: light > 0.7 ? 4.5 + Math.min(age, 12) * 0.28 : 2.1 + age * 0.1,
+        age, health: p.health, light, h, leafT,
+        lean: light > 0.7 && age >= 1.5 ? 8 + Math.min(age, 12) * 1.1 : (light < 0.25 ? 0 : 2),
+        stemW: light > 0.7 ? 3.2 + Math.min(age, 12) * 0.28 : 1.8 + age * 0.1,
         stem: light > 0.7 ? "#3d7a32" : light > 0.2 ? "#7a9a45" : "#efe6a6",
         leaf: light > 0.7 ? "#43a047" : light > 0.2 ? "#9aaa4a" : "#e6d56a",
         wilt: stage === 6
+      };
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function ease(t) { return 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, t))); }
+    function mixHex(a, b, t) {
+      const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+      const r = Math.round(lerp((pa >> 16) & 255, (pb >> 16) & 255, t));
+      const g = Math.round(lerp((pa >> 8) & 255, (pb >> 8) & 255, t));
+      const bl = Math.round(lerp(pa & 255, pb & 255, t));
+      return "#" + [r, g, bl].map((n) => n.toString(16).padStart(2, "0")).join("");
+    }
+    function lerpLook(A, B, t) {
+      t = ease(t);
+      return {
+        stage: t < 0.45 ? A.stage : B.stage,
+        beans: B.beans,
+        cotton: B.cotton,
+        moisture: lerp(A.moisture, B.moisture, t),
+        age: lerp(A.age, B.age, t),
+        health: lerp(A.health, B.health, t),
+        light: B.light,
+        h: lerp(A.h, B.h, t),
+        leafT: lerp(A.leafT || 0, B.leafT || 0, t),
+        lean: lerp(A.lean || 0, B.lean || 0, t),
+        stemW: lerp(A.stemW, B.stemW, t),
+        stem: mixHex(A.stem, B.stem, t),
+        leaf: mixHex(A.leaf, B.leaf, t),
+        wilt: t > 0.6 ? B.wilt : A.wilt
       };
     }
 
@@ -442,35 +476,40 @@
       const n = Math.min(Math.max(L.beans, 0), 3);
       const w = 88, boxH = 150;
       const parts = [];
-      if (L.stage >= 2) {
+      const rootT = Math.max(0, Math.min(1, (L.age - 0.8) / 1.2));
+      if (rootT > 0.05) {
         for (let i = 0; i < n; i++) {
           const x = 22 + i * 22;
-          parts.push(`<path d="M${x} ${boxH - 6} q -8 12 -3 20" stroke="#f3edd4" stroke-width="1.7" fill="none" stroke-linecap="round"/>`);
-          parts.push(`<path d="M${x} ${boxH - 6} q 9 10 5 18" stroke="#f3edd4" stroke-width="1.5" fill="none" stroke-linecap="round"/>`);
+          const len = 8 + rootT * 14;
+          parts.push(`<path d="M${x} ${boxH - 6} q ${-8 * rootT} ${len * 0.55} ${-3 * rootT} ${len}" stroke="#f3edd4" stroke-width="${1.2 + rootT * 0.6}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
+          parts.push(`<path d="M${x} ${boxH - 6} q ${9 * rootT} ${len * 0.5} ${5 * rootT} ${len * 0.9}" stroke="#f3edd4" stroke-width="${1 + rootT * 0.5}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
         }
       }
-      if (L.stage >= 3) {
+      if (L.h > 3) {
         for (let i = 0; i < n; i++) {
           const x = 22 + i * 22;
           const hh = L.h * (0.82 + i * 0.09);
-          const lean = L.light > 0.7 && L.age >= 2 ? 12 + Math.min(L.age, 12) : (L.light < 0.25 ? (i - 1) * 4 : 0);
-          const topX = x + lean + (L.wilt ? 14 : 0);
+          const lean = (L.lean || 0) + (L.light < 0.25 ? (i - 1) * 4 : 0);
+          const topX = x + lean + (L.wilt ? 14 * Math.min(1, L.h / 40) : 0);
           const d = L.wilt
             ? `M${x} ${boxH - 8} C ${x + 10} ${boxH - 8 - hh * 0.45}, ${topX} ${boxH - 8 - hh * 0.7}, ${topX + 4} ${boxH - 8 - hh}`
-            : `M${x} ${boxH - 8} C ${x} ${boxH - 8 - hh * 0.4}, ${x + lean} ${boxH - 8 - hh * 0.75}, ${topX} ${boxH - 8 - hh}`;
+            : `M${x} ${boxH - 8} C ${x} ${boxH - 8 - hh * 0.4}, ${x + lean * 0.6} ${boxH - 8 - hh * 0.75}, ${topX} ${boxH - 8 - hh}`;
           parts.push(`<path d="${d}" stroke="${L.stem}" stroke-width="${L.stemW}" fill="none" stroke-linecap="round"/>`);
           const ly = boxH - 8 - hh;
-          if (L.stage >= 4) {
-            const lw = L.light > 0.7 ? 11 : 6.5;
-            const lh = L.light > 0.7 ? 8 : 4.5;
-            parts.push(`<ellipse cx="${topX - lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" transform="rotate(-32 ${topX - lw * 0.55} ${ly + 3})"/>`);
-            parts.push(`<ellipse cx="${topX + lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" transform="rotate(32 ${topX + lw * 0.55} ${ly + 3})"/>`);
-            if (L.stage >= 5) {
-              parts.push(`<ellipse cx="${topX - 5}" cy="${ly + 14}" rx="${lw * 0.7}" ry="${lh * 0.7}" fill="${L.leaf}" transform="rotate(-18 ${topX - 5} ${ly + 14})"/>`);
-              parts.push(`<ellipse cx="${topX + 5}" cy="${ly + 14}" rx="${lw * 0.7}" ry="${lh * 0.7}" fill="${L.leaf}" transform="rotate(18 ${topX + 5} ${ly + 14})"/>`);
+          const leafT = L.leafT || 0;
+          if (leafT > 0.08) {
+            const lw = (L.light > 0.7 ? 11 : 6.5) * leafT;
+            const lh = (L.light > 0.7 ? 8 : 4.5) * leafT;
+            parts.push(`<ellipse cx="${topX - lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(-32 ${topX - lw * 0.55} ${ly + 3})"/>`);
+            parts.push(`<ellipse cx="${topX + lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(32 ${topX + lw * 0.55} ${ly + 3})"/>`);
+            if (leafT > 0.55) {
+              const t2 = (leafT - 0.55) / 0.45;
+              parts.push(`<ellipse cx="${topX - 5}" cy="${ly + 14}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(-18 ${topX - 5} ${ly + 14})"/>`);
+              parts.push(`<ellipse cx="${topX + 5}" cy="${ly + 14}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(18 ${topX + 5} ${ly + 14})"/>`);
             }
           } else {
-            parts.push(`<circle cx="${topX}" cy="${ly}" r="4.2" fill="#c9c15a"/>`);
+            const r = 2.2 + Math.min(L.h / 30, 2.2);
+            parts.push(`<circle cx="${topX}" cy="${ly}" r="${r}" fill="#c9c15a"/>`);
           }
         }
       }
@@ -486,7 +525,7 @@
       const zones = new Set(pots.map((p) => p.zone));
       if (pots.length < 2) return "再拖多一個器皿。一個放窗邊，一個放黑暗，先至公平。";
       if (!(zones.has("window") && zones.has("dark"))) return "⑤ 一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。";
-      if (state.day === 0) return "⑥ 準備好就撳「過一日」。大約 10 秒就過一日。冊要睇第 1、4、9 日。";
+      if (state.day === 0) return "⑥ 準備好就撳「過一日」。10 秒內會慢慢見到綠豆長高。冊要睇第 1、4、9 日。";
       if (state.day === 2) return "兩天後：窗邊嘅苗係咪向住陽光？同貼紙／窗口方向相同定相反？";
       if (state.day < 4) return `而家第 ${state.day} 日。繼續過日，重點觀察第 4 日同第 9 日。`;
       if (state.day < 9) return "窗邊嘅苗會向着陽光彎；黑暗嘅苗又黃又細長。撳「紀錄」對照。";
@@ -498,7 +537,7 @@
       $("dayNum").textContent = state.day;
       $("hint").textContent = hintText();
       $("passDay").disabled = state.passing || state.day >= MAX_DAY;
-      $("passDay").textContent = state.day >= MAX_DAY ? "已到第 20 日" : "過一日 ▶";
+      $("passDay").textContent = state.day >= MAX_DAY ? "已到第 20 日" : (state.passing ? "慢慢成長中…" : "過一日 ▶");
       document.querySelector('[data-tool="cup"]').classList.toggle("used", state.pots.length >= MAX_POTS);
 
       for (const slot of ["window", "dark", "table"]) {
@@ -531,20 +570,47 @@
       return el;
     }
 
-    function tickDay() {
-      for (const p of state.pots) {
-        if (p.beans > 0 && p.moisture > 0.25) {
-          p.age += 1;
-          p.dryStreak = 0;
-          p.health = Math.min(1, p.health + 0.04);
-        } else if (p.age > 0) {
-          p.dryStreak += 1;
-          p.health -= 0.2;
-        }
-        p.moisture = Math.max(0, p.moisture - (p.cotton ? 0.12 : 1.05));
-        if (p.health < 0) p.health = 0;
+    function nextPotState(p) {
+      const n = Object.assign({}, p);
+      if (n.beans > 0 && n.moisture > 0.25) {
+        n.age += 1;
+        n.dryStreak = 0;
+        n.health = Math.min(1, n.health + 0.04);
+      } else if (n.age > 0) {
+        n.dryStreak += 1;
+        n.health -= 0.2;
       }
+      n.moisture = Math.max(0, n.moisture - (n.cotton ? 0.12 : 1.05));
+      if (n.health < 0) n.health = 0;
+      return n;
+    }
+
+    function tickDay() {
+      state.pots = state.pots.map(nextPotState);
       state.day += 1;
+    }
+
+    function paintSprouts(t) {
+      for (const p of state.pots) {
+        if (!p._fromLook || !p._toLook) continue;
+        const L = lerpLook(p._fromLook, p._toLook, t);
+        const el = document.querySelector(`.pot[data-id="${p.id}"] .sprouts`);
+        if (el) el.innerHTML = sproutSVG(L);
+        const tag = document.querySelector(`.pot[data-id="${p.id}"] .pot-tag`);
+        if (tag && t > 0.85) {
+          const place = p.zone === "window" ? "窗邊" : p.zone === "dark" ? "黑暗" : "枱";
+          tag.textContent = `${place} · ${p.beans ? colorWord(p._toLook) : "空杯"}`;
+        }
+        const water = document.querySelector(`.pot[data-id="${p.id}"] .water-layer`);
+        if (water) {
+          const m = lerp(p._fromLook.moisture, p._toLook.moisture, ease(t));
+          water.style.height = Math.min(42, m * 14) + "%";
+        }
+      }
+      const sun = document.querySelector("#z-window .sun");
+      if (sun) sun.style.transform = `translate(${t * 36}px, ${Math.sin(t * Math.PI) * -18}px)`;
+      const rays = document.querySelector("#z-window .rays");
+      if (rays) rays.style.opacity = String(0.55 + 0.45 * Math.sin(t * Math.PI));
     }
 
     function findDrop(x, y) {
@@ -665,24 +731,38 @@
       if (state.pots.length === 0) { toast("先種好盆栽再過日呀。"); return; }
       state.passing = true;
       $("passDay").disabled = true;
+      $("passDay").textContent = "慢慢成長中…";
       $("dayFx").classList.add("show");
-      $("fxTitle").textContent = `太陽移動緊…第 ${state.day} 日 → 第 ${state.day + 1} 日`;
+      $("fxTitle").textContent = `第 ${state.day} 日 → 第 ${state.day + 1} 日　綠豆慢慢長緊`;
       $("fxBar").style.width = "0%";
+      $("hint").textContent = "睇實盆栽：綠豆會喺呢 10 秒入面慢慢長高。";
+      for (const p of state.pots) {
+        p._fromLook = look(p);
+        p._toLook = look(nextPotState(p));
+      }
+      render();
+      paintSprouts(0);
       beep("day");
       const t0 = performance.now();
       function frame(now) {
         const p = Math.min(1, (now - t0) / DAY_MS);
         $("fxBar").style.width = p * 100 + "%";
         const sun = $("sunMove");
-        sun.style.transform = `translateX(${(p - 0.5) * 120}px)`;
-        const overlay = $("dayFx");
-        overlay.style.background = `rgba(${20 + p * 40}, ${24 + p * 10}, ${50 - p * 20}, ${0.22 + p * 0.15})`;
+        if (sun) sun.style.transform = `translateX(${(p - 0.5) * 80}px)`;
+        paintSprouts(p);
         if (p < 1) requestAnimationFrame(frame);
         else {
           tickDay();
+          for (const pot of state.pots) {
+            delete pot._fromLook;
+            delete pot._toLook;
+          }
+          const sunEl = document.querySelector("#z-window .sun");
+          if (sunEl) sunEl.style.transform = "";
+          const rays = document.querySelector("#z-window .rays");
+          if (rays) rays.style.opacity = "";
           state.passing = false;
           $("dayFx").classList.remove("show");
-          overlay.style.background = "";
           render();
           if ([1, 2, 4, 9, 20].includes(state.day)) openLog();
         }
