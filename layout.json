@@ -1,0 +1,35 @@
+{
+  "subjects": [
+    "p2-sci",
+    "p4-sci",
+    "kits",
+    "p4-math",
+    "p4-pe",
+    "p4-ict",
+    "p5-ict",
+    "lang",
+    "bett"
+  ],
+  "items": {
+    "p2-sci": [
+      "jump",
+      "p2jump",
+      "mungbean"
+    ],
+    "p4-sci": [
+      "engineer",
+      "drift"
+    ],
+    "kits": [
+      "kits"
+    ],
+    "p4-math": [
+      "times"
+    ],
+    "lang": [
+      "jp",
+      "fr",
+      "ko"
+    ]
+  }
+}

@@ -36,10 +36,25 @@
       text-align: center;
       padding: max(14px, env(safe-area-inset-top)) 16px 16px;
       box-shadow: 0 8px 0 var(--green-dark);
+      position: relative;
     }
     header .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--yellow); }
     header h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
     header p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; opacity: .95; }
+    .btn-edit {
+      position: absolute;
+      right: 10px;
+      top: max(10px, env(safe-area-inset-top));
+      background: var(--yellow);
+      color: var(--green-dark);
+      border: 3px solid #c9a227;
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 14px;
+      box-shadow: 0 3px 0 #a7861c;
+    }
+    .btn-edit.on { background: #1b5e20; color: #fff; border-color: #0f3d14; box-shadow: 0 3px 0 #0a2a0e; }
+    body.editing header { box-shadow: 0 8px 0 #c9a227; }
     .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
     .chars {
       display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px;
@@ -72,9 +87,48 @@
       min-height: 44px;
     }
     a.card:active, .item:active { transform: translateY(2px); box-shadow: 0 4px 0 #8fbf92; }
-    a.card .emoji { font-size: 42px; line-height: 1; }
-    a.card h2, .item h2 { margin: 8px 0 4px; font-size: 22px; color: var(--green-dark); }
-    a.card p, .item p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; line-height: 1.45; }
+    a.card .emoji, .card .emoji { font-size: 42px; line-height: 1; }
+    a.card h2, .card h2, .item h2 { margin: 8px 0 4px; font-size: 22px; color: var(--green-dark); }
+    a.card p, .card p, .item p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; line-height: 1.45; }
+    .card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--card);
+      border: 5px solid #c5dcc6;
+      border-radius: 24px;
+      padding: 16px 16px 14px;
+      box-shadow: 0 6px 0 #8fbf92;
+      min-height: 44px;
+    }
+    body.editing .card { cursor: grab; }
+    body.editing .card.dragging { opacity: .45; cursor: grabbing; }
+    body.editing .card.drag-over { border-color: var(--green); outline: 4px dashed var(--yellow); }
+    .move-btns { display: none; gap: 8px; margin-top: 10px; }
+    body.editing .move-btns { display: flex; }
+    .move-btns button {
+      flex: 1;
+      background: var(--green);
+      color: #fff;
+      min-height: 40px;
+      font-size: 14px;
+    }
+    .move-btns button:disabled { opacity: .4; }
+    .toast {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      background: #1b5e20;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-weight: 800;
+      text-align: center;
+      z-index: 40;
+    }
+    @media (max-width: 560px) {
+      header { padding-right: 96px; text-align: left; }
+      .btn-edit { font-size: 13px; padding: 8px 10px; }
+    }
     .empty {
       background: var(--card);
       border: 5px dashed #9ccc65;
@@ -126,6 +180,7 @@
     <p class="school">佛教志蓮小學</p>
     <h1>張老師教學資源</h1>
     <p>供學生及家長使用。開始遊戲或測驗前，請填寫班別及學號，無須填寫姓名。</p>
+    <button class="btn-edit" id="btn-edit" type="button">編輯排版</button>
   </header>
   <main class="wrap" id="app"></main>
   <footer>
@@ -269,6 +324,218 @@
 
     function $(id) { return document.getElementById(id); }
 
+    const GH_REPO = "CheungSirEdu/education";
+    const GH_RAW = "https://raw.githubusercontent.com/CheungSirEdu/education/main/";
+    let editing = false;
+    let ghToken = sessionStorage.getItem("edu-gh") || "";
+    let layout = {
+      subjects: SUBJECTS.map(s => s.id),
+      items: {}
+    };
+    let dragId = null;
+
+    function toast(msg) {
+      document.querySelectorAll(".toast").forEach(n => n.remove());
+      const n = document.createElement("div");
+      n.className = "toast";
+      n.textContent = msg;
+      document.body.append(n);
+      setTimeout(() => n.remove(), 2800);
+    }
+
+    function bytesToB64(bytes) {
+      let s = "";
+      const arr = bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(bytes);
+      const chunk = 0x8000;
+      for (let i = 0; i < arr.length; i += chunk) {
+        s += String.fromCharCode.apply(null, arr.subarray(i, i + chunk));
+      }
+      return btoa(s);
+    }
+
+    async function unlockEdit() {
+      if (ghToken) return;
+      const res = await fetch("gate.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("未能開啟編輯");
+      const gate = await res.json();
+      const salt = Uint8Array.from(atob(gate.salt), c => c.charCodeAt(0));
+      const enc = Uint8Array.from(atob(gate.data), c => c.charCodeAt(0));
+      const key = await crypto.subtle.importKey("raw", new TextEncoder().encode("chilin"), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: gate.iter, hash: "SHA-256" }, key, 256);
+      const k = new Uint8Array(bits);
+      const raw = new Uint8Array(enc.length);
+      for (let i = 0; i < enc.length; i++) raw[i] = enc[i] ^ k[i % k.length];
+      const token = new TextDecoder().decode(raw).replace(/\0+$/g, "").trim();
+      if (!/^gh[pous]_/.test(token)) throw new Error("未能開啟編輯");
+      ghToken = token;
+      sessionStorage.setItem("edu-gh", token);
+    }
+
+    async function ghGet(path) {
+      const res = await fetch("https://api.github.com/repos/" + GH_REPO + "/contents/" + path, {
+        headers: { Authorization: "Bearer " + ghToken, Accept: "application/vnd.github+json" }
+      });
+      if (res.status === 404) return null;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "讀取失敗");
+      return data;
+    }
+
+    async function saveLayout() {
+      localStorage.setItem("edu-layout", JSON.stringify(layout));
+      if (!ghToken) {
+        try { await unlockEdit(); } catch (_) { return; }
+      }
+      const text = JSON.stringify(layout, null, 2) + "\n";
+      const existing = await ghGet("layout.json");
+      const res = await fetch("https://api.github.com/repos/" + GH_REPO + "/contents/layout.json", {
+        method: "PUT",
+        headers: {
+          Authorization: "Bearer " + ghToken,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "更新教學資源排版",
+          content: bytesToB64(text),
+          sha: existing && existing.sha,
+          branch: "main"
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "儲存失敗");
+    }
+
+    function applyLayout(data) {
+      if (!data || typeof data !== "object") return;
+      if (Array.isArray(data.subjects)) layout.subjects = data.subjects.slice();
+      if (data.items && typeof data.items === "object") layout.items = data.items;
+    }
+
+    function orderedSubjects() {
+      const byId = Object.fromEntries(SUBJECTS.map(s => [s.id, s]));
+      const seen = new Set();
+      const out = [];
+      for (const id of layout.subjects || []) {
+        if (byId[id] && !seen.has(id)) { out.push(byId[id]); seen.add(id); }
+      }
+      for (const s of SUBJECTS) if (!seen.has(s.id)) out.push(s);
+      return out;
+    }
+
+    function orderedItems(subjectId) {
+      const list = ITEMS.filter(x => x.subject === subjectId);
+      const byId = Object.fromEntries(list.map(it => [it.id, it]));
+      const order = (layout.items && layout.items[subjectId]) || [];
+      const seen = new Set();
+      const out = [];
+      for (const id of order) {
+        if (byId[id] && !seen.has(id)) { out.push(byId[id]); seen.add(id); }
+      }
+      for (const it of list) if (!seen.has(it.id)) out.push(it);
+      return out;
+    }
+
+    function moveInList(arr, fromId, toId) {
+      const a = arr.indexOf(fromId);
+      const b = arr.indexOf(toId);
+      if (a < 0 || b < 0 || a === b) return arr;
+      const next = arr.slice();
+      const [item] = next.splice(a, 1);
+      next.splice(b, 0, item);
+      return next;
+    }
+
+    function subjectIds() { return orderedSubjects().map(s => s.id); }
+    function itemIds(subjectId) { return orderedItems(subjectId).map(it => it.id); }
+
+    async function shiftList(kind, subjectId, id, dir) {
+      if (kind === "subjects") {
+        const ids = subjectIds();
+        const i = ids.indexOf(id);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= ids.length) return;
+        const next = ids.slice();
+        const [x] = next.splice(i, 1);
+        next.splice(j, 0, x);
+        layout.subjects = next;
+      } else {
+        const ids = itemIds(subjectId);
+        const i = ids.indexOf(id);
+        const j = i + dir;
+        if (i < 0 || j < 0 || j >= ids.length) return;
+        const next = ids.slice();
+        const [x] = next.splice(i, 1);
+        next.splice(j, 0, x);
+        layout.items = Object.assign({}, layout.items, { [subjectId]: next });
+      }
+      route();
+      try {
+        await saveLayout();
+        toast("排版已更新");
+      } catch (err) {
+        toast(err.message);
+      }
+    }
+
+    async function dropList(kind, subjectId, fromId, toId) {
+      if (!fromId || fromId === toId) return;
+      if (kind === "subjects") layout.subjects = moveInList(subjectIds(), fromId, toId);
+      else layout.items = Object.assign({}, layout.items, { [subjectId]: moveInList(itemIds(subjectId), fromId, toId) });
+      route();
+      try {
+        await saveLayout();
+        toast("排版已更新");
+      } catch (err) {
+        toast(err.message);
+      }
+    }
+
+    function bindGrid(kind, subjectId) {
+      const grid = document.querySelector(".grid");
+      if (!grid) return;
+      grid.querySelectorAll("[data-id]").forEach(card => {
+        const id = card.getAttribute("data-id");
+        card.querySelectorAll("[data-move]").forEach(btn => {
+          btn.addEventListener("click", e => {
+            e.preventDefault();
+            e.stopPropagation();
+            shiftList(kind, subjectId, id, Number(btn.getAttribute("data-move")));
+          });
+        });
+        if (!editing) return;
+        card.addEventListener("dragstart", e => {
+          dragId = id;
+          card.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+        });
+        card.addEventListener("dragend", () => {
+          dragId = null;
+          card.classList.remove("dragging");
+        });
+        card.addEventListener("dragover", e => {
+          e.preventDefault();
+          card.classList.add("drag-over");
+        });
+        card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+        card.addEventListener("drop", e => {
+          e.preventDefault();
+          card.classList.remove("drag-over");
+          dropList(kind, subjectId, dragId, id);
+        });
+      });
+    }
+
+    function moveButtons(index, total) {
+      if (!editing) return "";
+      return `
+        <div class="move-btns">
+          <button type="button" data-move="-1" ${index === 0 ? "disabled" : ""}>上移</button>
+          <button type="button" data-move="1" ${index === total - 1 ? "disabled" : ""}>下移</button>
+        </div>
+      `;
+    }
+
     function route() {
       const hash = (location.hash || "#/").replace(/^#/, "");
       const parts = hash.split("/").filter(Boolean);
@@ -282,14 +549,24 @@
 
     function renderHome() {
       document.title = "佛教志蓮小學　張老師教學資源";
+      const subjects = orderedSubjects();
       $("app").innerHTML = `
         <div class="chars">
           <img src="assets/boy.png" alt="小志">
           <img src="assets/girl.png" alt="小蓮">
         </div>
-        <p class="note">請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結、二維碼及成績紀錄。</p>
+        <p class="note">${editing
+          ? "編輯排版中：拖曳卡片，或撳「上移／下移」。左上角係第一格。改動會儲存，所有裝置都會見到新次序。"
+          : "請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結、二維碼及成績紀錄。"}</p>
         <div class="grid">
-          ${SUBJECTS.map(s => `
+          ${subjects.map((s, i) => editing ? `
+            <div class="card" data-id="${s.id}" draggable="true">
+              <div class="emoji">${s.emoji}</div>
+              <h2>${s.title}</h2>
+              <p>${s.blurb}</p>
+              ${moveButtons(i, subjects.length)}
+            </div>
+          ` : `
             <a class="card" href="${s.href || `#/s/${s.id}`}">
               <div class="emoji">${s.emoji}</div>
               <h2>${s.title}</h2>
@@ -298,6 +575,7 @@
           `).join("")}
         </div>
       `;
+      bindGrid("subjects");
     }
 
     function itemBasics(it) {
@@ -328,16 +606,25 @@
     function renderSubject(id) {
       const s = SUBJECTS.find(x => x.id === id);
       if (!s) return renderHome();
-      if (s.href) { location.replace(s.href); return; }
-      const items = ITEMS.filter(x => x.subject === id);
+      if (s.href && !editing) { location.replace(s.href); return; }
+      const items = orderedItems(id);
       document.title = s.title + "　張老師教學資源";
       $("app").innerHTML = `
         <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
         <h3 class="sec">${s.emoji} ${s.title}</h3>
         ${items.length ? `
-          <p class="note">${items.some(it => it.noScore) ? "撳入去可見到連結及二維碼。" : "請選擇遊戲。撳入去先見到連結、二維碼同成績說明。"}</p>
+          <p class="note">${editing
+            ? "編輯排版中：拖曳或撳上移／下移，以調較本頁次序。"
+            : (items.some(it => it.noScore) ? "撳入去可見到連結及二維碼。" : "請選擇遊戲。撳入去先見到連結、二維碼同成績說明。")}</p>
           <div class="grid">
-            ${items.map(it => `
+            ${items.map((it, i) => editing ? `
+              <div class="card" data-id="${it.id}" draggable="true">
+                <div class="emoji">${it.emoji || "🎮"}</div>
+                <h2>${it.title}</h2>
+                <p>${it.blurb || "撳入去遊玩"}</p>
+                ${moveButtons(i, items.length)}
+              </div>
+            ` : `
               <a class="card" href="#/i/${it.id}">
                 <div class="emoji">${it.emoji || "🎮"}</div>
                 <h2>${it.title}</h2>
@@ -347,6 +634,7 @@
           </div>
         ` : `<div class="empty">此部分教材即將推出。</div>`}
       `;
+      bindGrid("items", id);
     }
 
     function renderItem(id) {
@@ -363,8 +651,42 @@
       `;
     }
 
+    const btnEdit = document.getElementById("btn-edit");
+    btnEdit.addEventListener("click", async () => {
+      if (editing) {
+        editing = false;
+        document.body.classList.remove("editing");
+        btnEdit.textContent = "編輯排版";
+        btnEdit.classList.remove("on");
+        route();
+        return;
+      }
+      try {
+        await unlockEdit();
+      } catch (err) {
+        toast(err.message || "未能開啟編輯");
+        return;
+      }
+      editing = true;
+      document.body.classList.add("editing");
+      btnEdit.textContent = "完成排版";
+      btnEdit.classList.add("on");
+      route();
+    });
+
     window.addEventListener("hashchange", route);
-    route();
+
+    (async function boot() {
+      try {
+        const local = localStorage.getItem("edu-layout");
+        if (local) applyLayout(JSON.parse(local));
+      } catch (_) {}
+      try {
+        const res = await fetch(GH_RAW + "layout.json?t=" + Date.now(), { cache: "no-store" });
+        if (res.ok) applyLayout(await res.json());
+      } catch (_) {}
+      route();
+    })();
   </script>
 </body>
 </html>
