@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="種綠豆小實驗" />
+  <meta name="apple-mobile-web-app-title" content="動手種植物" />
   <meta name="theme-color" content="#2f7d32" />
   <meta name="format-detection" content="telephone=no" />
-  <title>種綠豆小實驗</title>
+  <title>動手種植物　綠豆幼苗會對光的方向做出反應嗎？</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
   <style>
@@ -280,8 +280,8 @@
 <body>
   <section id="start" class="panel">
     <div class="card">
-      <h1>種綠豆小實驗</h1>
-      <p class="sub">二年級科學　動手種植物</p>
+      <h1>綠豆幼苗會對光的方向做出反應嗎？</h1>
+      <p class="sub">二年級科學　第 3 課 動手種植物　活動 5</p>
       <div class="chars">
         <img src="assets/boy.png" alt="小志" draggable="false">
         <img src="assets/girl.png" alt="小蓮" draggable="false">
@@ -292,7 +292,7 @@
         <div class="step"><b>3</b><img src="assets/water.png" alt="" draggable="false"><span>拖動水杯，加啲水落去。</span></div>
         <div class="step"><b>4</b><img src="assets/cotton.png" alt="" draggable="false"><span>拖動棉花，扮泥土俾綠豆生長。</span></div>
         <div class="step"><b>5</b><span style="grid-column:2/-1">一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。</span></div>
-        <div class="step"><b>6</b><span style="grid-column:2/-1">撳「過一日」，大約 10 秒就過一日。觀察第 5 日至第 20 日。</span></div>
+        <div class="step"><b>6</b><span style="grid-column:2/-1">撳「過一日」，大約 10 秒就過一日。重點睇第 1、2、4、9 日（冊入面嘅觀察日）。</span></div>
       </div>
       <button class="primary" id="startBtn">開始種植</button>
     </div>
@@ -453,7 +453,7 @@
         for (let i = 0; i < n; i++) {
           const x = 22 + i * 22;
           const hh = L.h * (0.82 + i * 0.09);
-          const lean = L.light < 0.25 ? (i - 1) * 7 : 0;
+          const lean = L.light > 0.7 && L.age >= 2 ? 12 + Math.min(L.age, 12) : (L.light < 0.25 ? (i - 1) * 4 : 0);
           const topX = x + lean + (L.wilt ? 14 : 0);
           const d = L.wilt
             ? `M${x} ${boxH - 8} C ${x + 10} ${boxH - 8 - hh * 0.45}, ${topX} ${boxH - 8 - hh * 0.7}, ${topX + 4} ${boxH - 8 - hh}`
@@ -486,10 +486,11 @@
       const zones = new Set(pots.map((p) => p.zone));
       if (pots.length < 2) return "再拖多一個器皿。一個放窗邊，一個放黑暗，先至公平。";
       if (!(zones.has("window") && zones.has("dark"))) return "⑤ 一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。";
-      if (state.day === 0) return "⑥ 準備好就撳「過一日」。大約 10 秒就過一日。";
-      if (state.day < 5) return `而家第 ${state.day} 日。繼續過日，觀察第 5 日至第 20 日嘅變化。`;
-      if (state.day < 10) return "兩邊都出芽未？窗邊同黑暗有冇分別？可以撳「紀錄」對照。";
-      if (state.day < 20) return "窗邊嘅苗較綠較壯，黑暗嘅苗又黃又細長。可以觀察到第 20 日。";
+      if (state.day === 0) return "⑥ 準備好就撳「過一日」。大約 10 秒就過一日。冊要睇第 1、4、9 日。";
+      if (state.day === 2) return "兩天後：窗邊嘅苗係咪向住陽光？同貼紙／窗口方向相同定相反？";
+      if (state.day < 4) return `而家第 ${state.day} 日。繼續過日，重點觀察第 4 日同第 9 日。`;
+      if (state.day < 9) return "窗邊嘅苗會向着陽光彎；黑暗嘅苗又黃又細長。撳「紀錄」對照。";
+      if (state.day < 20) return "綠豆幼苗會對光的方向做出反應：向着陽光生長。可以觀察到第 20 日。";
       return "第 20 日到喇。撳「紀錄」睇你發現咗咩。";
     }
 
@@ -683,11 +684,32 @@
           $("dayFx").classList.remove("show");
           overlay.style.background = "";
           render();
-          if (state.day === 5 || state.day === 10 || state.day === 20) openLog();
+          if ([1, 2, 4, 9, 20].includes(state.day)) openLog();
         }
       }
       requestAnimationFrame(frame);
     };
+
+    function leafWord(L) {
+      if (L.stage < 4) return "未見真葉";
+      if (L.wilt) return "葉垂低";
+      if (L.light > 0.7) return L.age >= 7 ? "葉多、綠色" : "開始出葉";
+      if (L.light < 0.2) return "葉少、發黃";
+      return "有少少葉";
+    }
+    function rootWord(L) {
+      if (L.stage < 2) return "未見根";
+      if (L.wilt) return "根乾弱";
+      if (L.light > 0.7) return "根較粗、向下";
+      if (L.light < 0.2) return "根幼白";
+      return "有白根";
+    }
+    function dirWord(p, L) {
+      if (L.stage < 3) return "—";
+      if (p.zone === "window") return "向着陽光";
+      if (p.zone === "dark") return "冇固定方向";
+      return "向上";
+    }
 
     function openLog() {
       const rows = state.pots.map((p) => {
@@ -695,40 +717,39 @@
         const place = p.zone === "window" ? "窗邊（有陽光）" : p.zone === "dark" ? "黑暗" : "工作枱";
         return `<tr>
           <td>${place}</td>
-          <td>${p.cotton ? "有" : "冇"}</td>
-          <td>${p.beans ? "有" : "冇"}</td>
-          <td>${p.moisture > 0.4 ? "仲濕" : "乾咗"}</td>
           <td>${heightWord(L)}</td>
-          <td>${colorWord(L)}</td>
+          <td>${leafWord(L)}</td>
+          <td>${rootWord(L)}</td>
+          <td>${dirWord(p, L)}</td>
         </tr>`;
-      }).join("") || `<tr><td colspan="6">未有盆栽</td></tr>`;
+      }).join("") || `<tr><td colspan="5">未有盆栽</td></tr>`;
 
-      const hasWin = state.pots.some((p) => p.zone === "window" && p.age >= 5);
-      const hasDark = state.pots.some((p) => p.zone === "dark" && p.age >= 5);
+      const hasWin = state.pots.some((p) => p.zone === "window" && p.age >= 2);
+      const hasDark = state.pots.some((p) => p.zone === "dark" && p.age >= 2);
       let conclude = "";
-      if (state.day >= 5 && hasWin && hasDark) {
+      if (state.day >= 2 && hasWin && hasDark) {
         conclude = `
-          <p class="ok"><strong>我哋發現：</strong></p>
-          <p>兩邊嘅綠豆都可以發芽，所以<strong>發芽唔一定要陽光</strong>。</p>
-          <p>不過窗邊嘅綠豆苗葉較綠、莖較粗壯；黑暗嘅綠豆苗又黃又細長。</p>
-          <p class="ok">綠豆苗要健康生長，就需要陽光同水。</p>`;
-      } else if (state.day >= 5 && state.pots.every((p) => p.age === 0)) {
+          <p class="ok"><strong>求結果：</strong></p>
+          <p>綠豆幼苗的生長方向和窗口／陽光方向<strong>相同</strong>。</p>
+          <p>綠豆幼苗會<strong>向着</strong>陽光生長。</p>
+          <p>所以綠豆幼苗<strong>會對光的方向做出反應</strong>。</p>`;
+      } else if (state.day >= 2 && state.pots.every((p) => p.age === 0)) {
         conclude = `<p class="warn">綠豆未發芽。試吓檢查：有冇棉花、綠豆同水？</p>`;
-      } else if (state.day >= 5 && !(hasWin && hasDark)) {
-        conclude = `<p class="warn">如果要比較陽光嘅影響，兩個盆栽都要有棉花、綠豆同水，而且一個窗邊、一個黑暗。</p>`;
+      } else if (state.day >= 2 && !(hasWin && hasDark)) {
+        conclude = `<p class="warn">要比較光的方向，兩個盆栽都要有棉花、綠豆同水，而且一個窗邊、一個黑暗。</p>`;
       } else {
-        conclude = `<p>過到第 5 日之後，對照會更加明顯。可以繼續撳「過一日」至第 20 日。</p>`;
+        conclude = `<p>冊入面要記第 1、4、9 日嘅莖高、葉同根。兩天後可以睇生長方向。</p>`;
       }
 
       $("logSheet").innerHTML = `
-        <h2>觀察紀錄　第 ${state.day} 日</h2>
+        <h2>觀察紀錄　栽種的第 ${state.day} 天</h2>
         <table>
-          <tr><th>位置</th><th>棉花</th><th>綠豆</th><th>水</th><th>高度</th><th>樣子</th></tr>
+          <tr><th>位置</th><th>莖的高度</th><th>葉的數量</th><th>根的形態</th><th>生長方向</th></tr>
           ${rows}
         </table>
         ${conclude}
         <button class="primary" id="closeLog">繼續觀察</button>
-        ${state.day >= 5 ? `<button class="primary gold" id="endLog">我發現咗</button>` : ""}
+        ${state.day >= 2 ? `<button class="primary gold" id="endLog">我發現咗</button>` : ""}
         <button class="ghost-btn" id="backHome">返回說明</button>
       `;
       $("logModal").classList.add("show");
@@ -737,10 +758,10 @@
       if (end) end.onclick = () => {
         $("logSheet").innerHTML = `
           <h2>實驗結論</h2>
-          <p>棉花可以保持水份，好似泥土咁幫綠豆發芽。</p>
-          <p>綠豆<strong>發芽</strong>需要水（同空氣、適當温度），唔一定要陽光。</p>
-          <p>綠豆苗<strong>生長</strong>需要陽光：有陽光先至葉綠、莖粗、長得健康。</p>
-          <p>冇陽光會長得又黃又細長；冇水就會乾同發蔫。</p>
+          <p>探究問題：綠豆幼苗會對光的方向做出反應嗎？</p>
+          <p>窗邊（有陽光）嘅幼苗會<strong>向着陽光</strong>彎；黑暗嘅幼苗又黃又細長，冇固定方向。</p>
+          <p class="ok">綠豆幼苗<strong>會</strong>對光的方向做出反應，向着陽光生長。</p>
+          <p>發芽需要水同棉花保濕；健康生長仲需要陽光。</p>
           <button class="primary" id="again">再種一次</button>
           <button class="ghost-btn" id="keep">返回實驗</button>
         `;
