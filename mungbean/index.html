@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="種綠豆小實驗" />
+  <meta name="theme-color" content="#2f7d32" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>種綠豆小實驗</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #2f7d32;
+      --green-dark: #1b5e20;
+      --yellow: #f4d35e;
+      --ink: #1d2b1f;
+      --sky: #8fd3f0;
+      --card: #fffef6;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink); background: #7ec8e3;
+      touch-action: manipulation; user-select: none;
+      overscroll-behavior: none;
+    }
+    button { font: inherit; }
+    .hidden { display: none !important; }
+
+    /* ===== start ===== */
+    .panel {
+      position: fixed; inset: 0; z-index: 20;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      background: linear-gradient(#8fd3f0, #c8f0c0);
+      padding: max(12px, var(--safe-t)) 12px max(16px, var(--safe-b));
+    }
+    .card {
+      background: var(--card); border: 6px solid var(--green); border-radius: 28px;
+      padding: 16px 16px 18px; max-width: 560px; width: 100%;
+      margin: 10px auto; box-shadow: 0 10px 0 var(--green-dark);
+    }
+    h1 { margin: 0 0 4px; font-size: clamp(22px, 6vw, 30px); text-align: center; color: var(--green-dark); }
+    .sub { text-align: center; margin: 0 0 12px; font-weight: 700; color: #3d5c40; font-size: 15px; }
+    .chars { display: flex; gap: 16px; justify-content: center; margin: 4px 0 12px; }
+    .chars img { height: 92px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .steps { display: grid; gap: 8px; margin: 0 0 14px; }
+    .step {
+      display: grid; grid-template-columns: 42px 52px 1fr; gap: 8px; align-items: center;
+      background: #fff; border: 3px solid #c5dcc6; border-radius: 16px; padding: 8px 10px;
+    }
+    .step b {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--green); color: #fff;
+      display: grid; place-items: center; font-size: 16px;
+    }
+    .step img { width: 48px; height: 48px; object-fit: contain; }
+    .step span { font-size: 14px; font-weight: 700; line-height: 1.35; }
+    .primary {
+      width: 100%; border: 0; background: var(--green); color: #fff; font-weight: 900;
+      font-size: 22px; padding: 14px; border-radius: 16px; cursor: pointer;
+      box-shadow: 0 6px 0 var(--green-dark);
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--green-dark); }
+    .primary.gold { background: #ef6c00; box-shadow: 0 6px 0 #e65100; margin-top: 8px; }
+    .ghost-btn {
+      width: 100%; margin-top: 8px; border: 4px solid var(--green); background: #fff;
+      color: var(--green-dark); font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
+    }
+
+    /* ===== game chrome ===== */
+    #game {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      padding: max(6px, var(--safe-t)) 8px max(8px, var(--safe-b));
+      background: #6ec1e0;
+    }
+    .hud {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .day-chip {
+      background: #fffef6; border: 4px solid var(--green); border-radius: 16px;
+      padding: 6px 12px; font-weight: 900; font-size: clamp(16px, 4.2vw, 20px);
+      color: var(--green-dark); min-width: 96px; text-align: center;
+    }
+    .hud-btn {
+      border: 0; border-radius: 14px; font-weight: 900; cursor: pointer;
+      min-height: 48px; padding: 8px 12px; color: #fff;
+    }
+    #passDay {
+      flex: 1; background: #ef6c00; box-shadow: 0 4px 0 #e65100; font-size: clamp(16px, 4vw, 20px);
+    }
+    #passDay:disabled { background: #b0a090; box-shadow: none; }
+    #logBtn { background: #1565c0; box-shadow: 0 4px 0 #0d47a1; font-size: 14px; }
+    #resetBtn { background: #6d4c41; box-shadow: 0 4px 0 #4e342e; font-size: 14px; }
+    #hint {
+      margin: 6px 0; background: #fffef6; border: 3px solid var(--yellow); border-radius: 14px;
+      padding: 6px 10px; font-weight: 700; font-size: 14px; line-height: 1.4;
+      min-height: 40px; flex-shrink: 0;
+    }
+
+    /* ===== scene ===== */
+    #scene {
+      flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .zone {
+      position: relative; border-radius: 20px; overflow: hidden;
+      border: 4px solid rgba(255,255,255,.55); min-height: 0;
+      display: flex; flex-direction: column;
+    }
+    .zone.hot { outline: 4px solid var(--yellow); outline-offset: -4px; }
+    .zone-label {
+      position: relative; z-index: 3; text-align: center; font-weight: 900; font-size: 13px;
+      padding: 4px 6px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
+    .pots-row {
+      position: relative; z-index: 4; flex: 1; display: flex; justify-content: center;
+      align-items: flex-end; gap: 8px; padding: 0 6px 8px; min-height: 0;
+    }
+    #z-window { background: linear-gradient(#7ec8f0 0%, #b8e4fb 46%, #d7c4a0 46%, #d7c4a0 51%, #efe6d6 51%, #efe6d6 100%); }
+    #z-window .zone-label { background: rgba(239,108,0,.88); }
+    .sun {
+      position: absolute; top: 10%; right: 10%; width: 44px; height: 44px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff59d, #ffb300); z-index: 1;
+      box-shadow: 0 0 24px 8px rgba(255,213,79,.7);
+    }
+    .rays {
+      position: absolute; inset: 0 0 45% 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(105deg, transparent 0 18px, rgba(255,255,180,.18) 18px 28px);
+    }
+    .window-frame {
+      position: absolute; left: 8%; right: 8%; top: 6%; height: 38%;
+      border: 5px solid #fff; border-bottom-width: 10px; border-radius: 6px 6px 0 0;
+      z-index: 2; pointer-events: none; box-shadow: inset 0 0 0 3px #90caf9;
+    }
+    #z-dark { background: linear-gradient(#1a1520 0%, #2a2233 70%, #3e3428 70%, #2a231c 100%); }
+    #z-dark .zone-label { background: rgba(40,30,50,.9); }
+    .cupboard {
+      position: absolute; left: 6%; right: 6%; top: 10%; bottom: 8%;
+      border: 6px solid #4e342e; border-radius: 8px; z-index: 1;
+      background: linear-gradient(#1c1424, #2b2230);
+      box-shadow: inset 0 0 40px rgba(0,0,0,.65);
+    }
+    .shelf {
+      position: absolute; left: 4%; right: 4%; bottom: 22%; height: 8px;
+      background: #5d4037; z-index: 2; border-radius: 2px;
+    }
+
+    #table {
+      flex-shrink: 0; height: 92px; margin-top: 8px; border-radius: 18px;
+      background: linear-gradient(#d7b07a, #c49a62); border: 4px solid #8d6e4a;
+      display: flex; align-items: stretch; position: relative;
+    }
+    #table .zone-label {
+      position: absolute; top: 4px; left: 8px; color: #5d4037; text-shadow: none; font-size: 12px; padding: 0;
+    }
+    #table .pots-row { padding-bottom: 4px; }
+
+    /* ===== pots ===== */
+    .pot {
+      width: 92px; position: relative; touch-action: none; cursor: grab;
+      flex-shrink: 0;
+    }
+    .pot.hot { filter: drop-shadow(0 0 8px #ffd54f); }
+    .sprouts {
+      position: absolute; left: -10px; right: -10px; bottom: 52px; height: 170px;
+      pointer-events: none; z-index: 3; overflow: visible;
+    }
+    .sprouts svg { overflow: visible; }
+    .cup-body {
+      position: relative; z-index: 2; height: 78px;
+      background: linear-gradient(180deg, rgba(210,238,250,.35), rgba(180,220,240,.55));
+      border: 3px solid #2c3d4a; border-top-width: 4px;
+      border-radius: 6px 6px 16px 16px;
+      clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
+      overflow: hidden;
+    }
+    .water-layer {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+      background: linear-gradient(#81d4faaa, #29b6f6cc); transition: height .4s;
+    }
+    .cotton-layer {
+      position: absolute; left: 8%; right: 8%; bottom: 8px; height: 22px;
+      background: radial-gradient(circle at 30% 40%, #fff, #eceff1 70%);
+      border-radius: 40% 50% 30% 40%; opacity: 0; transition: opacity .25s;
+    }
+    .cotton-layer.on { opacity: 1; }
+    .bean-layer {
+      position: absolute; left: 14%; right: 14%; bottom: 18px; height: 18px;
+      display: flex; justify-content: center; gap: 3px; align-items: flex-end;
+    }
+    .bean-dot {
+      width: 10px; height: 12px; background: #6b8e23; border: 2px solid #3e4d18;
+      border-radius: 50%;
+    }
+    .bean-dot.swell { width: 13px; height: 15px; background: #7cb342; }
+    .pot-tag {
+      text-align: center; font-size: 11px; font-weight: 900; color: var(--green-dark);
+      background: #fffef6cc; border-radius: 8px; margin-top: 2px; padding: 1px 4px;
+    }
+
+    /* ===== tray ===== */
+    #tray {
+      flex-shrink: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      margin-top: 8px;
+    }
+    .tool {
+      touch-action: none; cursor: grab; border: 3px solid #c5dcc6; background: #fffef6;
+      border-radius: 16px; padding: 6px 4px 8px; display: flex; flex-direction: column;
+      align-items: center; gap: 2px; box-shadow: 0 4px 0 #8fbf92; min-height: 78px;
+    }
+    .tool img { width: 48px; height: 48px; object-fit: contain; pointer-events: none; }
+    .tool span { font-size: 12px; font-weight: 900; color: var(--green-dark); }
+    .tool.used { opacity: .45; }
+    .tool:active { transform: translateY(2px); box-shadow: 0 2px 0 #8fbf92; }
+
+    #ghost {
+      position: fixed; pointer-events: none; z-index: 50; width: 72px; height: 72px;
+      transform: translate(-50%, -60%); display: none; filter: drop-shadow(0 8px 8px rgba(0,0,0,.25));
+    }
+    #ghost img, #ghost .mini-pot { width: 100%; height: 100%; object-fit: contain; }
+
+    #dayFx {
+      position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center;
+      background: rgba(20,30,50,.28); flex-direction: column; gap: 12px;
+    }
+    #dayFx.show { display: flex; }
+    .clock {
+      width: min(70vw, 280px); background: #fffef6; border: 6px solid var(--green);
+      border-radius: 24px; padding: 16px; text-align: center; box-shadow: 0 10px 0 var(--green-dark);
+    }
+    .clock h2 { margin: 0 0 8px; font-size: 20px; color: var(--green-dark); }
+    .bar-out { height: 16px; background: #e8f5e9; border-radius: 99px; overflow: hidden; }
+    .bar-in { height: 100%; width: 0; background: linear-gradient(90deg, #ffb300, #ef6c00); }
+    .sun-move {
+      width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 8px;
+      background: radial-gradient(circle at 35% 35%, #fff59d, #ffb300);
+      box-shadow: 0 0 20px #ffd54f;
+    }
+
+    .modal {
+      position: fixed; inset: 0; z-index: 45; background: rgba(0,0,0,.4);
+      display: none; align-items: flex-end; justify-content: center;
+      padding: 12px 12px max(16px, var(--safe-b));
+    }
+    .modal.show { display: flex; }
+    .sheet {
+      background: var(--card); border: 6px solid var(--green); border-radius: 24px 24px 16px 16px;
+      padding: 16px; width: min(560px, 100%); max-height: 80dvh; overflow: auto;
+      box-shadow: 0 10px 0 var(--green-dark);
+    }
+    .sheet h2 { margin: 0 0 8px; color: var(--green-dark); font-size: 22px; text-align: center; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; font-weight: 700; margin: 8px 0 12px; }
+    th, td { border: 2px solid #c5dcc6; padding: 8px; text-align: center; }
+    th { background: #e8f5e9; }
+    .ok { color: #1b5e20; }
+    .warn { color: #e65100; }
+
+    @media (max-height: 680px) {
+      #table { height: 72px; }
+      .chars img { height: 72px; }
+      .tool img { width: 40px; height: 40px; }
+      .tool { min-height: 68px; }
+    }
+    @media (max-height: 560px) {
+      #table { display: none; }
+      .sprouts { height: 90px; }
+    }
+    @media (min-width: 820px) {
+      #game { max-width: 980px; left: 50%; transform: translateX(-50%); width: 100%; }
+      .pot { width: 110px; }
+      .cup-body { height: 92px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="start" class="panel">
+    <div class="card">
+      <h1>種綠豆小實驗</h1>
+      <p class="sub">二年級科學　動手種植物</p>
+      <div class="chars">
+        <img src="assets/boy.png" alt="小志" draggable="false">
+        <img src="assets/girl.png" alt="小蓮" draggable="false">
+      </div>
+      <div class="steps">
+        <div class="step"><b>1</b><img src="assets/beans.png" alt="" draggable="false"><span>拖動綠豆，放落盆栽度。</span></div>
+        <div class="step"><b>2</b><img src="assets/cup.png" alt="" draggable="false"><span>拖動器皿，種出兩個盆栽。</span></div>
+        <div class="step"><b>3</b><img src="assets/water.png" alt="" draggable="false"><span>拖動水杯，加啲水落去。</span></div>
+        <div class="step"><b>4</b><img src="assets/cotton.png" alt="" draggable="false"><span>拖動棉花，扮泥土俾綠豆生長。</span></div>
+        <div class="step"><b>5</b><span style="grid-column:2/-1">一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。</span></div>
+        <div class="step"><b>6</b><span style="grid-column:2/-1">撳「過一日」，大約 10 秒就過一日。觀察第 5 日至第 20 日。</span></div>
+      </div>
+      <button class="primary" id="startBtn">開始種植</button>
+    </div>
+  </section>
+
+  <section id="game" class="hidden">
+    <div class="hud">
+      <div class="day-chip">第 <span id="dayNum">0</span> 日</div>
+      <button class="hud-btn" id="passDay">過一日 ▶</button>
+      <button class="hud-btn" id="logBtn">紀錄</button>
+      <button class="hud-btn" id="resetBtn">重來</button>
+    </div>
+    <div id="hint"></div>
+    <div id="scene">
+      <div class="zone" id="z-window" data-zone="window">
+        <div class="sun"></div>
+        <div class="rays"></div>
+        <div class="window-frame"></div>
+        <div class="zone-label">☀️ 窗邊 · 有陽光</div>
+        <div class="pots-row" data-slot="window"></div>
+      </div>
+      <div class="zone" id="z-dark" data-zone="dark">
+        <div class="cupboard"></div>
+        <div class="shelf"></div>
+        <div class="zone-label">🌑 黑暗的地方</div>
+        <div class="pots-row" data-slot="dark"></div>
+      </div>
+    </div>
+    <div class="zone" id="table" data-zone="table">
+      <div class="zone-label">🪵 工作枱　可以喺度先種好再搬</div>
+      <div class="pots-row" data-slot="table"></div>
+    </div>
+    <div id="tray">
+      <div class="tool" data-tool="beans"><img src="assets/beans.png" alt="綠豆" draggable="false"><span>綠豆</span></div>
+      <div class="tool" data-tool="cup"><img src="assets/cup.png" alt="器皿" draggable="false"><span>器皿</span></div>
+      <div class="tool" data-tool="water"><img src="assets/water.png" alt="水杯" draggable="false"><span>水杯</span></div>
+      <div class="tool" data-tool="cotton"><img src="assets/cotton.png" alt="棉花" draggable="false"><span>棉花</span></div>
+    </div>
+  </section>
+
+  <img id="ghost" alt="">
+  <div id="dayFx">
+    <div class="clock">
+      <div class="sun-move" id="sunMove"></div>
+      <h2 id="fxTitle">太陽移動緊…過緊一日</h2>
+      <div class="bar-out"><div class="bar-in" id="fxBar"></div></div>
+      <p style="margin:8px 0 0;font-weight:700;font-size:14px">大約 10 秒 = 1 日</p>
+    </div>
+  </div>
+  <div class="modal" id="logModal">
+    <div class="sheet" id="logSheet"></div>
+  </div>
+
+  <script>
+    const MAX_POTS = 2;
+    const MAX_DAY = 20;
+    const QA = /(?:\?|&)qa=1(?:&|$)/.test(location.search);
+    const DAY_MS = QA ? 400 : 10000;
+    const ICONS = {
+      beans: "assets/beans.png",
+      cup: "assets/cup.png",
+      water: "assets/water.png",
+      cotton: "assets/cotton.png"
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      day: 0,
+      passing: false,
+      pots: [],
+      nextId: 1
+    };
+
+    function beep(type) {
+      try {
+        const ctx = beep.ctx || (beep.ctx = new (window.AudioContext || window.webkitAudioContext)());
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        const now = ctx.currentTime;
+        if (type === "drop") { o.frequency.value = 520; g.gain.setValueAtTime(0.05, now); }
+        else if (type === "water") { o.frequency.value = 420; g.gain.setValueAtTime(0.06, now); }
+        else if (type === "day") { o.frequency.value = 660; g.gain.setValueAtTime(0.07, now); }
+        else { o.frequency.value = 340; g.gain.setValueAtTime(0.04, now); }
+        o.type = "sine";
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        o.start(now); o.stop(now + 0.2);
+      } catch (e) {}
+    }
+
+    function lightOf(zone) {
+      if (zone === "window") return 1;
+      if (zone === "table") return 0.4;
+      return 0;
+    }
+
+    function look(p) {
+      const light = lightOf(p.zone);
+      const age = p.age;
+      let stage = 0;
+      if (p.beans <= 0) stage = -1;
+      else if (p.health < 0.35 && age >= 3) stage = 6;
+      else if (age >= 12) stage = 5;
+      else if (age >= 7) stage = 4;
+      else if (age >= 4) stage = 3;
+      else if (age >= 2) stage = 2;
+      else if (age >= 1 || p.moisture > 0.3) stage = 1;
+      else stage = 0;
+
+      let h = 0;
+      if (age >= 2) h = 22 + (age - 2) * (light > 0.7 ? 5.0 : light > 0.2 ? 6.0 : 8.4);
+      if (stage === 6) h *= 0.65;
+      h = Math.min(h, light > 0.7 ? 88 : 132);
+
+      return {
+        stage, beans: p.beans, cotton: p.cotton, moisture: p.moisture,
+        age, health: p.health, light, h,
+        stemW: light > 0.7 ? 4.5 + Math.min(age, 12) * 0.28 : 2.1 + age * 0.1,
+        stem: light > 0.7 ? "#3d7a32" : light > 0.2 ? "#7a9a45" : "#efe6a6",
+        leaf: light > 0.7 ? "#43a047" : light > 0.2 ? "#9aaa4a" : "#e6d56a",
+        wilt: stage === 6
+      };
+    }
+
+    function colorWord(L) {
+      if (L.stage < 0) return "空杯";
+      if (L.stage === 0) return "乾豆";
+      if (L.age < 2) return "已浸水";
+      if (L.wilt) return "發蔫";
+      if (L.age < 4) return "出咗白根";
+      if (L.light > 0.7) return L.age >= 7 ? "葉綠色、莖粗壯" : "開始出芽";
+      if (L.light < 0.2) return L.age >= 7 ? "葉發黃、莖又細又長" : "白芽";
+      return "有少少綠";
+    }
+
+    function heightWord(L) {
+      if (L.stage < 2) return "—";
+      if (L.wilt) return "垂低";
+      if (L.age < 4) return "好短";
+      if (L.light > 0.7) return L.age >= 7 ? "較矮、粗壯" : "開始長高";
+      if (L.light < 0.2) return L.age >= 7 ? "又高又細" : "開始長高";
+      return "中等";
+    }
+
+    function sproutSVG(L) {
+      if (L.stage < 0) return "";
+      const n = Math.min(Math.max(L.beans, 0), 3);
+      const w = 88, boxH = 150;
+      const parts = [];
+      if (L.stage >= 2) {
+        for (let i = 0; i < n; i++) {
+          const x = 22 + i * 22;
+          parts.push(`<path d="M${x} ${boxH - 6} q -8 12 -3 20" stroke="#f3edd4" stroke-width="1.7" fill="none" stroke-linecap="round"/>`);
+          parts.push(`<path d="M${x} ${boxH - 6} q 9 10 5 18" stroke="#f3edd4" stroke-width="1.5" fill="none" stroke-linecap="round"/>`);
+        }
+      }
+      if (L.stage >= 3) {
+        for (let i = 0; i < n; i++) {
+          const x = 22 + i * 22;
+          const hh = L.h * (0.82 + i * 0.09);
+          const lean = L.light < 0.25 ? (i - 1) * 7 : 0;
+          const topX = x + lean + (L.wilt ? 14 : 0);
+          const d = L.wilt
+            ? `M${x} ${boxH - 8} C ${x + 10} ${boxH - 8 - hh * 0.45}, ${topX} ${boxH - 8 - hh * 0.7}, ${topX + 4} ${boxH - 8 - hh}`
+            : `M${x} ${boxH - 8} C ${x} ${boxH - 8 - hh * 0.4}, ${x + lean} ${boxH - 8 - hh * 0.75}, ${topX} ${boxH - 8 - hh}`;
+          parts.push(`<path d="${d}" stroke="${L.stem}" stroke-width="${L.stemW}" fill="none" stroke-linecap="round"/>`);
+          const ly = boxH - 8 - hh;
+          if (L.stage >= 4) {
+            const lw = L.light > 0.7 ? 11 : 6.5;
+            const lh = L.light > 0.7 ? 8 : 4.5;
+            parts.push(`<ellipse cx="${topX - lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" transform="rotate(-32 ${topX - lw * 0.55} ${ly + 3})"/>`);
+            parts.push(`<ellipse cx="${topX + lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" transform="rotate(32 ${topX + lw * 0.55} ${ly + 3})"/>`);
+            if (L.stage >= 5) {
+              parts.push(`<ellipse cx="${topX - 5}" cy="${ly + 14}" rx="${lw * 0.7}" ry="${lh * 0.7}" fill="${L.leaf}" transform="rotate(-18 ${topX - 5} ${ly + 14})"/>`);
+              parts.push(`<ellipse cx="${topX + 5}" cy="${ly + 14}" rx="${lw * 0.7}" ry="${lh * 0.7}" fill="${L.leaf}" transform="rotate(18 ${topX + 5} ${ly + 14})"/>`);
+            }
+          } else {
+            parts.push(`<circle cx="${topX}" cy="${ly}" r="4.2" fill="#c9c15a"/>`);
+          }
+        }
+      }
+      return `<svg viewBox="0 0 ${w} ${boxH}" width="100%" height="100%" overflow="visible">${parts.join("")}</svg>`;
+    }
+
+    function hintText() {
+      const pots = state.pots;
+      if (pots.length === 0) return "① 拖「器皿」去窗邊、黑暗或者工作枱。";
+      if (pots.some((p) => !p.cotton)) return "② 將棉花放落器皿度，扮泥土俾綠豆生長。";
+      if (pots.some((p) => p.cotton && p.beans === 0)) return "③ 將綠豆放落棉花上面。";
+      if (pots.some((p) => p.beans && p.moisture < 0.4)) return "④ 將水杯拖去盆栽度，加啲水。";
+      const zones = new Set(pots.map((p) => p.zone));
+      if (pots.length < 2) return "再拖多一個器皿。一個放窗邊，一個放黑暗，先至公平。";
+      if (!(zones.has("window") && zones.has("dark"))) return "⑤ 一個盆栽放窗邊（有陽光），另一個放黑暗嘅地方。";
+      if (state.day === 0) return "⑥ 準備好就撳「過一日」。大約 10 秒就過一日。";
+      if (state.day < 5) return `而家第 ${state.day} 日。繼續過日，觀察第 5 日至第 20 日嘅變化。`;
+      if (state.day < 10) return "兩邊都出芽未？窗邊同黑暗有冇分別？可以撳「紀錄」對照。";
+      if (state.day < 20) return "窗邊嘅苗較綠較壯，黑暗嘅苗又黃又細長。可以觀察到第 20 日。";
+      return "第 20 日到喇。撳「紀錄」睇你發現咗咩。";
+    }
+
+    function render() {
+      $("dayNum").textContent = state.day;
+      $("hint").textContent = hintText();
+      $("passDay").disabled = state.passing || state.day >= MAX_DAY;
+      $("passDay").textContent = state.day >= MAX_DAY ? "已到第 20 日" : "過一日 ▶";
+      document.querySelector('[data-tool="cup"]').classList.toggle("used", state.pots.length >= MAX_POTS);
+
+      for (const slot of ["window", "dark", "table"]) {
+        const row = document.querySelector(`[data-slot="${slot}"]`);
+        row.innerHTML = "";
+        state.pots.filter((p) => p.zone === slot).forEach((p) => row.appendChild(potEl(p)));
+      }
+    }
+
+    function potEl(p) {
+      const L = look(p);
+      const el = document.createElement("div");
+      el.className = "pot";
+      el.dataset.id = p.id;
+      const waterH = Math.min(42, p.moisture * 14);
+      const beans = [];
+      for (let i = 0; i < Math.min(p.beans, 4); i++) {
+        beans.push(`<i class="bean-dot${L.stage >= 1 ? " swell" : ""}"></i>`);
+      }
+      const place = p.zone === "window" ? "窗邊" : p.zone === "dark" ? "黑暗" : "枱";
+      el.innerHTML = `
+        <div class="sprouts">${sproutSVG(L)}</div>
+        <div class="cup-body">
+          <div class="water-layer" style="height:${waterH}%"></div>
+          <div class="cotton-layer${p.cotton ? " on" : ""}"></div>
+          <div class="bean-layer">${beans.join("")}</div>
+        </div>
+        <div class="pot-tag">${place} · ${p.beans ? colorWord(L) : "空杯"}</div>`;
+      bindDrag(el, { kind: "pot", id: p.id });
+      return el;
+    }
+
+    function tickDay() {
+      for (const p of state.pots) {
+        if (p.beans > 0 && p.moisture > 0.25) {
+          p.age += 1;
+          p.dryStreak = 0;
+          p.health = Math.min(1, p.health + 0.04);
+        } else if (p.age > 0) {
+          p.dryStreak += 1;
+          p.health -= 0.2;
+        }
+        p.moisture = Math.max(0, p.moisture - (p.cotton ? 0.12 : 1.05));
+        if (p.health < 0) p.health = 0;
+      }
+      state.day += 1;
+    }
+
+    function findDrop(x, y) {
+      const stack = document.elementsFromPoint(x, y);
+      const pot = stack.find((n) => n.classList && n.classList.contains("pot"));
+      const zone = stack.find((n) => n.dataset && n.dataset.zone);
+      return { pot, zone };
+    }
+
+    let drag = null;
+    const ghost = $("ghost");
+
+    function bindDrag(el, info) {
+      el.addEventListener("pointerdown", (e) => {
+        if (state.passing) return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        drag = { ...info, x: e.clientX, y: e.clientY };
+        ghost.style.display = "block";
+        if (info.kind === "tool") {
+          ghost.src = ICONS[info.tool];
+          ghost.style.width = "72px";
+        } else {
+          ghost.src = ICONS.cup;
+          ghost.style.width = "80px";
+        }
+        moveGhost(e.clientX, e.clientY);
+        beep("pick");
+      });
+      el.addEventListener("pointermove", (e) => {
+        if (!drag) return;
+        moveGhost(e.clientX, e.clientY);
+        const { pot, zone } = findDrop(e.clientX, e.clientY);
+        document.querySelectorAll(".zone").forEach((z) => z.classList.toggle("hot", z === zone));
+        document.querySelectorAll(".pot").forEach((p) => p.classList.toggle("hot", p === pot));
+      });
+      el.addEventListener("pointerup", (e) => endDrag(e));
+      el.addEventListener("pointercancel", (e) => endDrag(e));
+    }
+
+    function moveGhost(x, y) {
+      ghost.style.left = x + "px";
+      ghost.style.top = y + "px";
+    }
+
+    function toast(msg) {
+      $("hint").textContent = msg;
+    }
+
+    function endDrag(e) {
+      if (!drag) return;
+      const info = drag;
+      drag = null;
+      ghost.style.display = "none";
+      document.querySelectorAll(".hot").forEach((n) => n.classList.remove("hot"));
+      const { pot, zone } = findDrop(e.clientX, e.clientY);
+      const potId = pot && pot.dataset.id;
+      const target = potId ? state.pots.find((p) => String(p.id) === String(potId)) : null;
+
+      if (info.kind === "tool") {
+        if (info.tool === "cup") {
+          if (!zone) { toast("將器皿放到窗邊、黑暗或者工作枱。"); return; }
+          if (state.pots.length >= MAX_POTS) { toast("已經有兩個盆栽喇。一個窗邊、一個黑暗就得。"); return; }
+          state.pots.push({
+            id: state.nextId++,
+            zone: zone.dataset.zone,
+            cotton: false,
+            beans: 0,
+            moisture: 0,
+            age: 0,
+            health: 1,
+            dryStreak: 0
+          });
+          beep("drop");
+        } else if (!target) {
+          toast("呢樣嘢要放落盆栽度呀。");
+        } else if (info.tool === "cotton") {
+          target.cotton = true;
+          beep("drop");
+        } else if (info.tool === "beans") {
+          target.beans = Math.min(5, target.beans + 3);
+          beep("drop");
+        } else if (info.tool === "water") {
+          target.moisture = 3;
+          target.dryStreak = 0;
+          beep("water");
+        }
+      } else if (info.kind === "pot") {
+        const moving = state.pots.find((p) => p.id === info.id);
+        if (moving && zone) {
+          moving.zone = zone.dataset.zone;
+          beep("drop");
+        }
+      }
+      render();
+    }
+
+    document.querySelectorAll(".tool").forEach((el) => {
+      bindDrag(el, { kind: "tool", tool: el.dataset.tool });
+    });
+
+    $("startBtn").onclick = () => {
+      $("start").classList.add("hidden");
+      $("game").classList.remove("hidden");
+      render();
+    };
+
+    $("resetBtn").onclick = () => {
+      if (state.passing) return;
+      state.day = 0;
+      state.pots = [];
+      state.nextId = 1;
+      render();
+    };
+
+    $("passDay").onclick = () => {
+      if (state.passing || state.day >= MAX_DAY) return;
+      if (state.pots.length === 0) { toast("先種好盆栽再過日呀。"); return; }
+      state.passing = true;
+      $("passDay").disabled = true;
+      $("dayFx").classList.add("show");
+      $("fxTitle").textContent = `太陽移動緊…第 ${state.day} 日 → 第 ${state.day + 1} 日`;
+      $("fxBar").style.width = "0%";
+      beep("day");
+      const t0 = performance.now();
+      function frame(now) {
+        const p = Math.min(1, (now - t0) / DAY_MS);
+        $("fxBar").style.width = p * 100 + "%";
+        const sun = $("sunMove");
+        sun.style.transform = `translateX(${(p - 0.5) * 120}px)`;
+        const overlay = $("dayFx");
+        overlay.style.background = `rgba(${20 + p * 40}, ${24 + p * 10}, ${50 - p * 20}, ${0.22 + p * 0.15})`;
+        if (p < 1) requestAnimationFrame(frame);
+        else {
+          tickDay();
+          state.passing = false;
+          $("dayFx").classList.remove("show");
+          overlay.style.background = "";
+          render();
+          if (state.day === 5 || state.day === 10 || state.day === 20) openLog();
+        }
+      }
+      requestAnimationFrame(frame);
+    };
+
+    function openLog() {
+      const rows = state.pots.map((p) => {
+        const L = look(p);
+        const place = p.zone === "window" ? "窗邊（有陽光）" : p.zone === "dark" ? "黑暗" : "工作枱";
+        return `<tr>
+          <td>${place}</td>
+          <td>${p.cotton ? "有" : "冇"}</td>
+          <td>${p.beans ? "有" : "冇"}</td>
+          <td>${p.moisture > 0.4 ? "仲濕" : "乾咗"}</td>
+          <td>${heightWord(L)}</td>
+          <td>${colorWord(L)}</td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="6">未有盆栽</td></tr>`;
+
+      const hasWin = state.pots.some((p) => p.zone === "window" && p.age >= 5);
+      const hasDark = state.pots.some((p) => p.zone === "dark" && p.age >= 5);
+      let conclude = "";
+      if (state.day >= 5 && hasWin && hasDark) {
+        conclude = `
+          <p class="ok"><strong>我哋發現：</strong></p>
+          <p>兩邊嘅綠豆都可以發芽，所以<strong>發芽唔一定要陽光</strong>。</p>
+          <p>不過窗邊嘅綠豆苗葉較綠、莖較粗壯；黑暗嘅綠豆苗又黃又細長。</p>
+          <p class="ok">綠豆苗要健康生長，就需要陽光同水。</p>`;
+      } else if (state.day >= 5 && state.pots.every((p) => p.age === 0)) {
+        conclude = `<p class="warn">綠豆未發芽。試吓檢查：有冇棉花、綠豆同水？</p>`;
+      } else if (state.day >= 5 && !(hasWin && hasDark)) {
+        conclude = `<p class="warn">如果要比較陽光嘅影響，兩個盆栽都要有棉花、綠豆同水，而且一個窗邊、一個黑暗。</p>`;
+      } else {
+        conclude = `<p>過到第 5 日之後，對照會更加明顯。可以繼續撳「過一日」至第 20 日。</p>`;
+      }
+
+      $("logSheet").innerHTML = `
+        <h2>觀察紀錄　第 ${state.day} 日</h2>
+        <table>
+          <tr><th>位置</th><th>棉花</th><th>綠豆</th><th>水</th><th>高度</th><th>樣子</th></tr>
+          ${rows}
+        </table>
+        ${conclude}
+        <button class="primary" id="closeLog">繼續觀察</button>
+        ${state.day >= 5 ? `<button class="primary gold" id="endLog">我發現咗</button>` : ""}
+        <button class="ghost-btn" id="backHome">返回說明</button>
+      `;
+      $("logModal").classList.add("show");
+      $("closeLog").onclick = () => $("logModal").classList.remove("show");
+      const end = $("endLog");
+      if (end) end.onclick = () => {
+        $("logSheet").innerHTML = `
+          <h2>實驗結論</h2>
+          <p>棉花可以保持水份，好似泥土咁幫綠豆發芽。</p>
+          <p>綠豆<strong>發芽</strong>需要水（同空氣、適當温度），唔一定要陽光。</p>
+          <p>綠豆苗<strong>生長</strong>需要陽光：有陽光先至葉綠、莖粗、長得健康。</p>
+          <p>冇陽光會長得又黃又細長；冇水就會乾同發蔫。</p>
+          <button class="primary" id="again">再種一次</button>
+          <button class="ghost-btn" id="keep">返回實驗</button>
+        `;
+        $("again").onclick = () => { $("logModal").classList.remove("show"); $("resetBtn").click(); };
+        $("keep").onclick = () => $("logModal").classList.remove("show");
+      };
+      $("backHome").onclick = () => {
+        $("logModal").classList.remove("show");
+        $("game").classList.add("hidden");
+        $("start").classList.remove("hidden");
+      };
+    }
+
+    $("logBtn").onclick = openLog;
+    $("logModal").addEventListener("click", (e) => {
+      if (e.target.id === "logModal") $("logModal").classList.remove("show");
+    });
+
+    document.addEventListener("touchmove", (e) => {
+      if (drag) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    if (QA) window.__qa = { state, tickDay, render, look };
+
+    render();
+  </script>
+</body>
+</html>

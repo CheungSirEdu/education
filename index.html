@@ -137,6 +137,7 @@
     const SUBJECTS = [
       { id: "p2-sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
       { id: "p4-sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
+      { id: "kits", title: "科學教具", emoji: "🧪", blurb: "一至六年級教具相片及清單" },
       { id: "p4-math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
       { id: "p4-pe", title: "四年級體育", emoji: "⚽", blurb: "教材即將推出" },
       { id: "p4-ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
@@ -173,6 +174,17 @@
         downloadName: "二年班科學志蓮跳跳小遊戲.zip"
       },
       {
+        id: "mungbean",
+        subject: "p2-sci",
+        type: "game",
+        emoji: "🌱",
+        blurb: "第 3 課動手種植物：窗邊同黑暗對照",
+        title: "種綠豆小實驗",
+        description: "二年級科學　《科學新領域》第 3 課 動手種植物。拖綠豆、器皿、水杯、棉花，種兩個盆栽：一個放窗邊、一個放黑暗。撳「過一日」（約 10 秒 = 1 日），觀察第 5 日至第 20 日。電腦、iPad、iPhone 都可以玩。暫時不須填班別學號。",
+        play: "https://cheungsiredu.github.io/education/mungbean/",
+        qr: "qrs/mungbean.png"
+      },
+      {
         id: "engineer",
         subject: "p4-sci",
         type: "game",
@@ -195,6 +207,19 @@
         description: "單元八_ 摩擦力",
         play: "https://cheungsiredu.github.io/education/drift/",
         qr: "qrs/drift.png"
+      },
+      {
+        id: "kits",
+        subject: "kits",
+        type: "tool",
+        emoji: "🧪",
+        blurb: "一至六年級科學教具相片",
+        title: "科學教具",
+        description: "一至六年級科學教具清單。可查看實物相片、新增教具、影相上傳、調整順序。電腦、平板、電話均用同一網址。",
+        play: "https://sciencetool.surge.sh/",
+        playLabel: "立即開啟",
+        qr: "qrs/kits.png",
+        noScore: true
       },
       {
         id: "times",
@@ -283,19 +308,19 @@
             <p>${it.description || it.blurb || ""}</p>
           </div>
           <p class="label-bit">連結</p>
-          <a class="btn btn-play" href="${it.play}">立即遊玩</a>
+          <a class="btn btn-play" href="${it.play}">${it.playLabel || "立即遊玩"}</a>
           <p class="url-line">${it.play}</p>
           ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">下載遊戲檔案</a>` : ""}
           <p class="label-bit">二維碼</p>
           <div class="qrbox">
             <img src="${it.qr}" alt="二維碼：${it.title}">
-            <p>請用相機掃描二維碼即可遊玩。</p>
+            <p>請用相機掃描二維碼即可${it.noScore ? "開啟" : "遊玩"}。</p>
           </div>
-          <p class="label-bit">成績</p>
+          ${it.noScore ? "" : `<p class="label-bit">成績</p>
           <div class="note">
             開始前請填寫班別及學號（例如：4A、12）。無須填寫姓名。<br>
             完成後，分數會自動交給老師。本頁不顯示成績，學生及家長亦不會看到其他同學的分數。
-          </div>
+          </div>`}
         </div>
       `;
     }
@@ -310,7 +335,7 @@
         <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
         <h3 class="sec">${s.emoji} ${s.title}</h3>
         ${items.length ? `
-          <p class="note">請選擇遊戲。撳入去先見到連結、二維碼同成績說明。</p>
+          <p class="note">${items.some(it => it.noScore) ? "撳入去可見到連結及二維碼。" : "請選擇遊戲。撳入去先見到連結、二維碼同成績說明。"}</p>
           <div class="grid">
             ${items.map(it => `
               <a class="card" href="#/i/${it.id}">
