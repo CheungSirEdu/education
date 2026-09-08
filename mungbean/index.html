@@ -279,7 +279,7 @@
         <div class="step"><b>3</b><img src="assets/water.png" alt="" draggable="false"><span>拖動水杯，為盆栽加水。</span></div>
         <div class="step"><b>4</b><img src="assets/cotton.png" alt="" draggable="false"><span>拖動棉花，代替泥土，讓綠豆生長。</span></div>
         <div class="step"><b>5</b><span style="grid-column:2/-1">一個盆栽放在窗邊（有陽光），另一個放在黑暗的地方。</span></div>
-        <div class="step"><b>6</b><span style="grid-column:2/-1">按下「過一日」，約十秒內可看見綠豆慢慢長高。請重點觀察第 1、2、4、9 日。</span></div>
+        <div class="step"><b>6</b><span style="grid-column:2/-1">按下「過一日」，約六秒內可看見綠豆慢慢長高。請重點觀察第 1、2、4、9 日。</span></div>
       </div>
       <button class="primary" id="startBtn">開始種植</button>
     </div>
@@ -329,7 +329,7 @@
     const MAX_POTS = 2;
     const MAX_DAY = 20;
     const QA = /(?:\?|&)qa=1(?:&|$)/.test(location.search);
-    const DAY_MS = QA ? 400 : 10000;
+    const DAY_MS = QA ? 400 : 6000;
     const ICONS = {
       beans: "assets/beans.png",
       cup: "assets/cup.png",
@@ -501,7 +501,7 @@
       const zones = new Set(pots.map((p) => p.zone));
       if (pots.length < 2) return "請再種一個盆栽。一個放在窗邊，一個放在黑暗處，實驗才公平。";
       if (!(zones.has("window") && zones.has("dark"))) return "⑤ 請把一個盆栽放在窗邊（有陽光），另一個放在黑暗的地方。";
-      if (state.day === 0) return "⑥ 準備完成後，請按「過一日」。約十秒內可看見綠豆慢慢長高。請觀察第 1、4、9 日。";
+      if (state.day === 0) return "⑥ 準備完成後，請按「過一日」。約六秒內可看見綠豆慢慢長高。請觀察第 1、4、9 日。";
       if (state.day === 2) return "兩天後：窗邊的幼苗是否向着陽光？生長方向與窗口方向相同還是相反？";
       if (state.day < 4) return `現在是第 ${state.day} 日。請繼續過日，重點觀察第 4 日和第 9 日。`;
       if (state.day < 9) return "窗邊的幼苗會向着陽光彎曲；黑暗處的幼苗又黃又細長。請按「紀錄」對照。";
