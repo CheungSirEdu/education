@@ -104,10 +104,11 @@
       min-height: 48px; padding: 8px 12px; color: #fff;
     }
     #passDay {
-      flex: 1; background: #ef6c00; box-shadow: 0 4px 0 #e65100; font-size: clamp(16px, 4vw, 20px);
+      width: 100%; flex: none; background: #ef6c00; box-shadow: 0 4px 0 #e65100;
+      font-size: clamp(16px, 4vw, 20px); margin-top: 8px;
     }
     #passDay:disabled { background: #b0a090; box-shadow: none; }
-    #logBtn { background: #1565c0; box-shadow: 0 4px 0 #0d47a1; font-size: 14px; }
+    #logBtn { background: #1565c0; box-shadow: 0 4px 0 #0d47a1; font-size: 14px; margin-left: auto; }
     #resetBtn { background: #6d4c41; box-shadow: 0 4px 0 #4e342e; font-size: 14px; }
     #hint {
       margin: 6px 0; background: #fffef6; border: 3px solid var(--yellow); border-radius: 14px;
@@ -346,7 +347,6 @@
         </svg>
         <span>24小時</span>
       </div>
-      <button class="hud-btn" id="passDay">過一日 ▶</button>
       <button class="hud-btn" id="logBtn">紀錄</button>
       <button class="hud-btn" id="resetBtn">重新開始</button>
     </div>
@@ -381,6 +381,7 @@
       <div class="tool" data-tool="water"><img src="assets/water.png" alt="水杯" draggable="false"><span>水杯</span></div>
       <div class="tool" data-tool="cotton"><img src="assets/cotton.png" alt="棉花" draggable="false"><span>棉花</span></div>
     </div>
+    <button class="hud-btn" id="passDay">過一日 ▶</button>
   </section>
 
   <img id="ghost" alt="">
