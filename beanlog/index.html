@@ -161,7 +161,7 @@
         <img src="assets/boy.png" alt="小志" draggable="false">
         <img src="assets/girl.png" alt="小蓮" draggable="false">
       </div>
-      <div class="how">把綠豆種在杯中的棉花上，放在家中有陽光的地方。<br>每日影一張相片，選擇生長情況，也可以說話紀錄。</div>
+      <div class="how">把綠豆種在杯中的棉花上，放在家中有陽光的地方。<br>每日拍攝一張相片，選擇生長情況，亦可用語音記錄。</div>
       <button class="primary" id="startBtn" disabled>開始觀察</button>
     </div>
   </section>
@@ -171,18 +171,18 @@
       <div class="who" id="who"></div>
       <button class="ghost" id="logout" type="button" style="width:auto;padding:8px 12px;margin:0;min-height:40px;font-size:14px">離開</button>
     </div>
-    <p class="hint wrap">請選擇要紀錄的日子。同一日可以再影相、再儲存。</p>
+    <p class="hint wrap">請選擇要記錄的日子。同一日可以再次拍照並儲存。</p>
     <div class="days" id="days"></div>
     <div class="wrap">
       <h2 id="dayTitle">第 1 日</h2>
       <div class="photo" id="photoBox">
-        <div class="ph" id="photoPh">尚未影相<br>請對準綠豆盆栽</div>
+        <div class="ph" id="photoPh">尚未拍照<br>請對準綠豆盆栽</div>
         <img id="photoImg" class="hidden" alt="綠豆相片">
         <video id="live" class="hidden" autoplay playsinline muted></video>
       </div>
       <div class="row">
-        <button class="cam" id="btnCam" type="button">影相</button>
-        <button class="album" id="btnAlbum" type="button">相簿</button>
+        <button class="cam" id="btnCam" type="button">拍照</button>
+        <button class="album" id="btnAlbum" type="button">從相簿選擇</button>
       </div>
       <div class="row hidden" id="liveRow">
         <button class="snap" id="btnSnap" type="button">按此拍照</button>
@@ -195,12 +195,12 @@
       <div class="stages" id="stages"></div>
 
       <h2>語音紀錄</h2>
-      <p class="hint" id="voiceHint">按下後，用普通話或廣東話說出綠豆的生長情況，會轉成書面語。</p>
-      <button class="voice" id="btnVoice" type="button">開始說話</button>
-      <textarea id="note" maxlength="400" placeholder="書面語會顯示在這裏，也可以自行修改。"></textarea>
+      <p class="hint" id="voiceHint">按下後，請說出綠豆的生長情況，系統會轉換為書面語。</p>
+      <button class="voice" id="btnVoice" type="button">開始錄音</button>
+      <textarea id="note" maxlength="400" placeholder="轉換後的書面語會顯示於此，亦可自行修改。"></textarea>
 
       <button class="primary" id="btnSave" type="button">儲存本日紀錄</button>
-      <p class="hint" id="saveHint">儲存後會交給老師。同一日再儲存，會取代舊紀錄。</p>
+      <p class="hint" id="saveHint">儲存後會交給老師。同一日再次儲存，會取代舊紀錄。</p>
 
       <h2>已紀錄的日子</h2>
       <div class="gallery" id="gallery"></div>
@@ -218,7 +218,7 @@
       "開始見到白色",
       "開始長高",
       "長出真葉",
-      "開始倒向有光嗰邊",
+      "開始倒向有光的一邊",
       "開始枯萎",
       "已經死亡"
     ];
@@ -510,7 +510,7 @@
         showPhoto();
         toast("已拍攝相片");
       } catch (e) {
-        toast("未能讀取相片，請改用「影相」。", true);
+        toast("未能讀取相片，請改用「拍照」。", true);
       }
     }
 
@@ -548,7 +548,7 @@
     $("btnAlbum").onclick = function () { $("fileAlbum").click(); };
     $("btnSnap").onclick = function () {
       const data = compressCanvas($("live"));
-      if (!data) { toast("請稍等鏡頭準備好。", true); return; }
+      if (!data) { toast("請稍候，鏡頭尚未準備好。", true); return; }
       state.photo = data;
       stopLive();
       showPhoto();
@@ -568,9 +568,9 @@
       }
       recer = speechEngine();
       if (!recer) {
-        $("voiceHint").textContent = "這部裝置未能用語音。請在下面用文字寫下綠豆的生長情況。";
+        $("voiceHint").textContent = "這部裝置未能使用語音功能。請在下方用文字寫下綠豆的生長情況。";
         $("note").focus();
-        toast("請改用文字紀錄。", true);
+        toast("請改用文字記錄。", true);
         return;
       }
       recer.lang = "zh-HK";
@@ -578,22 +578,22 @@
       recer.maxAlternatives = 1;
       recer.onstart = function () {
         state.listening = true;
-        $("btnVoice").textContent = "正在聆聽，請說話";
+        $("btnVoice").textContent = "正在聆聽，請說出綠豆的生長情況";
         $("btnVoice").classList.add("live");
       };
       recer.onend = function () {
         state.listening = false;
-        $("btnVoice").textContent = "開始說話";
+        $("btnVoice").textContent = "開始錄音";
         $("btnVoice").classList.remove("live");
       };
       recer.onerror = function () {
-        toast("未能聽到語音，可以再試或改用文字。", true);
+        toast("未能聽到語音，可以再試一次，或改用文字記錄。", true);
       };
       recer.onresult = function (ev) {
         const said = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
         const written = toWritten(said);
         $("note").value = written;
-        toast("已轉成書面語");
+        toast("已轉換為書面語");
       };
       try { recer.start(); } catch (e) {
         toast("未能開啟麥克風。", true);
@@ -606,9 +606,9 @@
     });
 
     $("btnSave").onclick = async function () {
-      if (!state.photo) { toast("請先影相。", true); return; }
+      if (!state.photo) { toast("請先拍照。", true); return; }
       if (!state.stage && !$("note").value.trim()) {
-        toast("請選擇生長情況，或用語音／文字紀錄。", true);
+        toast("請選擇生長情況，或使用語音／文字記錄。", true);
         return;
       }
       $("btnSave").disabled = true;
@@ -618,7 +618,7 @@
       renderGallery();
       $("btnSave").textContent = "儲存並取代舊紀錄";
       $("btnSave").disabled = false;
-      toast("已儲存，並交給老師。");
+      toast("已儲存，並已交給老師。");
     };
 
     $("startBtn").onclick = async function () {
