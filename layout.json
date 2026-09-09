@@ -13,6 +13,7 @@
   "items": {
     "p2-sci": [
       "mungbean",
+      "beanlog",
       "jump",
       "p2jump"
     ],
