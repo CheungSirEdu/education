@@ -185,7 +185,6 @@
         <button class="album" id="btnAlbum" type="button">從相簿選擇</button>
       </div>
       <div class="row hidden" id="liveRow">
-        <button class="snap" id="btnSnap" type="button">按此拍照</button>
         <button class="album" id="btnCloseLive" type="button">關閉鏡頭</button>
       </div>
       <input id="fileCam" type="file" accept="image/*" capture="environment" hidden>
@@ -374,13 +373,54 @@
       return c.toDataURL("image/jpeg", 0.72);
     }
 
+    function isLive() {
+      return !!(state.stream && state.stream.getTracks().some(function (t) { return t.readyState === "live"; }));
+    }
+
+    function setCamLabel() {
+      $("btnCam").textContent = isLive() ? "拍攝" : "拍照";
+    }
+
+    function waitVideoReady(video) {
+      return new Promise(function (resolve) {
+        if (video.readyState >= 2 && video.videoWidth) return resolve(true);
+        const finish = function (ok) {
+          video.removeEventListener("loadeddata", onReady);
+          video.removeEventListener("playing", onReady);
+          clearTimeout(timer);
+          resolve(!!ok);
+        };
+        const onReady = function () { if (video.videoWidth) finish(true); };
+        const timer = setTimeout(function () { finish(video.videoWidth > 0); }, 2000);
+        video.addEventListener("loadeddata", onReady);
+        video.addEventListener("playing", onReady);
+      });
+    }
+
+    function snapPhoto() {
+      const video = $("live");
+      const data = compressCanvas(video);
+      if (!data) {
+        toast("請稍候，鏡頭尚未準備好。", true);
+        return false;
+      }
+      state.photo = data;
+      stopLive();
+      showPhoto();
+      toast("已拍攝相片");
+      return true;
+    }
+
     function stopLive() {
       if (state.stream) {
         state.stream.getTracks().forEach(function (t) { t.stop(); });
         state.stream = null;
       }
-      $("live").classList.add("hidden");
+      const video = $("live");
+      video.srcObject = null;
+      video.classList.add("hidden");
       $("liveRow").classList.add("hidden");
+      setCamLabel();
       showPhoto();
     }
 
@@ -525,35 +565,40 @@
       onFile(f);
     });
     $("btnCam").onclick = async function () {
+      if (isLive()) {
+        snapPhoto();
+        return;
+      }
       const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       if (isiOS || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         $("fileCam").click();
         return;
       }
       try {
-        stopLive();
+        const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
         state.stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: mobile ? "environment" : "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
         });
-        $("live").srcObject = state.stream;
-        $("live").classList.remove("hidden");
+        const video = $("live");
+        video.srcObject = state.stream;
+        video.classList.remove("hidden");
         $("photoImg").classList.add("hidden");
         $("photoPh").classList.add("hidden");
         $("liveRow").classList.remove("hidden");
+        try { await video.play(); } catch (e) {}
+        const ready = await waitVideoReady(video);
+        setCamLabel();
+        if (!ready) {
+          toast("鏡頭已開啟，請稍候再按「拍攝」。", true);
+          return;
+        }
+        toast("鏡頭已開啟。請對準綠豆盆栽，再按「拍攝」。");
       } catch (e) {
         $("fileCam").click();
       }
     };
     $("btnAlbum").onclick = function () { $("fileAlbum").click(); };
-    $("btnSnap").onclick = function () {
-      const data = compressCanvas($("live"));
-      if (!data) { toast("請稍候，鏡頭尚未準備好。", true); return; }
-      state.photo = data;
-      stopLive();
-      showPhoto();
-      toast("已拍攝相片");
-    };
     $("btnCloseLive").onclick = stopLive;
 
     let recer = null;
