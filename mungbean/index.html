@@ -189,7 +189,7 @@
     }
 
     #table {
-      flex-shrink: 0; height: 92px; margin-top: 8px; border-radius: 18px;
+      flex-shrink: 0; height: 108px; margin-top: 8px; border-radius: 18px;
       background: linear-gradient(#d7b07a, #c49a62); border: 4px solid #8d6e4a;
       display: flex; align-items: stretch; position: relative;
     }
@@ -200,20 +200,20 @@
 
     /* ===== pots ===== */
     .pot {
-      width: 92px; position: relative; touch-action: none; cursor: grab;
+      width: 128px; position: relative; touch-action: none; cursor: grab;
       flex-shrink: 0;
     }
     .pot.hot { filter: drop-shadow(0 0 8px #ffd54f); }
     .sprouts {
-      position: absolute; left: -10px; right: -10px; bottom: 52px; height: 170px;
+      position: absolute; left: -22px; right: -22px; bottom: 74px; height: 250px;
       pointer-events: none; z-index: 3; overflow: visible;
     }
     .sprouts svg { overflow: visible; }
     .cup-body {
-      position: relative; z-index: 2; height: 78px;
+      position: relative; z-index: 2; height: 100px;
       background: linear-gradient(180deg, rgba(210,238,250,.35), rgba(180,220,240,.55));
       border: 3px solid #2c3d4a; border-top-width: 4px;
-      border-radius: 6px 6px 16px 16px;
+      border-radius: 6px 6px 18px 18px;
       clip-path: polygon(10% 0, 90% 0, 100% 100%, 0 100%);
       overflow: hidden;
     }
@@ -222,20 +222,25 @@
       background: linear-gradient(#81d4faaa, #29b6f6cc); transition: height .4s;
     }
     .cotton-layer {
-      position: absolute; left: 8%; right: 8%; bottom: 8px; height: 22px;
-      background: radial-gradient(circle at 30% 40%, #fff, #eceff1 70%);
-      border-radius: 40% 50% 30% 40%; opacity: 0; transition: opacity .25s;
+      position: absolute; left: 6%; right: 6%; bottom: 10px; height: 36px;
+      background:
+        radial-gradient(circle at 28% 40%, #fff 0 42%, transparent 46%),
+        radial-gradient(circle at 62% 35%, #fff 0 40%, transparent 45%),
+        radial-gradient(circle at 48% 62%, #f5f5f5 0 46%, transparent 50%),
+        radial-gradient(circle at 50% 50%, #eceff1, #e0e0e0 70%);
+      border-radius: 46% 54% 38% 48%; opacity: 0; transition: opacity .25s;
+      box-shadow: 0 2px 0 #cfd8dc;
     }
     .cotton-layer.on { opacity: 1; }
     .bean-layer {
-      position: absolute; left: 14%; right: 14%; bottom: 18px; height: 18px;
-      display: flex; justify-content: center; gap: 3px; align-items: flex-end;
+      position: absolute; left: 12%; right: 12%; bottom: 26px; height: 24px;
+      display: flex; justify-content: center; gap: 4px; align-items: flex-end;
     }
     .bean-dot {
-      width: 10px; height: 12px; background: #6b8e23; border: 2px solid #3e4d18;
+      width: 14px; height: 16px; background: #6b8e23; border: 2px solid #3e4d18;
       border-radius: 50%;
     }
-    .bean-dot.swell { width: 13px; height: 15px; background: #7cb342; }
+    .bean-dot.swell { width: 18px; height: 21px; background: #7cb342; }
     .pot-tag {
       text-align: center; font-size: 11px; font-weight: 900; color: var(--green-dark);
       background: #fffef6cc; border-radius: 8px; margin-top: 2px; padding: 1px 4px;
@@ -292,19 +297,23 @@
       .dir-tag { font-size: 11px; padding: 1px 5px; }
     }
     @media (max-height: 680px) {
-      #table { height: 72px; }
+      #table { height: 88px; }
       .chars img { height: 72px; }
       .tool img { width: 40px; height: 40px; }
       .tool { min-height: 68px; }
+      .pot { width: 110px; }
+      .cup-body { height: 86px; }
+      .sprouts { height: 190px; bottom: 62px; }
     }
     @media (max-height: 560px) {
       #table { display: none; }
-      .sprouts { height: 90px; }
+      .sprouts { height: 140px; }
     }
     @media (min-width: 820px) {
       #game { max-width: 980px; left: 50%; transform: translateX(-50%); width: 100%; }
-      .pot { width: 110px; }
-      .cup-body { height: 92px; }
+      .pot { width: 148px; }
+      .cup-body { height: 112px; }
+      .sprouts { height: 280px; bottom: 84px; }
     }
   </style>
 </head>
@@ -446,16 +455,16 @@
       else stage = 0;
 
       let h = 0;
-      if (age >= 1.2) h = 8 + Math.max(0, age - 1.2) * (light > 0.7 ? 5.0 : light > 0.2 ? 6.0 : 8.4);
+      if (age >= 1.2) h = 16 + Math.max(0, age - 1.2) * (light > 0.7 ? 7.4 : light > 0.2 ? 8.8 : 12.6);
       if (stage === 6) h *= 0.65;
-      h = Math.min(h, light > 0.7 ? 88 : 132);
+      h = Math.min(h, light > 0.7 ? 128 : 188);
       const leafT = Math.max(0, Math.min(1, (age - 3.2) / 3));
 
       return {
         stage, beans: p.beans, cotton: p.cotton, moisture: p.moisture,
         age, health: p.health, light, h, leafT,
         lean: light > 0.7 && age >= 1.5 ? 8 + Math.min(age, 12) * 1.1 : (light < 0.25 ? 0 : 2),
-        stemW: light > 0.7 ? 3.2 + Math.min(age, 12) * 0.28 : 1.8 + age * 0.1,
+        stemW: light > 0.7 ? 4.6 + Math.min(age, 12) * 0.38 : 2.6 + age * 0.14,
         stem: light > 0.7 ? "#3d7a32" : light > 0.2 ? "#7a9a45" : "#efe6a6",
         leaf: light > 0.7 ? "#43a047" : light > 0.2 ? "#9aaa4a" : "#e6d56a",
         wilt: stage === 6
@@ -514,41 +523,41 @@
     function sproutSVG(L) {
       if (L.stage < 0) return "";
       const n = Math.min(Math.max(L.beans, 0), 3);
-      const w = 88, boxH = 150;
+      const w = 110, boxH = 190;
       const parts = [];
       const rootT = Math.max(0, Math.min(1, (L.age - 0.8) / 1.2));
       if (rootT > 0.05) {
         for (let i = 0; i < n; i++) {
-          const x = 22 + i * 22;
-          const len = 8 + rootT * 14;
-          parts.push(`<path d="M${x} ${boxH - 6} q ${-8 * rootT} ${len * 0.55} ${-3 * rootT} ${len}" stroke="#f3edd4" stroke-width="${1.2 + rootT * 0.6}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
-          parts.push(`<path d="M${x} ${boxH - 6} q ${9 * rootT} ${len * 0.5} ${5 * rootT} ${len * 0.9}" stroke="#f3edd4" stroke-width="${1 + rootT * 0.5}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
+          const x = 26 + i * 28;
+          const len = 12 + rootT * 20;
+          parts.push(`<path d="M${x} ${boxH - 8} q ${-10 * rootT} ${len * 0.55} ${-4 * rootT} ${len}" stroke="#f3edd4" stroke-width="${1.8 + rootT * 0.8}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
+          parts.push(`<path d="M${x} ${boxH - 8} q ${11 * rootT} ${len * 0.5} ${6 * rootT} ${len * 0.9}" stroke="#f3edd4" stroke-width="${1.5 + rootT * 0.7}" fill="none" stroke-linecap="round" opacity="${rootT}"/>`);
         }
       }
       if (L.h > 3) {
         for (let i = 0; i < n; i++) {
-          const x = 22 + i * 22;
+          const x = 26 + i * 28;
           const hh = L.h * (0.82 + i * 0.09);
           const lean = (L.lean || 0) + (L.light < 0.25 ? (i - 1) * 4 : 0);
           const topX = x + lean + (L.wilt ? 14 * Math.min(1, L.h / 40) : 0);
           const d = L.wilt
-            ? `M${x} ${boxH - 8} C ${x + 10} ${boxH - 8 - hh * 0.45}, ${topX} ${boxH - 8 - hh * 0.7}, ${topX + 4} ${boxH - 8 - hh}`
-            : `M${x} ${boxH - 8} C ${x} ${boxH - 8 - hh * 0.4}, ${x + lean * 0.6} ${boxH - 8 - hh * 0.75}, ${topX} ${boxH - 8 - hh}`;
+            ? `M${x} ${boxH - 10} C ${x + 10} ${boxH - 10 - hh * 0.45}, ${topX} ${boxH - 10 - hh * 0.7}, ${topX + 4} ${boxH - 10 - hh}`
+            : `M${x} ${boxH - 10} C ${x} ${boxH - 10 - hh * 0.4}, ${x + lean * 0.6} ${boxH - 10 - hh * 0.75}, ${topX} ${boxH - 10 - hh}`;
           parts.push(`<path d="${d}" stroke="${L.stem}" stroke-width="${L.stemW}" fill="none" stroke-linecap="round"/>`);
-          const ly = boxH - 8 - hh;
+          const ly = boxH - 10 - hh;
           const leafT = L.leafT || 0;
           if (leafT > 0.08) {
-            const lw = (L.light > 0.7 ? 11 : 6.5) * leafT;
-            const lh = (L.light > 0.7 ? 8 : 4.5) * leafT;
-            parts.push(`<ellipse cx="${topX - lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(-32 ${topX - lw * 0.55} ${ly + 3})"/>`);
-            parts.push(`<ellipse cx="${topX + lw * 0.55}" cy="${ly + 3}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(32 ${topX + lw * 0.55} ${ly + 3})"/>`);
+            const lw = (L.light > 0.7 ? 16 : 9.5) * leafT;
+            const lh = (L.light > 0.7 ? 11 : 6.5) * leafT;
+            parts.push(`<ellipse cx="${topX - lw * 0.55}" cy="${ly + 4}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(-32 ${topX - lw * 0.55} ${ly + 4})"/>`);
+            parts.push(`<ellipse cx="${topX + lw * 0.55}" cy="${ly + 4}" rx="${lw}" ry="${lh}" fill="${L.leaf}" opacity="${leafT}" transform="rotate(32 ${topX + lw * 0.55} ${ly + 4})"/>`);
             if (leafT > 0.55) {
               const t2 = (leafT - 0.55) / 0.45;
-              parts.push(`<ellipse cx="${topX - 5}" cy="${ly + 14}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(-18 ${topX - 5} ${ly + 14})"/>`);
-              parts.push(`<ellipse cx="${topX + 5}" cy="${ly + 14}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(18 ${topX + 5} ${ly + 14})"/>`);
+              parts.push(`<ellipse cx="${topX - 7}" cy="${ly + 18}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(-18 ${topX - 7} ${ly + 18})"/>`);
+              parts.push(`<ellipse cx="${topX + 7}" cy="${ly + 18}" rx="${lw * 0.7 * t2}" ry="${lh * 0.7 * t2}" fill="${L.leaf}" opacity="${t2}" transform="rotate(18 ${topX + 7} ${ly + 18})"/>`);
             }
           } else {
-            const r = 2.2 + Math.min(L.h / 30, 2.2);
+            const r = 3.4 + Math.min(L.h / 28, 3.2);
             parts.push(`<circle cx="${topX}" cy="${ly}" r="${r}" fill="#c9c15a"/>`);
           }
         }
