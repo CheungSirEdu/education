@@ -251,6 +251,7 @@
       border-radius: 50%;
     }
     .bean-dot.swell { width: 18px; height: 21px; background: #7cb342; }
+    .bean-dot.dead { width: 12px; height: 13px; background: #6d4c41; border-color: #3e2723; }
     .pot-tag {
       text-align: center; font-size: 11px; font-weight: 900; color: var(--green-dark);
       background: #fffef6cc; border-radius: 8px; margin-top: 2px; padding: 1px 4px;
@@ -497,9 +498,13 @@
     function look(p) {
       const light = lightOf(p.zone);
       const age = p.age;
+      const noSunLong = light < 0.2 && age >= 9;
+      const dead = noSunLong && (p.health <= 0.15 || age >= 11);
+      const wilt = !dead && (noSunLong || (p.health < 0.35 && age >= 3));
       let stage = 0;
       if (p.beans <= 0) stage = -1;
-      else if (p.health < 0.35 && age >= 3) stage = 6;
+      else if (dead) stage = 7;
+      else if (wilt) stage = 6;
       else if (age >= 12) stage = 5;
       else if (age >= 7) stage = 4;
       else if (age >= 4) stage = 3;
@@ -509,18 +514,25 @@
 
       let h = 0;
       if (age >= 1.2) h = 16 + Math.max(0, age - 1.2) * (light > 0.7 ? 7.4 : light > 0.2 ? 8.8 : 12.6);
-      if (stage === 6) h *= 0.65;
       h = Math.min(h, light > 0.7 ? 128 : 188);
-      const leafT = Math.max(0, Math.min(1, (age - 3.2) / 3));
+      if (noSunLong) h *= Math.max(0.28, 1 - Math.min(1, (age - 8) / 3) * 0.7);
+      else if (stage === 6) h *= 0.65;
+      let leafT = Math.max(0, Math.min(1, (age - 3.2) / 3));
+      if (dead) leafT *= 0.25;
+      else if (noSunLong) leafT *= 0.45;
+
+      let stem = light > 0.7 ? "#3d7a32" : light > 0.2 ? "#7a9a45" : "#efe6a6";
+      let leaf = light > 0.7 ? "#43a047" : light > 0.2 ? "#9aaa4a" : "#e6d56a";
+      if (dead) { stem = "#5d4037"; leaf = "#6d4c41"; }
+      else if (noSunLong) { stem = "#8d6e4a"; leaf = "#a1887f"; }
 
       return {
         stage, beans: p.beans, cotton: p.cotton, moisture: p.moisture,
         age, health: p.health, light, h, leafT,
         lean: light > 0.7 && age >= 1.5 ? 8 + Math.min(age, 12) * 1.1 : (light < 0.25 ? 0 : 2),
         stemW: light > 0.7 ? 4.6 + Math.min(age, 12) * 0.38 : 2.6 + age * 0.14,
-        stem: light > 0.7 ? "#3d7a32" : light > 0.2 ? "#7a9a45" : "#efe6a6",
-        leaf: light > 0.7 ? "#43a047" : light > 0.2 ? "#9aaa4a" : "#e6d56a",
-        wilt: stage === 6
+        stem, leaf,
+        wilt, dead
       };
     }
 
@@ -549,7 +561,8 @@
         stemW: lerp(A.stemW, B.stemW, t),
         stem: mixHex(A.stem, B.stem, t),
         leaf: mixHex(A.leaf, B.leaf, t),
-        wilt: t > 0.6 ? B.wilt : A.wilt
+        wilt: t > 0.55 ? B.wilt : A.wilt,
+        dead: t > 0.55 ? B.dead : A.dead
       };
     }
 
@@ -557,7 +570,8 @@
       if (L.stage < 0) return "空杯";
       if (L.stage === 0) return "乾豆";
       if (L.age < 2) return "已浸水";
-      if (L.wilt) return "發蔫";
+      if (L.dead) return "已枯死";
+      if (L.wilt) return "枯萎";
       if (L.age < 4) return "已長出白根";
       if (L.light > 0.7) return L.age >= 7 ? "葉片綠色、莖粗壯" : "開始出芽";
       if (L.light < 0.2) return L.age >= 7 ? "葉片發黃，莖又細又長" : "白芽";
@@ -566,6 +580,7 @@
 
     function heightWord(L) {
       if (L.stage < 2) return "—";
+      if (L.dead) return "倒下";
       if (L.wilt) return "垂低";
       if (L.age < 4) return "很短";
       if (L.light > 0.7) return L.age >= 7 ? "較矮、粗壯" : "開始長高";
@@ -593,10 +608,11 @@
           const hh = L.h * (0.82 + i * 0.09);
           const lean = (L.lean || 0) + (L.light < 0.25 ? (i - 1) * 4 : 0);
           const topX = x + lean + (L.wilt ? 14 * Math.min(1, L.h / 40) : 0);
-          const d = L.wilt
-            ? `M${x} ${boxH - 10} C ${x + 10} ${boxH - 10 - hh * 0.45}, ${topX} ${boxH - 10 - hh * 0.7}, ${topX + 4} ${boxH - 10 - hh}`
+          const limp = L.dead || L.wilt;
+          const d = limp
+            ? `M${x} ${boxH - 10} C ${x + 12} ${boxH - 10 - hh * 0.4}, ${topX + (L.dead ? 10 : 4)} ${boxH - 10 - hh * 0.62}, ${topX + (L.dead ? 16 : 6)} ${boxH - 10 - hh}`
             : `M${x} ${boxH - 10} C ${x} ${boxH - 10 - hh * 0.4}, ${x + lean * 0.6} ${boxH - 10 - hh * 0.75}, ${topX} ${boxH - 10 - hh}`;
-          parts.push(`<path d="${d}" stroke="${L.stem}" stroke-width="${L.stemW}" fill="none" stroke-linecap="round"/>`);
+          parts.push(`<path d="${d}" stroke="${L.stem}" stroke-width="${L.stemW}" fill="none" stroke-linecap="round" opacity="${L.dead ? 0.55 : 1}"/>`);
           const ly = boxH - 10 - hh;
           const leafT = L.leafT || 0;
           if (leafT > 0.08) {
@@ -630,8 +646,9 @@
       if (state.day === 0) return "⑥ 準備完成後，請按「過一日」。綠豆會慢慢長高。請觀察第 1、4、9 日。";
       if (state.day === 2) return "兩天後：窗邊的幼苗是否向着陽光？生長方向與窗口方向相同還是相反？";
       if (state.day < 4) return `現在是第 ${state.day} 日。請繼續過日，重點觀察第 4 日和第 9 日。`;
-      if (state.day < 9) return "窗邊的幼苗會向着陽光彎曲；黑暗處的幼苗又黃又細長。請按「紀錄」對照。";
-      if (state.day < 20) return "綠豆幼苗會對光的方向做出反應：向着陽光生長。可以觀察到第 20 日。";
+      if (state.day < 9) return "窗邊的幼苗會向着陽光彎曲；黑暗處的幼苗又黃又細長。請繼續觀察第 9 日。";
+      if (state.day === 9) return "第 9 日：沒有陽光的幼苗開始枯萎；窗邊有陽光的幼苗可以繼續生長。";
+      if (state.day < 20) return "黑暗處沒有陽光，幼苗由第 9 日起枯萎死亡；窗邊有陽光的幼苗繼續生長。";
       return "已到第 20 日。請按「紀錄」查看你的發現。";
     }
 
@@ -659,7 +676,7 @@
       const waterH = Math.min(42, p.moisture * 14);
       const beans = [];
       for (let i = 0; i < Math.min(p.beans, 4); i++) {
-        beans.push(`<i class="bean-dot${L.stage >= 1 ? " swell" : ""}"></i>`);
+        beans.push(`<i class="bean-dot${L.dead ? " dead" : L.stage >= 1 ? " swell" : ""}"></i>`);
       }
       const place = p.zone === "window" ? "窗邊" : p.zone === "dark" ? "黑暗" : "枱";
       el.innerHTML = `
@@ -683,6 +700,9 @@
       } else if (n.age > 0) {
         n.dryStreak += 1;
         n.health -= 0.2;
+      }
+      if (lightOf(n.zone) < 0.2 && n.age >= 9) {
+        n.health = Math.max(0, n.health - 0.38);
       }
       n.moisture = Math.max(0, n.moisture - (n.cotton ? 0.12 : 1.05));
       if (n.health < 0) n.health = 0;
@@ -961,6 +981,7 @@
 
     function leafWord(L) {
       if (L.stage < 4) return "未見真葉";
+      if (L.dead) return "葉片枯黃";
       if (L.wilt) return "葉垂低";
       if (L.light > 0.7) return L.age >= 7 ? "葉多、綠色" : "開始出葉";
       if (L.light < 0.2) return "葉少、發黃";
@@ -968,6 +989,7 @@
     }
     function rootWord(L) {
       if (L.stage < 2) return "未見根";
+      if (L.dead) return "根已枯萎";
       if (L.wilt) return "根乾弱";
       if (L.light > 0.7) return "根較粗、向下";
       if (L.light < 0.2) return "根幼白";
@@ -975,6 +997,7 @@
     }
     function dirWord(p, L) {
       if (L.stage < 3) return "—";
+      if (L.dead) return "已倒下";
       if (p.zone === "window") return "向着陽光";
       if (p.zone === "dark") return "沒有固定方向";
       return "向上";
@@ -1029,9 +1052,10 @@
         $("logSheet").innerHTML = `
           <h2>實驗結論</h2>
           <p>探究問題：綠豆幼苗會對光的方向做出反應嗎？</p>
-          <p>窗邊（有陽光）的幼苗會<strong>向着陽光</strong>彎曲；黑暗處的幼苗又黃又細長，沒有固定方向。</p>
+          <p>窗邊（有陽光）的幼苗會<strong>向着陽光</strong>彎曲，並且可以繼續生長。</p>
+          <p>黑暗處的幼苗又黃又細長，沒有固定方向；約第 9 日起會枯萎死亡。</p>
           <p class="ok">綠豆幼苗<strong>會</strong>對光的方向做出反應，向着陽光生長。</p>
-          <p>發芽需要水和棉花保濕；健康生長還需要陽光。</p>
+          <p>發芽需要水和棉花保濕；長時間健康生長還需要陽光。</p>
           <button class="primary" id="again">再種一次</button>
           <button class="ghost-btn" id="keep">返回實驗</button>
         `;
