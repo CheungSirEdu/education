@@ -2,19 +2,19 @@
   "subjects": [
     "p2-sci",
     "p4-sci",
-    "kits",
     "p4-math",
     "p4-pe",
     "p4-ict",
     "p5-ict",
     "lang",
+    "kits",
     "bett"
   ],
   "items": {
     "p2-sci": [
+      "mungbean",
       "jump",
-      "p2jump",
-      "mungbean"
+      "p2jump"
     ],
     "p4-sci": [
       "engineer",
