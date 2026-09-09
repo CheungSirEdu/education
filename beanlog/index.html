@@ -117,6 +117,16 @@
     }
     .cam { background: var(--green); color: #fff; min-height: 52px; font-size: 18px; }
     .album { background: #fff; color: var(--green-dark); border: 4px solid var(--green); min-height: 52px; }
+    .danger {
+      width: 100%; background: #fff; color: #b71c1c; border: 4px solid #c62828;
+      min-height: 52px; font-size: 18px; margin: 0 0 12px;
+    }
+    .confirm {
+      position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .confirm .card { max-width: 420px; width: 100%; }
+    .confirm .row { margin-top: 12px; margin-bottom: 0; }
     .sr-file {
       position: absolute; left: 0; top: 0; width: 1px; height: 1px;
       opacity: 0; overflow: hidden;
@@ -207,6 +217,7 @@
       </div>
       <input id="fileCam" class="sr-file" type="file" accept="image/*" capture="environment">
       <input id="fileAlbum" class="sr-file" type="file" accept="image/*">
+      <button class="danger hidden" id="btnDel" type="button">刪除本日相片</button>
 
       <h2>生長情況</h2>
       <div class="stages" id="stages"></div>
@@ -217,12 +228,23 @@
       <textarea id="note" maxlength="400" placeholder="轉換後的書面語會顯示於此，亦可自行修改。"></textarea>
 
       <button class="primary" id="btnSave" type="button">儲存本日紀錄</button>
-      <p class="hint" id="saveHint">儲存後會交給老師。同一日再次儲存，會取代舊紀錄。</p>
+      <p class="hint" id="saveHint">儲存後會交給老師。同一日再次儲存，會取代舊紀錄。若相片不正確，可按「刪除本日相片」後重新拍照。</p>
 
       <h2>已紀錄的日子</h2>
       <div class="gallery" id="gallery"></div>
     </div>
   </section>
+
+  <div class="confirm hidden" id="delModal">
+    <div class="card">
+      <h2 style="text-align:center;margin-top:0">確定刪除本日相片嗎？</h2>
+      <p class="hint" style="text-align:center">刪除後，老師亦不會再見到這張相片。可以重新拍照。</p>
+      <div class="row">
+        <button class="album" id="btnDelNo" type="button">取消</button>
+        <button class="danger" id="btnDelYes" type="button" style="margin:0">確定刪除</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
@@ -473,6 +495,7 @@
         img.classList.add("hidden");
         ph.classList.remove("hidden");
       }
+      $("btnDel").classList.toggle("hidden", !state.photo || isLive());
     }
 
     function renderDays() {
@@ -556,8 +579,8 @@
       try { await dbSet(recKey(), state.recs); } catch (e) {}
     }
 
-    function sendTeacher() {
-      const body = JSON.stringify({
+    function sendTeacher(extra) {
+      const body = JSON.stringify(Object.assign({
         token: SCORE_TOKEN,
         kind: "beanlog",
         activity: ACTIVITY,
@@ -568,7 +591,7 @@
         result: state.stage,
         note: $("note").value.trim(),
         photo: state.photo
-      });
+      }, extra || {}));
       try {
         fetch(SCORE_URL, {
           method: "POST",
@@ -577,6 +600,25 @@
           body: body
         }).catch(function () {});
       } catch (e) {}
+    }
+
+    async function deleteToday() {
+      if (!state.photo) return;
+      stopLive();
+      state.photo = "";
+      if (state.recs[state.day]) {
+        state.recs[state.day].photo = "";
+        if (!state.recs[state.day].stage && !state.recs[state.day].note) {
+          delete state.recs[state.day];
+        }
+      }
+      try { await dbSet(recKey(), state.recs); } catch (e) {}
+      sendTeacher({ op: "delete", photo: "" });
+      $("btnSave").textContent = "儲存本日紀錄";
+      showPhoto();
+      renderDays();
+      renderGallery();
+      toast("已刪除本日相片。可以重新拍照。");
     }
 
     async function onFile(file) {
@@ -699,6 +741,16 @@
       const v = $("note").value.trim();
       if (v) $("note").value = toWritten(v);
     });
+
+    $("btnDel").onclick = function () {
+      if (!state.photo) return;
+      $("delModal").classList.remove("hidden");
+    };
+    $("btnDelNo").onclick = function () { $("delModal").classList.add("hidden"); };
+    $("btnDelYes").onclick = async function () {
+      $("delModal").classList.add("hidden");
+      await deleteToday();
+    };
 
     $("btnSave").onclick = async function () {
       if (!state.photo) { toast("請先拍照。", true); return; }
