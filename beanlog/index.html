@@ -186,7 +186,7 @@
         <label>班別<input id="klass" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 2A"></label>
         <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
       </div>
-      <div class="care">請小心拍攝：只拍攝綠豆盆栽，不要拍到家中環境或家人。<br>相片會給老師和同學看見，大家可以互相欣賞彼此的盆栽。<br>系統會檢查相片；拍到人或不是綠豆盆栽，便不能上傳。</div>
+      <div class="care">請小心拍攝：只拍攝綠豆盆栽，不要拍到家中環境或家人。<br>相片會給老師和同學看見，大家可以互相欣賞彼此的盆栽。</div>
       <div class="plant-pic">
         <img src="assets/plant-v2.jpg" alt="小志和小蓮把綠豆種在杯中的棉花上" draggable="false">
       </div>
@@ -238,17 +238,11 @@
       <button class="ghost" id="btnClass" type="button">欣賞同學的盆栽</button>
       <div id="classPanel" class="hidden">
         <h2>本班同學的盆栽</h2>
-        <p class="hint">請欣賞綠豆的生長。相片已經過檢查，請只觀看盆栽。</p>
+        <p class="hint">請欣賞綠豆的生長。</p>
         <div class="gallery class-gallery" id="classGallery"></div>
       </div>
     </div>
   </section>
-
-  <div class="confirm hidden" id="checkMask">
-    <div class="card">
-      <p class="hint" style="text-align:center;font-size:18px;margin:0">正在檢查相片，請稍候。<br>請只拍攝綠豆盆栽。</p>
-    </div>
-  </div>
 
   <div class="confirm hidden" id="delModal">
     <div class="card">
@@ -284,7 +278,6 @@
       day: 1,
       stage: "",
       photo: "",
-      photoOk: false,
       recs: {},
       stream: null,
       listening: false
@@ -480,7 +473,11 @@
         toast("請稍候，鏡頭尚未準備好。", true);
         return false;
       }
-      return acceptPhoto(data);
+      state.photo = data;
+      stopLive();
+      showPhoto();
+      toast("已拍攝相片");
+      return true;
     }
 
     function stopLive() {
@@ -562,7 +559,6 @@
       state.day = d;
       const rec = state.recs[d] || {};
       state.photo = rec.photo || "";
-      state.photoOk = false;
       state.stage = rec.stage || "";
       $("note").value = rec.note || "";
       $("dayTitle").textContent = "第 " + d + " 日";
@@ -619,7 +615,6 @@
       if (!state.photo) return;
       stopLive();
       state.photo = "";
-      state.photoOk = false;
       if (state.recs[state.day]) {
         state.recs[state.day].photo = "";
         if (!state.recs[state.day].stage && !state.recs[state.day].note) {
@@ -635,164 +630,14 @@
       toast("已刪除本日相片。可以重新拍照。");
     }
 
-    const safety = { ready: false, loading: null, coco: null, faces: null, nsfw: null };
-
-    function loadScript(src) {
-      return new Promise(function (resolve, reject) {
-        const found = Array.prototype.find.call(document.scripts, function (s) { return s.src === src; });
-        if (found) { resolve(); return; }
-        const s = document.createElement("script");
-        s.src = src;
-        s.onload = resolve;
-        s.onerror = function () { reject(new Error("script")); };
-        document.head.appendChild(s);
-      });
-    }
-
-    function loadSafetyModels() {
-      if (safety.ready) return Promise.resolve(true);
-      if (safety.loading) return safety.loading;
-      safety.loading = (async function () {
-        await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js");
-        if (window.tf && tf.ready) await tf.ready();
-        await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js");
-        try {
-          safety.coco = await Promise.race([
-            cocoSsd.load({ modelUrl: "models/coco-ssd/model.json" }),
-            new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, 20000); })
-          ]);
-        } catch (e) {
-          safety.coco = await cocoSsd.load({ base: "lite_mobilenet_v2" });
-        }
-        try {
-          await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js");
-          safety.faces = await blazeface.load();
-        } catch (e) { safety.faces = null; }
-        try {
-          await loadScript("https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js");
-          safety.nsfw = await nsfwjs.load();
-        } catch (e) { safety.nsfw = null; }
-        safety.ready = true;
-        return true;
-      })().catch(function (err) {
-        safety.loading = null;
-        throw err;
-      });
-      return safety.loading;
-    }
-
-    function imageFromData(dataUrl) {
-      return new Promise(function (resolve, reject) {
-        const img = new Image();
-        img.onload = function () { resolve(img); };
-        img.onerror = reject;
-        img.src = dataUrl;
-      });
-    }
-
-    function plantColorScore(img) {
-      const c = document.createElement("canvas");
-      c.width = 80; c.height = 80;
-      const ctx = c.getContext("2d");
-      ctx.drawImage(img, 0, 0, 80, 80);
-      const d = ctx.getImageData(16, 16, 48, 48).data;
-      let plant = 0, cotton = 0, n = 0;
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i + 1], b = d[i + 2];
-        n++;
-        const green = g > r + 10 && g > b + 6 && g > 48;
-        const olive = g > 65 && r > 35 && r < 190 && b < 130 && g >= r - 15 && g > b;
-        const sprout = r > 130 && g > 140 && b > 80 && g >= r - 5 && g > b + 12;
-        const white = r > 200 && g > 200 && b > 200 && Math.abs(r - g) < 22 && Math.abs(g - b) < 22;
-        if (green || olive || sprout) plant++;
-        if (white) cotton++;
-      }
-      return { plant: plant / n, cotton: cotton / n };
-    }
-
-    const PLANT_OBJS = { "potted plant": 1, vase: 1, cup: 1, bowl: 1, bottle: 1, "wine glass": 1, orange: 1, apple: 1, banana: 1, carrot: 1, broccoli: 1 };
-    const BLOCK_OBJS = {
-      person: 1, cat: 1, dog: 1, horse: 1, sheep: 1, cow: 1, elephant: 1, bear: 1, zebra: 1, giraffe: 1, bird: 1,
-      tv: 1, laptop: 1, "cell phone": 1, keyboard: 1, mouse: 1, remote: 1, book: 1, toilet: 1, bed: 1,
-      bicycle: 1, car: 1, motorcycle: 1, airplane: 1, bus: 1, train: 1, truck: 1, boat: 1,
-      "teddy bear": 1, backpack: 1, handbag: 1, umbrella: 1, tie: 1, suitcase: 1, "sports ball": 1,
-      skateboard: 1, surfboard: 1, kite: 1, "tennis racket": 1
-    };
-
-    async function inspectPhoto(dataUrl) {
-      const img = await imageFromData(dataUrl);
-      await loadSafetyModels();
-      if (!safety.coco) throw new Error("model");
-
-      const preds = await safety.coco.detect(img, 12);
-      const person = preds.find(function (p) { return p.class === "person" && p.score >= 0.38; });
-      if (person) return { ok: false, message: "請只拍攝綠豆盆栽，不要拍到人。" };
-
-      if (safety.faces) {
-        try {
-          const faces = await safety.faces.estimateFaces(img, false);
-          const realFace = (faces || []).some(function (f) {
-            const p = f.probability;
-            const conf = Array.isArray(p) ? p[0] : p;
-            return conf == null || conf >= 0.7;
-          });
-          if (realFace) return { ok: false, message: "請只拍攝綠豆盆栽，不要拍到人。" };
-        } catch (e) {}
-      }
-
-      if (safety.nsfw) {
-        try {
-          const nsfw = await safety.nsfw.classify(img, 5);
-          const bad = (nsfw || []).find(function (x) {
-            return (x.className === "Porn" || x.className === "Hentai") && x.probability >= 0.55
-              || (x.className === "Sexy" && x.probability >= 0.8);
-          });
-          if (bad) return { ok: false, message: "這張相片不能上傳。請只拍攝綠豆盆栽。" };
-        } catch (e) {}
-      }
-
-      const blocked = preds.find(function (p) { return BLOCK_OBJS[p.class] && p.score >= 0.5; });
-      if (blocked) return { ok: false, message: "請只拍攝綠豆盆栽的生長情況，不要拍到其他事物。" };
-
-      const plantObj = preds.find(function (p) { return PLANT_OBJS[p.class] && p.score >= 0.32; });
-      const color = plantColorScore(img);
-      const looksPlant = color.plant >= 0.04 || (color.cotton >= 0.18 && color.plant >= 0.012);
-      if (plantObj || looksPlant) return { ok: true };
-      if (!preds.length && looksPlant) return { ok: true };
-      return { ok: false, message: "未能確認這是綠豆盆栽。請對準綠豆再拍攝一次。" };
-    }
-
-    function showCheck(on) {
-      $("checkMask").classList.toggle("hidden", !on);
-    }
-
-    async function acceptPhoto(data) {
-      showCheck(true);
-      try {
-        const result = await inspectPhoto(data);
-        showCheck(false);
-        if (!result.ok) {
-          toast(result.message, true);
-          return false;
-        }
-        state.photo = data;
-        state.photoOk = true;
-        stopLive();
-        showPhoto();
-        toast("已拍攝相片");
-        return true;
-      } catch (e) {
-        showCheck(false);
-        toast("未能檢查相片，請稍後再試。", true);
-        return false;
-      }
-    }
-
     async function onFile(file) {
       if (!file) return;
       try {
         const data = await compressBlob(file);
-        await acceptPhoto(data);
+        state.photo = data;
+        stopLive();
+        showPhoto();
+        toast("已拍攝相片");
       } catch (e) {
         toast("未能讀取相片，請改用「拍照」。", true);
       }
@@ -988,24 +833,6 @@
         return;
       }
       $("btnSave").disabled = true;
-      if (!state.photoOk) {
-        showCheck(true);
-        try {
-          const result = await inspectPhoto(state.photo);
-          showCheck(false);
-          if (!result.ok) {
-            toast(result.message, true);
-            $("btnSave").disabled = false;
-            return;
-          }
-          state.photoOk = true;
-        } catch (e) {
-          showCheck(false);
-          toast("未能檢查相片，請稍後再試。", true);
-          $("btnSave").disabled = false;
-          return;
-        }
-      }
       await persistLocal();
       sendTeacher();
       renderDays();
@@ -1023,7 +850,6 @@
       $("who").textContent = id.class + "　學號 " + id.no;
       $("start").classList.add("hidden");
       $("app").classList.remove("hidden");
-      loadSafetyModels().catch(function () {});
       await loadRecs();
       pickDay(1);
     };
