@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="家中種綠豆" />
+  <meta name="theme-color" content="#2f7d32" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>家中種綠豆　生長觀察</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #2f7d32;
+      --green-dark: #1b5e20;
+      --yellow: #f4d35e;
+      --ink: #1d2b1f;
+      --muted: #3d5c40;
+      --card: #fffef6;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; min-height: 100%; min-height: 100dvh;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(#8fd3f0, #c8f0c0) fixed;
+    }
+    button, .btn {
+      appearance: none; border: 0; font: inherit; font-weight: 900;
+      border-radius: 16px; cursor: pointer;
+    }
+    button:disabled { opacity: .45; }
+    .hidden { display: none !important; }
+    .panel {
+      min-height: 100dvh;
+      padding: calc(16px + var(--safe-t)) 16px calc(24px + var(--safe-b));
+    }
+    .card {
+      background: var(--card);
+      border: 5px solid var(--green);
+      border-radius: 24px;
+      padding: 18px 16px 20px;
+      box-shadow: 0 8px 0 var(--green-dark);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 6px; text-align: center; color: var(--green-dark); font-size: clamp(22px, 6vw, 28px); }
+    .sub { text-align: center; font-weight: 700; color: var(--muted); margin: 0 0 10px; }
+    .id-note, .how {
+      font-weight: 800; line-height: 1.5; text-align: center;
+    }
+    .how {
+      background: #fff; border: 4px solid #c5dcc6; border-radius: 18px;
+      padding: 12px 14px; margin: 12px 0 14px; font-size: clamp(16px, 4.4vw, 20px);
+    }
+    .ids { display: flex; gap: 10px; margin: 12px 0; }
+    .ids label { flex: 1; font-size: 14px; font-weight: 700; color: var(--green-dark); }
+    .ids input {
+      width: 100%; margin-top: 4px; font: inherit; font-weight: 700; font-size: 18px;
+      min-height: 48px; padding: 12px; border: 3px solid #c5dcc6; border-radius: 12px;
+    }
+    .chars { display: flex; justify-content: center; gap: 24px; margin: 8px 0 12px; }
+    .chars img { height: 84px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .primary {
+      width: 100%; background: var(--green); color: #fff; font-size: 20px;
+      min-height: 54px; padding: 14px; box-shadow: 0 5px 0 var(--green-dark);
+    }
+    .primary.alt { background: #1565c0; box-shadow: 0 5px 0 #0d47a1; }
+    .ghost {
+      width: 100%; background: #fff; color: var(--green-dark);
+      border: 4px solid var(--green); min-height: 48px; padding: 12px; margin-top: 8px;
+    }
+    .topbar {
+      max-width: 720px; margin: 0 auto 12px; display: flex; gap: 8px; align-items: center;
+    }
+    .who { flex: 1; font-weight: 900; color: var(--green-dark); }
+    .days {
+      max-width: 720px; margin: 0 auto 12px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    }
+    .day {
+      min-height: 48px; background: #fff; border: 3px solid #c5dcc6; color: var(--ink);
+      font-size: 14px; padding: 6px 4px; line-height: 1.2;
+    }
+    .day.on { background: var(--yellow); border-color: #c9a227; }
+    .day.done { box-shadow: inset 0 -6px 0 #81c784; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    .photo {
+      background: #fff; border: 5px solid var(--green); border-radius: 22px;
+      min-height: 220px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative; margin-bottom: 12px;
+    }
+    .photo img, .photo video {
+      width: 100%; height: 280px; object-fit: cover; display: block;
+    }
+    .photo .ph {
+      text-align: center; font-weight: 800; color: var(--muted); padding: 24px;
+      font-size: 18px;
+    }
+    .row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .row .btn, .row button { flex: 1; }
+    .cam { background: var(--green); color: #fff; min-height: 52px; font-size: 18px; }
+    .album { background: #fff; color: var(--green-dark); border: 4px solid var(--green); min-height: 52px; }
+    .snap { background: #ef6c00; color: #fff; min-height: 52px; }
+    h2 {
+      margin: 8px 0 8px; font-size: 18px; color: var(--green-dark);
+    }
+    .stages {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
+    }
+    .stage {
+      text-align: left; background: #fff; border: 3px solid #c5dcc6;
+      min-height: 52px; padding: 10px 12px; font-size: 15px;
+    }
+    .stage.on { background: #e8f5e9; border-color: var(--green); box-shadow: 0 0 0 3px #c8e6c9; }
+    .voice {
+      width: 100%; background: #6a1b9a; color: #fff; min-height: 52px; font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .voice.live { background: #c62828; }
+    textarea {
+      width: 100%; min-height: 88px; font: inherit; font-weight: 700; font-size: 16px;
+      padding: 12px; border: 3px solid #c5dcc6; border-radius: 14px; resize: vertical;
+      margin-bottom: 12px;
+    }
+    .hint { font-weight: 700; color: var(--muted); margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+    .toast {
+      position: fixed; left: 16px; right: 16px; bottom: calc(16px + var(--safe-b));
+      background: #1b5e20; color: #fff; padding: 12px 16px; border-radius: 16px;
+      font-weight: 800; text-align: center; z-index: 40;
+    }
+    .toast.bad { background: #b71c1c; }
+    .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .gallery button {
+      padding: 0; background: #fff; border: 3px solid #c5dcc6; border-radius: 12px; overflow: hidden;
+    }
+    .gallery img { width: 100%; height: 64px; object-fit: cover; display: block; }
+    .gallery span { display: block; font-size: 12px; padding: 4px 0 6px; }
+    @media (min-width: 820px) {
+      .photo img, .photo video { height: 360px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="start" class="panel">
+    <div class="card">
+      <h1>家中種綠豆</h1>
+      <p class="sub">二年級科學　第三課 動手種植物</p>
+      <p class="id-note">開始前請填寫班別及學號，無須填寫姓名。</p>
+      <div class="ids">
+        <label>班別<input id="klass" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 2A"></label>
+        <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
+      </div>
+      <div class="chars">
+        <img src="assets/boy.png" alt="小志" draggable="false">
+        <img src="assets/girl.png" alt="小蓮" draggable="false">
+      </div>
+      <div class="how">把綠豆種在杯中的棉花上，放在家中有陽光的地方。<br>每日影一張相片，選擇生長情況，也可以說話紀錄。</div>
+      <button class="primary" id="startBtn" disabled>開始觀察</button>
+    </div>
+  </section>
+
+  <section id="app" class="panel hidden">
+    <div class="topbar">
+      <div class="who" id="who"></div>
+      <button class="ghost" id="logout" type="button" style="width:auto;padding:8px 12px;margin:0;min-height:40px;font-size:14px">離開</button>
+    </div>
+    <p class="hint wrap">請選擇要紀錄的日子。同一日可以再影相、再儲存。</p>
+    <div class="days" id="days"></div>
+    <div class="wrap">
+      <h2 id="dayTitle">第 1 日</h2>
+      <div class="photo" id="photoBox">
+        <div class="ph" id="photoPh">尚未影相<br>請對準綠豆盆栽</div>
+        <img id="photoImg" class="hidden" alt="綠豆相片">
+        <video id="live" class="hidden" autoplay playsinline muted></video>
+      </div>
+      <div class="row">
+        <button class="cam" id="btnCam" type="button">影相</button>
+        <button class="album" id="btnAlbum" type="button">相簿</button>
+      </div>
+      <div class="row hidden" id="liveRow">
+        <button class="snap" id="btnSnap" type="button">按此拍照</button>
+        <button class="album" id="btnCloseLive" type="button">關閉鏡頭</button>
+      </div>
+      <input id="fileCam" type="file" accept="image/*" capture="environment" hidden>
+      <input id="fileAlbum" type="file" accept="image/*" hidden>
+
+      <h2>生長情況</h2>
+      <div class="stages" id="stages"></div>
+
+      <h2>語音紀錄</h2>
+      <p class="hint" id="voiceHint">按下後，用普通話或廣東話說出綠豆的生長情況，會轉成書面語。</p>
+      <button class="voice" id="btnVoice" type="button">開始說話</button>
+      <textarea id="note" maxlength="400" placeholder="書面語會顯示在這裏，也可以自行修改。"></textarea>
+
+      <button class="primary" id="btnSave" type="button">儲存本日紀錄</button>
+      <p class="hint" id="saveHint">儲存後會交給老師。同一日再儲存，會取代舊紀錄。</p>
+
+      <h2>已紀錄的日子</h2>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </section>
+
+  <script>
+    const SCORE_URL = "https://script.google.com/macros/s/AKfycbyQsIuKgSBXqPYXENmsbS79X2ND6_otmq9PefobcVhpr6uapZko-6SIs8bK7mo7xMHhdg/exec";
+    const SCORE_TOKEN = "chilin-edu-2026";
+    const ACTIVITY = "家中種綠豆";
+    const MAX_DAY = 20;
+    const STAGES = [
+      "未發芽",
+      "開始發芽",
+      "開始見到白色",
+      "開始長高",
+      "長出真葉",
+      "開始倒向有光嗰邊",
+      "開始枯萎",
+      "已經死亡"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      class: "",
+      no: "",
+      day: 1,
+      stage: "",
+      photo: "",
+      recs: {},
+      stream: null,
+      listening: false
+    };
+
+    function identityOk() {
+      const klass = ($("klass").value || "").trim().slice(0, 8);
+      const no = ($("stuno").value || "").trim();
+      return { ok: klass.length >= 1 && /^\d{1,3}$/.test(no), class: klass, no };
+    }
+    $("klass").addEventListener("input", () => { $("startBtn").disabled = !identityOk().ok; });
+    $("stuno").addEventListener("input", () => { $("startBtn").disabled = !identityOk().ok; });
+
+    function toast(msg, bad) {
+      document.querySelectorAll(".toast").forEach(n => n.remove());
+      const n = document.createElement("div");
+      n.className = "toast" + (bad ? " bad" : "");
+      n.textContent = msg;
+      document.body.append(n);
+      setTimeout(() => n.remove(), 2800);
+    }
+
+    function dbOpen() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open("beanlog-v1", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("recs");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function dbGet(key) {
+      const db = await dbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("recs", "readonly");
+        const q = tx.objectStore("recs").get(key);
+        q.onsuccess = () => resolve(q.result || {});
+        q.onerror = () => reject(q.error);
+      });
+    }
+    async function dbSet(key, val) {
+      const db = await dbOpen();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("recs", "readwrite");
+        tx.objectStore("recs").put(val, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    function recKey() { return state.class + "|" + state.no; }
+
+    function toWritten(raw) {
+      let t = String(raw || "").trim();
+      if (!t) return "";
+      const pairs = [
+        [/未發到芽|未見發芽|未有發芽|未發芽到/g, "尚未發芽"],
+        [/發緊芽|發咗芽|出咗芽/g, "開始發芽"],
+        [/見到啲白|見到白色|有啲白|出咗白/g, "開始見到白色"],
+        [/長高咗|高咗好多|開始長高|高咗/g, "開始長高"],
+        [/出咗真葉|長出真葉|有真葉|出咗葉/g, "長出真葉"],
+        [/歪去有光|側去窗邊|趷去光|倒向有光|趷去窗/g, "開始倒向有光的一邊"],
+        [/枯咗|蔫咗|開始枯萎|枯萎/g, "開始枯萎"],
+        [/死咗|已經死|死亡/g, "已經死亡"],
+        [/琴日|噚日/g, "昨天"],
+        [/今日/g, "今天"],
+        [/聽日/g, "明天"],
+        [/而家/g, "現在"],
+        [/之後/g, "之後"],
+        [/冇乜/g, "沒有什麼"],
+        [/唔好/g, "不要"],
+        [/唔使/g, "不用"],
+        [/唔知/g, "不知道"],
+        [/仲未/g, "還沒有"],
+        [/仲有/g, "還有"],
+        [/好似/g, "好像"],
+        [/好高/g, "很高"],
+        [/好短/g, "很短"],
+        [/好快/g, "很快"],
+        [/好慢/g, "很慢"],
+        [/窗邊/g, "窗邊"],
+        [/黑暗嘅地方|暗處|黑暗/g, "黑暗處"],
+        [/綠豆/g, "綠豆"],
+        [/棉花/g, "棉花"],
+        [/水杯|杯度|杯裏面|杯入面/g, "杯中"],
+        [/我覺得/g, "我覺得"],
+        [/睇到/g, "看到"],
+        [/影相/g, "拍照"],
+        [/冇/g, "沒有"],
+        [/唔/g, "不"],
+        [/咗/g, "了"],
+        [/緊/g, "正在"],
+        [/嘅/g, "的"],
+        [/啲/g, "些"],
+        [/咁/g, "這麼"],
+        [/喺/g, "在"],
+        [/佢哋/g, "它們"],
+        [/佢/g, "它"],
+        [/啦|喇|囉|喎|㗎|吖|呀|嘅喎/g, ""],
+        [/  +/g, " "]
+      ];
+      pairs.forEach(function (p) { t = t.replace(p[0], p[1]); });
+      t = t.replace(/[，,]+/g, "，").replace(/[。\.]+/g, "。").trim();
+      if (t && !/[。！？]$/.test(t)) t += "。";
+      return t;
+    }
+
+    function compressBlob(file) {
+      return new Promise(function (resolve, reject) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = function () {
+          const max = 960;
+          let w = img.width, h = img.height;
+          if (w > max || h > max) {
+            if (w > h) { h = Math.round(h * max / w); w = max; }
+            else { w = Math.round(w * max / h); h = max; }
+          }
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL("image/jpeg", 0.72));
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+          reject(new Error("photo"));
+        };
+        img.src = url;
+      });
+    }
+
+    function compressCanvas(video) {
+      const max = 960;
+      let w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) return "";
+      if (w > max || h > max) {
+        if (w > h) { h = Math.round(h * max / w); w = max; }
+        else { w = Math.round(w * max / h); h = max; }
+      }
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      c.getContext("2d").drawImage(video, 0, 0, w, h);
+      return c.toDataURL("image/jpeg", 0.72);
+    }
+
+    function stopLive() {
+      if (state.stream) {
+        state.stream.getTracks().forEach(function (t) { t.stop(); });
+        state.stream = null;
+      }
+      $("live").classList.add("hidden");
+      $("liveRow").classList.add("hidden");
+      showPhoto();
+    }
+
+    function showPhoto() {
+      const img = $("photoImg");
+      const ph = $("photoPh");
+      if (state.photo) {
+        img.src = state.photo;
+        img.classList.remove("hidden");
+        ph.classList.add("hidden");
+      } else {
+        img.classList.add("hidden");
+        ph.classList.remove("hidden");
+      }
+    }
+
+    function renderDays() {
+      const box = $("days");
+      box.innerHTML = "";
+      for (let i = 1; i <= MAX_DAY; i++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "day" + (i === state.day ? " on" : "") + (state.recs[i] && state.recs[i].photo ? " done" : "");
+        b.textContent = "第" + i + "日";
+        b.onclick = function () { pickDay(i); };
+        box.appendChild(b);
+      }
+    }
+
+    function renderStages() {
+      const box = $("stages");
+      box.innerHTML = "";
+      STAGES.forEach(function (name) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "stage" + (state.stage === name ? " on" : "");
+        b.textContent = name;
+        b.onclick = function () {
+          state.stage = name;
+          renderStages();
+        };
+        box.appendChild(b);
+      });
+    }
+
+    function renderGallery() {
+      const box = $("gallery");
+      box.innerHTML = "";
+      const days = Object.keys(state.recs).map(Number).sort(function (a, b) { return a - b; });
+      days.forEach(function (d) {
+        const rec = state.recs[d];
+        if (!rec || !rec.photo) return;
+        const b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = "<img alt=\"\" src=\"" + rec.photo + "\"><span>第" + d + "日</span>";
+        b.onclick = function () { pickDay(d); };
+        box.appendChild(b);
+      });
+      if (!box.children.length) {
+        box.innerHTML = "<p class=\"hint\" style=\"grid-column:1/-1\">尚未有相片。</p>";
+      }
+    }
+
+    function pickDay(d) {
+      stopLive();
+      state.day = d;
+      const rec = state.recs[d] || {};
+      state.photo = rec.photo || "";
+      state.stage = rec.stage || "";
+      $("note").value = rec.note || "";
+      $("dayTitle").textContent = "第 " + d + " 日";
+      $("btnSave").textContent = rec.photo ? "儲存並取代舊紀錄" : "儲存本日紀錄";
+      showPhoto();
+      renderDays();
+      renderStages();
+      renderGallery();
+    }
+
+    async function loadRecs() {
+      try {
+        state.recs = (await dbGet(recKey())) || {};
+      } catch (e) {
+        state.recs = {};
+      }
+    }
+
+    async function persistLocal() {
+      state.recs[state.day] = {
+        day: state.day,
+        stage: state.stage,
+        note: $("note").value.trim(),
+        photo: state.photo,
+        at: Date.now()
+      };
+      try { await dbSet(recKey(), state.recs); } catch (e) {}
+    }
+
+    function sendTeacher() {
+      const body = JSON.stringify({
+        token: SCORE_TOKEN,
+        kind: "beanlog",
+        activity: ACTIVITY,
+        class: state.class,
+        no: state.no,
+        day: state.day,
+        level: "第" + state.day + "日",
+        result: state.stage,
+        note: $("note").value.trim(),
+        photo: state.photo
+      });
+      try {
+        fetch(SCORE_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: body
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    async function onFile(file) {
+      if (!file) return;
+      try {
+        const data = await compressBlob(file);
+        state.photo = data;
+        stopLive();
+        showPhoto();
+        toast("已拍攝相片");
+      } catch (e) {
+        toast("未能讀取相片，請改用「影相」。", true);
+      }
+    }
+
+    $("fileCam").addEventListener("change", function () {
+      const f = this.files && this.files[0];
+      this.value = "";
+      onFile(f);
+    });
+    $("fileAlbum").addEventListener("change", function () {
+      const f = this.files && this.files[0];
+      this.value = "";
+      onFile(f);
+    });
+    $("btnCam").onclick = async function () {
+      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      if (isiOS || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        $("fileCam").click();
+        return;
+      }
+      try {
+        stopLive();
+        state.stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        $("live").srcObject = state.stream;
+        $("live").classList.remove("hidden");
+        $("photoImg").classList.add("hidden");
+        $("photoPh").classList.add("hidden");
+        $("liveRow").classList.remove("hidden");
+      } catch (e) {
+        $("fileCam").click();
+      }
+    };
+    $("btnAlbum").onclick = function () { $("fileAlbum").click(); };
+    $("btnSnap").onclick = function () {
+      const data = compressCanvas($("live"));
+      if (!data) { toast("請稍等鏡頭準備好。", true); return; }
+      state.photo = data;
+      stopLive();
+      showPhoto();
+      toast("已拍攝相片");
+    };
+    $("btnCloseLive").onclick = stopLive;
+
+    let recer = null;
+    function speechEngine() {
+      const C = window.SpeechRecognition || window.webkitSpeechRecognition;
+      return C ? new C() : null;
+    }
+    $("btnVoice").onclick = function () {
+      if (state.listening && recer) {
+        try { recer.stop(); } catch (e) {}
+        return;
+      }
+      recer = speechEngine();
+      if (!recer) {
+        $("voiceHint").textContent = "這部裝置未能用語音。請在下面用文字寫下綠豆的生長情況。";
+        $("note").focus();
+        toast("請改用文字紀錄。", true);
+        return;
+      }
+      recer.lang = "zh-HK";
+      recer.interimResults = false;
+      recer.maxAlternatives = 1;
+      recer.onstart = function () {
+        state.listening = true;
+        $("btnVoice").textContent = "正在聆聽，請說話";
+        $("btnVoice").classList.add("live");
+      };
+      recer.onend = function () {
+        state.listening = false;
+        $("btnVoice").textContent = "開始說話";
+        $("btnVoice").classList.remove("live");
+      };
+      recer.onerror = function () {
+        toast("未能聽到語音，可以再試或改用文字。", true);
+      };
+      recer.onresult = function (ev) {
+        const said = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
+        const written = toWritten(said);
+        $("note").value = written;
+        toast("已轉成書面語");
+      };
+      try { recer.start(); } catch (e) {
+        toast("未能開啟麥克風。", true);
+      }
+    };
+
+    $("note").addEventListener("blur", function () {
+      const v = $("note").value.trim();
+      if (v) $("note").value = toWritten(v);
+    });
+
+    $("btnSave").onclick = async function () {
+      if (!state.photo) { toast("請先影相。", true); return; }
+      if (!state.stage && !$("note").value.trim()) {
+        toast("請選擇生長情況，或用語音／文字紀錄。", true);
+        return;
+      }
+      $("btnSave").disabled = true;
+      await persistLocal();
+      sendTeacher();
+      renderDays();
+      renderGallery();
+      $("btnSave").textContent = "儲存並取代舊紀錄";
+      $("btnSave").disabled = false;
+      toast("已儲存，並交給老師。");
+    };
+
+    $("startBtn").onclick = async function () {
+      const id = identityOk();
+      if (!id.ok) return;
+      state.class = id.class;
+      state.no = id.no;
+      $("who").textContent = id.class + "　學號 " + id.no;
+      $("start").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      await loadRecs();
+      pickDay(1);
+    };
+    $("logout").onclick = function () {
+      stopLive();
+      $("app").classList.add("hidden");
+      $("start").classList.remove("hidden");
+    };
+
+    renderStages();
+  </script>
+</body>
+</html>
