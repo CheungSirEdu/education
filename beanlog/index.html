@@ -104,10 +104,18 @@
       font-size: 18px;
     }
     .row { display: flex; gap: 8px; margin-bottom: 12px; }
-    .row .btn, .row button { flex: 1; }
+    .row .btn, .row button, .row .cam, .row .album { flex: 1; }
+    .cam, .album {
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; text-decoration: none;
+      font: inherit; font-weight: 900; cursor: pointer;
+    }
     .cam { background: var(--green); color: #fff; min-height: 52px; font-size: 18px; }
     .album { background: #fff; color: var(--green-dark); border: 4px solid var(--green); min-height: 52px; }
-    .snap { background: #ef6c00; color: #fff; min-height: 52px; }
+    .sr-file {
+      position: absolute; left: 0; top: 0; width: 1px; height: 1px;
+      opacity: 0; overflow: hidden;
+    }
     h2 {
       margin: 8px 0 8px; font-size: 18px; color: var(--green-dark);
     }
@@ -178,17 +186,19 @@
       <div class="photo" id="photoBox">
         <div class="ph" id="photoPh">尚未拍照<br>請對準綠豆盆栽</div>
         <img id="photoImg" class="hidden" alt="綠豆相片">
-        <video id="live" class="hidden" autoplay playsinline muted></video>
+        <video id="live" class="hidden" autoplay playsinline muted webkit-playsinline></video>
       </div>
+      <p class="hint" id="camHint">電話及平板電腦會開啟相機。電腦會先開啟鏡頭，對準後再按「拍攝」。</p>
       <div class="row">
-        <button class="cam" id="btnCam" type="button">拍照</button>
-        <button class="album" id="btnAlbum" type="button">從相簿選擇</button>
+        <label class="cam" id="camLabel" for="fileCam">拍照</label>
+        <button class="cam hidden" id="btnCam" type="button">拍照</button>
+        <label class="album" id="albumLabel" for="fileAlbum">從相簿選擇</label>
       </div>
       <div class="row hidden" id="liveRow">
         <button class="album" id="btnCloseLive" type="button">關閉鏡頭</button>
       </div>
-      <input id="fileCam" type="file" accept="image/*" capture="environment" hidden>
-      <input id="fileAlbum" type="file" accept="image/*" hidden>
+      <input id="fileCam" class="sr-file" type="file" accept="image/*" capture="environment">
+      <input id="fileAlbum" class="sr-file" type="file" accept="image/*">
 
       <h2>生長情況</h2>
       <div class="stages" id="stages"></div>
@@ -334,43 +344,63 @@
       return t;
     }
 
-    function compressBlob(file) {
-      return new Promise(function (resolve, reject) {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = function () {
-          const max = 960;
-          let w = img.width, h = img.height;
-          if (w > max || h > max) {
-            if (w > h) { h = Math.round(h * max / w); w = max; }
-            else { w = Math.round(w * max / h); h = max; }
-          }
-          const c = document.createElement("canvas");
-          c.width = w; c.height = h;
-          c.getContext("2d").drawImage(img, 0, 0, w, h);
-          URL.revokeObjectURL(url);
-          resolve(c.toDataURL("image/jpeg", 0.72));
-        };
-        img.onerror = function () {
-          URL.revokeObjectURL(url);
-          reject(new Error("photo"));
-        };
-        img.src = url;
-      });
-    }
-
-    function compressCanvas(video) {
+    function fitCanvas(w, h) {
       const max = 960;
-      let w = video.videoWidth, h = video.videoHeight;
-      if (!w || !h) return "";
       if (w > max || h > max) {
         if (w > h) { h = Math.round(h * max / w); w = max; }
         else { w = Math.round(w * max / h); h = max; }
       }
+      return { w: w, h: h };
+    }
+
+    function drawToJpeg(source, w, h) {
+      const size = fitCanvas(w, h);
       const c = document.createElement("canvas");
-      c.width = w; c.height = h;
-      c.getContext("2d").drawImage(video, 0, 0, w, h);
+      c.width = size.w; c.height = size.h;
+      c.getContext("2d").drawImage(source, 0, 0, size.w, size.h);
       return c.toDataURL("image/jpeg", 0.72);
+    }
+
+    function compressBlob(file) {
+      return new Promise(function (resolve, reject) {
+        const fail = function () { reject(new Error("photo")); };
+        const viaBitmap = function () {
+          if (typeof createImageBitmap !== "function") return Promise.reject();
+          return createImageBitmap(file, { imageOrientation: "from-image" }).then(function (bmp) {
+            const data = drawToJpeg(bmp, bmp.width, bmp.height);
+            if (bmp.close) bmp.close();
+            return data;
+          });
+        };
+        viaBitmap().then(resolve).catch(function () {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = function () {
+            try { resolve(drawToJpeg(img, img.width, img.height)); }
+            catch (e) { fail(); }
+            URL.revokeObjectURL(url);
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            fail();
+          };
+          img.src = url;
+        });
+      });
+    }
+
+    function compressCanvas(video) {
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) return "";
+      return drawToJpeg(video, w, h);
+    }
+
+    function isMobileDevice() {
+      const ua = navigator.userAgent || "";
+      if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+      if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+      if (navigator.maxTouchPoints > 1 && window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
+      return false;
     }
 
     function isLive() {
@@ -564,23 +594,27 @@
       this.value = "";
       onFile(f);
     });
+    $("live").addEventListener("click", function () {
+      if (isLive()) snapPhoto();
+    });
     $("btnCam").onclick = async function () {
       if (isLive()) {
         snapPhoto();
         return;
       }
-      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      if (isiOS || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        $("fileCam").click();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast("請改用「從相簿選擇」，或改用電話、平板電腦拍照。", true);
         return;
       }
       try {
-        const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
         state.stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: mobile ? "environment" : "user" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
         });
         const video = $("live");
+        video.setAttribute("playsinline", "true");
+        video.setAttribute("webkit-playsinline", "true");
+        video.muted = true;
         video.srcObject = state.stream;
         video.classList.remove("hidden");
         $("photoImg").classList.add("hidden");
@@ -595,11 +629,19 @@
         }
         toast("鏡頭已開啟。請對準綠豆盆栽，再按「拍攝」。");
       } catch (e) {
-        $("fileCam").click();
+        toast("未能開啟鏡頭。請按「從相簿選擇」，或改用電話、平板電腦拍照。", true);
       }
     };
-    $("btnAlbum").onclick = function () { $("fileAlbum").click(); };
     $("btnCloseLive").onclick = stopLive;
+
+    (function setupCamMode() {
+      const mobile = isMobileDevice();
+      $("camLabel").classList.toggle("hidden", !mobile);
+      $("btnCam").classList.toggle("hidden", mobile);
+      $("camHint").textContent = mobile
+        ? "按下「拍照」後，請使用相機拍攝綠豆盆栽。"
+        : "按下「拍照」開啟鏡頭，對準綠豆盆栽後再按「拍攝」。";
+    })();
 
     let recer = null;
     function speechEngine() {
