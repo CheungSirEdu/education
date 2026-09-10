@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <!-- published 2026-09-10b -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="家中種綠豆" />
@@ -67,10 +68,13 @@
     }
     .ids { display: flex; gap: 10px; margin: 12px 0; }
     .ids label { flex: 1; font-size: 14px; font-weight: 700; color: var(--green-dark); }
-    .ids input {
+    .ids input, .ids select {
       width: 100%; margin-top: 4px; font: inherit; font-weight: 700; font-size: 18px;
       min-height: 48px; padding: 12px; border: 3px solid #c5dcc6; border-radius: 12px;
+      color: var(--ink); background: #fff;
     }
+    .ids select { padding-right: 36px; }
+    .ids input:focus, .ids select:focus { outline: 0; border-color: var(--green); background: #e8f5e9; }
     .plant-pic { text-align: center; margin: 0 0 12px; }
     .plant-pic img {
       width: min(100%, 440px); height: auto; border-radius: 16px;
@@ -184,9 +188,27 @@
     <div class="card">
       <h1>家中種綠豆</h1>
       <p class="sub">二年級科學　第三課 動手種植物</p>
-      <p class="id-note">開始前請填寫班別及學號，無須填寫姓名。</p>
+      <p class="id-note">開始前請選擇班別及填寫學號，無須填寫姓名。</p>
       <div class="ids">
-        <label>班別<input id="klass" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 2A"></label>
+        <label>班別
+          <select id="klass" autocomplete="off">
+            <option value="">請選擇</option>
+            <optgroup label="一年班">
+              <option value="1A">1A</option>
+              <option value="1B">1B</option>
+            </optgroup>
+            <optgroup label="二年班">
+              <option value="2A">2A</option>
+              <option value="2B">2B</option>
+              <option value="2C">2C</option>
+            </optgroup>
+            <optgroup label="四年班">
+              <option value="4A">4A</option>
+              <option value="4B">4B</option>
+              <option value="4C">4C</option>
+            </optgroup>
+          </select>
+        </label>
         <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
       </div>
       <div class="care">請小心拍攝：只拍攝綠豆盆栽，不要拍到家中環境或家人。<br>相片會給老師和同學看見，大家可以互相欣賞彼此的盆栽。</div>
@@ -295,13 +317,17 @@
       listening: false
     };
 
+    const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
     function identityOk() {
-      const klass = ($("klass").value || "").trim().slice(0, 8);
+      const klass = ($("klass").value || "").trim();
       const no = ($("stuno").value || "").trim();
-      return { ok: klass.length >= 1 && /^\d{1,3}$/.test(no), class: klass, no };
+      return { ok: CLASS_OPTIONS.indexOf(klass) !== -1 && /^\d{1,3}$/.test(no), class: klass, no };
     }
-    $("klass").addEventListener("input", () => { $("startBtn").disabled = !identityOk().ok; });
-    $("stuno").addEventListener("input", () => { $("startBtn").disabled = !identityOk().ok; });
+    function refreshStart() { $("startBtn").disabled = !identityOk().ok; }
+    $("klass").addEventListener("input", refreshStart);
+    $("klass").addEventListener("change", refreshStart);
+    $("stuno").addEventListener("input", refreshStart);
+    $("stuno").addEventListener("change", refreshStart);
 
     function toast(msg, bad) {
       document.querySelectorAll(".toast").forEach(n => n.remove());

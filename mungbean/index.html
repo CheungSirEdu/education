@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <!-- published 2026-09-09c -->
+  <!-- published 2026-09-10b -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="動手種植物" />
@@ -73,12 +73,13 @@
     }
     .ids { display: flex; gap: 10px; margin: 0 0 16px; }
     .ids label { flex: 1; font-size: clamp(18px, 4.2vw, 22px); font-weight: 900; color: var(--green-dark); }
-    .ids input {
+    .ids input, .ids select {
       width: 100%; margin-top: 6px; font: inherit; font-weight: 700; font-size: clamp(22px, 5vw, 28px);
       padding: 14px; border: 3px solid #c5dcc6; border-radius: 12px; background: #fff;
-      min-height: 58px;
+      min-height: 58px; color: var(--ink);
     }
-    .ids input:focus { outline: 0; border-color: var(--green); background: #e8f5e9; }
+    .ids select { padding-right: 36px; }
+    .ids input:focus, .ids select:focus { outline: 0; border-color: var(--green); background: #e8f5e9; }
     .id-note { margin: 0 0 14px; font-size: clamp(16px, 4vw, 20px); font-weight: 700; color: #3d5c40; text-align: center; }
     .primary:disabled { background: #9aaa9a; box-shadow: none; cursor: not-allowed; }
 
@@ -332,9 +333,27 @@
     <div class="card">
       <h1>綠豆幼苗會對光的方向做出反應嗎？</h1>
       <p class="sub">二年級科學　第 3 課 動手種植物　活動 5</p>
-      <p class="id-note">開始前請填寫班別及學號，無須填寫姓名。</p>
+      <p class="id-note">開始前請選擇班別及填寫學號，無須填寫姓名。</p>
       <div class="ids">
-        <label>班別<input id="klass" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 2A"></label>
+        <label>班別
+          <select id="klass" autocomplete="off">
+            <option value="">請選擇</option>
+            <optgroup label="一年班">
+              <option value="1A">1A</option>
+              <option value="1B">1B</option>
+            </optgroup>
+            <optgroup label="二年班">
+              <option value="2A">2A</option>
+              <option value="2B">2B</option>
+              <option value="2C">2C</option>
+            </optgroup>
+            <optgroup label="四年班">
+              <option value="4A">4A</option>
+              <option value="4B">4B</option>
+              <option value="4C">4C</option>
+            </optgroup>
+          </select>
+        </label>
         <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
       </div>
       <div class="chars">
@@ -430,10 +449,17 @@
       startedAt: 0
     };
 
+    const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+
+    function normalizeClass(v) {
+      const s = String(v || "").trim().toUpperCase().replace(/^二/, "2");
+      return CLASS_OPTIONS.indexOf(s) !== -1 ? s : "";
+    }
+
     function identityOk() {
-      const klass = ($("klass").value || "").trim().slice(0, 8);
+      const klass = normalizeClass($("klass").value);
       const no = ($("stuno").value || "").trim();
-      return { ok: klass.length >= 1 && /^\d{1,3}$/.test(no), class: klass, no };
+      return { ok: !!klass && /^\d{1,3}$/.test(no), class: klass, no };
     }
 
     function refreshStart() {
@@ -904,11 +930,16 @@
 
     ["klass", "stuno"].forEach((id) => {
       const el = $(id);
-      if (el) el.addEventListener("input", refreshStart);
+      if (!el) return;
+      el.addEventListener("input", refreshStart);
+      el.addEventListener("change", refreshStart);
     });
     try {
       const saved = JSON.parse(localStorage.getItem("mungbean-who") || "null");
-      if (saved && saved.class) $("klass").value = saved.class;
+      if (saved && saved.class) {
+        const klass = normalizeClass(saved.class);
+        if (klass) $("klass").value = klass;
+      }
       if (saved && saved.no) $("stuno").value = saved.no;
     } catch (e) {}
     refreshStart();
@@ -916,7 +947,7 @@
     $("startBtn").onclick = () => {
       const id = identityOk();
       if (!id.ok) {
-        alert("請填寫班別及學號。學號只須數字，無須填寫姓名。");
+        alert("請選擇班別，並填寫學號。學號只須數字，無須填寫姓名。");
         return;
       }
       localStorage.setItem("mungbean-who", JSON.stringify(id));
