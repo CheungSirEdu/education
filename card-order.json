@@ -1,8 +1,8 @@
 {
   "areas": [
     "math",
-    "pe",
     "sci",
+    "pe",
     "ict",
     "lang",
     "bett"
@@ -26,11 +26,6 @@
     "lang": [
       "lang"
     ]
-  },
-  "labels": {
-    "areas": {},
-    "folders": {},
-    "items": {}
   },
   "items": {
     "p2-sci": [
@@ -57,5 +52,10 @@
       "fr",
       "ko"
     ]
+  },
+  "labels": {
+    "areas": {},
+    "folders": {},
+    "items": {}
   }
 }
