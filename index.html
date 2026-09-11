@@ -108,10 +108,30 @@
       flex: 1;
       background: var(--green);
       color: #fff;
-      min-height: 40px;
+      min-height: 44px;
       font-size: 14px;
     }
     .move-btns button:disabled { opacity: .4; }
+    .edit-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--muted);
+      margin: 8px 0 4px;
+    }
+    .edit-title, .edit-blurb {
+      width: 100%;
+      font: inherit;
+      border: 3px solid var(--green);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--green-dark);
+      font-size: 16px;
+      line-height: 1.4;
+    }
+    .edit-title { font-weight: 900; }
+    .edit-blurb { font-weight: 700; color: var(--muted); min-height: 64px; resize: vertical; }
     .toast {
       position: fixed;
       left: 16px;
@@ -368,7 +388,8 @@
     let layout = {
       areas: AREAS.map(a => a.id),
       folders: {},
-      items: {}
+      items: {},
+      labels: { areas: {}, folders: {}, items: {} }
     };
     let dragId = null;
 
@@ -449,6 +470,13 @@
       if (Array.isArray(data.areas)) layout.areas = data.areas.slice();
       if (data.folders && typeof data.folders === "object") layout.folders = data.folders;
       if (data.items && typeof data.items === "object") layout.items = data.items;
+      if (data.labels && typeof data.labels === "object") {
+        layout.labels = {
+          areas: Object.assign({}, data.labels.areas || {}),
+          folders: Object.assign({}, data.labels.folders || {}),
+          items: Object.assign({}, data.labels.items || {})
+        };
+      }
       if (Array.isArray(data.subjects) && !Array.isArray(data.areas)) {
         const byFolder = Object.fromEntries(FOLDERS.map(f => [f.id, f]));
         const grouped = {};
@@ -460,6 +488,56 @@
         }
         layout.folders = grouped;
       }
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function toPlainLines(s) {
+      return String(s || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+    }
+
+    function titleHtml(s) {
+      return escapeHtml(toPlainLines(s)).replace(/\n/g, "<br>");
+    }
+
+    function withLabel(kind, obj) {
+      if (!obj) return obj;
+      const patch = ((layout.labels || {})[kind] || {})[obj.id] || {};
+      const out = Object.assign({}, obj);
+      if (patch.title != null && String(patch.title).trim()) out.title = patch.title;
+      if (patch.blurb != null) {
+        out.blurb = patch.blurb;
+        if (!obj.description || obj.description === obj.blurb) out.description = patch.blurb;
+      }
+      return out;
+    }
+
+    function setLabel(kind, id, fields) {
+      const labels = {
+        areas: Object.assign({}, (layout.labels || {}).areas || {}),
+        folders: Object.assign({}, (layout.labels || {}).folders || {}),
+        items: Object.assign({}, (layout.labels || {}).items || {})
+      };
+      labels[kind] = Object.assign({}, labels[kind], {
+        [id]: Object.assign({}, labels[kind][id] || {}, fields)
+      });
+      if (kind === "areas" && id === "lang") {
+        labels.folders = Object.assign({}, labels.folders, {
+          lang: Object.assign({}, labels.folders.lang || {}, fields)
+        });
+      }
+      if (kind === "folders" && id === "lang") {
+        labels.areas = Object.assign({}, labels.areas, {
+          lang: Object.assign({}, labels.areas.lang || {}, fields)
+        });
+      }
+      layout.labels = labels;
     }
 
     function orderedList(all, order) {
@@ -474,16 +552,16 @@
     }
 
     function orderedAreas() {
-      return orderedList(AREAS, layout.areas);
+      return orderedList(AREAS, layout.areas).map(a => withLabel("areas", a));
     }
 
     function orderedFolders(areaId) {
       const list = FOLDERS.filter(f => f.area === areaId);
-      return orderedList(list, (layout.folders && layout.folders[areaId]) || []);
+      return orderedList(list, (layout.folders && layout.folders[areaId]) || []).map(f => withLabel("folders", f));
     }
 
-    function areaById(id) { return AREAS.find(a => a.id === id); }
-    function folderById(id) { return FOLDERS.find(f => f.id === id); }
+    function areaById(id) { return withLabel("areas", AREAS.find(a => a.id === id)); }
+    function folderById(id) { return withLabel("folders", FOLDERS.find(f => f.id === id)); }
     function areaHref(a) {
       if (a.href) return a.href;
       if (a.subject) return "#/s/" + a.subject;
@@ -500,7 +578,13 @@
         if (byId[id] && !seen.has(id)) { out.push(byId[id]); seen.add(id); }
       }
       for (const it of list) if (!seen.has(it.id)) out.push(it);
-      return out;
+      return out.map(it => withLabel("items", it));
+    }
+
+    function cardByKind(kind, id) {
+      if (kind === "areas") return areaById(id);
+      if (kind === "folders") return folderById(id);
+      return withLabel("items", ITEMS.find(x => x.id === id));
     }
 
     function moveInList(arr, fromId, toId) {
@@ -529,7 +613,70 @@
       else layout.items = Object.assign({}, layout.items, { [scopeId]: next });
     }
 
+    function readCardFields(kind, card) {
+      const titleEl = card.querySelector("[data-field=title]");
+      const blurbEl = card.querySelector("[data-field=blurb]");
+      if (!titleEl || !blurbEl) return null;
+      const title = titleEl.value.replace(/\s+$/g, "").replace(/^\s+/g, "");
+      const blurb = blurbEl.value.replace(/\s+$/g, "").replace(/^\s+/g, "");
+      if (!title) return { error: "名稱唔可以空白" };
+      return {
+        title: kind === "items" ? title.replace(/\n/g, "<br>") : title.replace(/\n/g, ""),
+        blurb: blurb
+      };
+    }
+
+    function labelsEqual(a, b) {
+      return toPlainLines(a.title) === toPlainLines(b.title) && String(a.blurb || "") === String(b.blurb || "");
+    }
+
+    async function saveFields(kind, id, card, opts) {
+      const next = readCardFields(kind, card);
+      if (!next) return false;
+      if (next.error) {
+        if (!opts || !opts.quiet) toast(next.error);
+        const cur = cardByKind(kind, id);
+        if (cur) {
+          const titleEl = card.querySelector("[data-field=title]");
+          if (titleEl) titleEl.value = toPlainLines(cur.title);
+        }
+        return false;
+      }
+      const cur = cardByKind(kind, id) || {};
+      if (labelsEqual(cur, next)) return false;
+      setLabel(kind, id, { title: next.title, blurb: next.blurb });
+      if (!opts || !opts.quiet) {
+        try {
+          await saveLayout();
+          toast("已儲存");
+        } catch (err) {
+          toast(err.message);
+        }
+      }
+      return true;
+    }
+
+    async function flushEdits() {
+      const grid = document.querySelector(".grid");
+      if (!grid) return;
+      const kind = grid.getAttribute("data-kind");
+      if (!kind) return;
+      let changed = false;
+      grid.querySelectorAll(".card[data-id]").forEach(card => {
+        const id = card.getAttribute("data-id");
+        const next = readCardFields(kind, card);
+        if (!next || next.error) return;
+        const cur = cardByKind(kind, id) || {};
+        if (labelsEqual(cur, next)) return;
+        setLabel(kind, id, { title: next.title, blurb: next.blurb });
+        changed = true;
+      });
+      if (changed) await saveLayout();
+    }
+
     async function shiftList(kind, scopeId, id, dir) {
+      const card = document.querySelector('.card[data-id="' + id + '"]');
+      if (card) await saveFields(kind, id, card, { quiet: true });
       const ids = idsFor(kind, scopeId);
       const i = ids.indexOf(id);
       const j = i + dir;
@@ -549,6 +696,7 @@
 
     async function dropList(kind, scopeId, fromId, toId) {
       if (!fromId || fromId === toId) return;
+      try { await flushEdits(); } catch (_) {}
       writeOrder(kind, scopeId, moveInList(idsFor(kind, scopeId), fromId, toId));
       route();
       try {
@@ -564,6 +712,11 @@
       if (!grid) return;
       grid.querySelectorAll("[data-id]").forEach(card => {
         const id = card.getAttribute("data-id");
+        const obj = cardByKind(kind, id);
+        const titleEl = card.querySelector("[data-field=title]");
+        const blurbEl = card.querySelector("[data-field=blurb]");
+        if (obj && titleEl) titleEl.value = toPlainLines(obj.title);
+        if (obj && blurbEl) blurbEl.value = toPlainLines(obj.blurb);
         card.querySelectorAll("[data-move]").forEach(btn => {
           btn.addEventListener("click", e => {
             e.preventDefault();
@@ -571,8 +724,18 @@
             shiftList(kind, subjectId, id, Number(btn.getAttribute("data-move")));
           });
         });
+        card.querySelectorAll("[data-field]").forEach(field => {
+          field.addEventListener("pointerdown", e => e.stopPropagation());
+          field.addEventListener("mousedown", e => e.stopPropagation());
+          field.addEventListener("click", e => e.stopPropagation());
+          field.addEventListener("change", () => saveFields(kind, id, card));
+        });
         if (!editing) return;
         card.addEventListener("dragstart", e => {
+          if (e.target.closest("input, textarea, button, label")) {
+            e.preventDefault();
+            return;
+          }
           dragId = id;
           card.classList.add("dragging");
           e.dataTransfer.effectAllowed = "move";
@@ -617,19 +780,23 @@
       renderHome();
     }
 
-    function renderCards(list, hrefFor) {
+    function renderCards(list, hrefFor, kind) {
       return list.map((s, i) => editing ? `
             <div class="card" data-id="${s.id}" draggable="true">
-              <div class="emoji">${s.emoji}</div>
-              <h2>${s.title}</h2>
-              <p>${s.blurb}</p>
+              <div class="emoji">${s.emoji || "🎮"}</div>
+              <label class="edit-label">名稱</label>
+              ${kind === "items"
+                ? `<textarea class="edit-title" data-field="title" rows="3" maxlength="160"></textarea>`
+                : `<input class="edit-title" data-field="title" type="text" maxlength="40" autocomplete="off">`}
+              <label class="edit-label">說明</label>
+              <textarea class="edit-blurb" data-field="blurb" rows="2" maxlength="120"></textarea>
               ${moveButtons(i, list.length)}
             </div>
           ` : `
             <a class="card" href="${hrefFor(s)}">
-              <div class="emoji">${s.emoji}</div>
-              <h2>${s.title}</h2>
-              <p>${s.blurb}</p>
+              <div class="emoji">${s.emoji || "🎮"}</div>
+              <h2>${titleHtml(s.title)}</h2>
+              <p>${escapeHtml(s.blurb || "")}</p>
             </a>
           `).join("");
     }
@@ -643,10 +810,10 @@
           <img src="assets/girl.png" alt="小蓮">
         </div>
         <p class="note">${editing
-          ? "編輯排版中：拖曳卡片，或撳「上移／下移」。左上角係第一格。改動會儲存，所有裝置都會見到新次序。"
+          ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
           : "請選擇科目。數學、體育、科學、資訊科技入面再按年級揀教材。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。"}</p>
-        <div class="grid">
-          ${renderCards(areas, areaHref)}
+        <div class="grid" data-kind="areas">
+          ${renderCards(areas, areaHref, "areas")}
         </div>
       `;
       bindGrid("areas");
@@ -658,16 +825,16 @@
       if (area.href && !editing) { location.replace(area.href); return; }
       if (area.subject) return renderSubject(area.subject);
       const folders = orderedFolders(id);
-      document.title = area.title + "　張老師教學資源";
+      document.title = toPlainLines(area.title) + "　張老師教學資源";
       $("app").innerHTML = `
         <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
-        <h3 class="sec">${area.emoji} ${area.title}</h3>
+        <h3 class="sec">${area.emoji} ${escapeHtml(toPlainLines(area.title))}</h3>
         ${folders.length ? `
           <p class="note">${editing
-            ? "編輯排版中：拖曳或撳上移／下移，以調較本頁次序。"
+            ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
             : "請選擇年級或分類。"}</p>
-          <div class="grid">
-            ${renderCards(folders, f => "#/s/" + f.id)}
+          <div class="grid" data-kind="folders" data-scope="${id}">
+            ${renderCards(folders, f => "#/s/" + f.id, "folders")}
           </div>
         ` : `<div class="empty">此部分教材即將推出。</div>`}
       `;
@@ -678,8 +845,8 @@
       return `
         <div class="basics">
           <div class="item" style="cursor:default;margin-bottom:14px">
-            <h2>${it.title}</h2>
-            <p>${it.description || it.blurb || ""}</p>
+            <h2>${titleHtml(it.title)}</h2>
+            <p>${escapeHtml(it.description || it.blurb || "")}</p>
           </div>
           <p class="label-bit">連結</p>
           <a class="btn btn-play" href="${it.play}">${it.playLabel || "立即遊玩"}</a>
@@ -703,32 +870,19 @@
       if (!s) return renderHome();
       const area = areaById(s.area);
       const items = orderedItems(id);
-      document.title = s.title + "　張老師教學資源";
+      document.title = toPlainLines(s.title) + "　張老師教學資源";
       $("app").innerHTML = `
         <div class="bar">
           <a class="btn btn-back" href="#/">← 返回目錄</a>
-          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${area.title}</a>` : ""}
+          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${escapeHtml(toPlainLines(area.title))}</a>` : ""}
         </div>
-        <h3 class="sec">${s.emoji} ${s.title}</h3>
+        <h3 class="sec">${s.emoji} ${escapeHtml(toPlainLines(s.title))}</h3>
         ${items.length ? `
           <p class="note">${editing
-            ? "編輯排版中：拖曳或撳上移／下移，以調較本頁次序。"
+            ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
             : (items.some(it => it.noScore) ? "撳入去可見到連結及二維碼。" : "請選擇遊戲。撳入去先見到連結、二維碼同成績說明。")}</p>
-          <div class="grid">
-            ${items.map((it, i) => editing ? `
-              <div class="card" data-id="${it.id}" draggable="true">
-                <div class="emoji">${it.emoji || "🎮"}</div>
-                <h2>${it.title}</h2>
-                <p>${it.blurb || "撳入去遊玩"}</p>
-                ${moveButtons(i, items.length)}
-              </div>
-            ` : `
-              <a class="card" href="#/i/${it.id}">
-                <div class="emoji">${it.emoji || "🎮"}</div>
-                <h2>${it.title}</h2>
-                <p>${it.blurb || "撳入去遊玩"}</p>
-              </a>
-            `).join("")}
+          <div class="grid" data-kind="items" data-scope="${id}">
+            ${renderCards(items, it => "#/i/" + it.id, "items")}
           </div>
         ` : `<div class="empty">此部分教材即將推出。</div>`}
       `;
@@ -736,7 +890,7 @@
     }
 
     function renderItem(id) {
-      const it = ITEMS.find(x => x.id === id);
+      const it = withLabel("items", ITEMS.find(x => x.id === id));
       if (!it) return renderHome();
       const s = folderById(it.subject);
       const area = s ? areaById(s.area) : null;
@@ -744,8 +898,8 @@
       $("app").innerHTML = `
         <div class="bar">
           <a class="btn btn-back" href="#/">← 返回目錄</a>
-          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${area.title}</a>` : ""}
-          <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? s.title : "返回"}</a>
+          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${escapeHtml(toPlainLines(area.title))}</a>` : ""}
+          <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? escapeHtml(toPlainLines(s.title)) : "返回"}</a>
         </div>
         ${itemBasics(it)}
       `;
@@ -754,6 +908,7 @@
     const btnEdit = document.getElementById("btn-edit");
     btnEdit.addEventListener("click", async () => {
       if (editing) {
+        try { await flushEdits(); } catch (err) { toast(err.message); }
         editing = false;
         document.body.classList.remove("editing");
         btnEdit.textContent = "編輯排版";
