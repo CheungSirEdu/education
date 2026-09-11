@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11j 龍虎榜一路累積個人最佳 -->
+  <!-- published 2026-09-11k 龍虎榜改用左右手平均 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -332,7 +332,7 @@
         <h2>今次與上次比較</h2>
         <div class="compare">
           <div class="scorebox" id="prevBox">
-            <div class="lab">上次較佳</div>
+            <div class="lab">上次平均</div>
             <div class="big" id="prevBest">—</div>
             <div class="sub" id="prevSub">還沒有上次紀錄</div>
           </div>
@@ -341,7 +341,7 @@
             <div id="deltaText"></div>
           </div>
           <div class="scorebox now">
-            <div class="lab">今次較佳</div>
+            <div class="lab">今次平均</div>
             <div class="big" id="nowBest">—</div>
             <div class="sub" id="nowSub"></div>
           </div>
@@ -353,7 +353,7 @@
 
     <section class="card board-card" id="boardCard">
       <h2>龍虎榜　第 1 至 10 名</h2>
-      <p class="hint">一路累積。每人取歷來最高的較佳手成績排列（左手、右手取較高者）。榜上顯示班別、學號及姓名。</p>
+      <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。榜上顯示班別、學號及姓名。</p>
       <div class="classes" id="boardFilters"></div>
       <div id="podium" class="podium"></div>
       <div id="boardRows" class="rows"></div>
@@ -435,6 +435,10 @@
       const x = Number(n);
       if (!isFinite(x)) return "—";
       return (Math.round(x * 10) / 10).toFixed(1);
+    }
+
+    function avgKg(left, right) {
+      return Math.round(((Number(left) + Number(right)) / 2) * 10) / 10;
     }
 
     function parseKgInput(s) {
@@ -549,7 +553,7 @@
         if (one !== null) { left = one; right = one; }
       }
       if (left === null || right === null) return null;
-      return { left, right, best: Math.max(left, right) };
+      return { left, right, avg: avgKg(left, right) };
     }
 
     function recordsFromGviz(table) {
@@ -582,7 +586,7 @@
         if (iLeft >= 0 && iRight >= 0) {
           const left = parseKgInput(gvizCell(row, iLeft));
           const right = parseKgInput(gvizCell(row, iRight));
-          if (left !== null && right !== null) packed = { left, right, best: Math.max(left, right) };
+          if (left !== null && right !== null) packed = { left, right, avg: avgKg(left, right) };
         }
         if (!packed) {
           packed = parsePackedKg(result, stars, gvizCell(row, iHero), gvizCell(row, iSec));
@@ -590,8 +594,7 @@
         if (!packed) return;
         out.push({
           klass, no, date, ts,
-          left: packed.left, right: packed.right, best: packed.best,
-          avg: Math.round(((packed.left + packed.right) / 2) * 10) / 10
+          left: packed.left, right: packed.right, avg: packed.avg
         });
       });
       return out;
@@ -623,17 +626,17 @@
         if (filter && r.klass !== filter) return;
         const key = r.klass + "\t" + r.no;
         const cur = map[key];
-        if (!cur || r.best > cur.best || (r.best === cur.best && (r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)))) {
+        if (!cur || r.avg > cur.avg || (r.avg === cur.avg && (r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)))) {
           map[key] = r;
         }
       });
       const list = Object.keys(map).map(k => map[k]);
-      list.sort((a, b) => b.best - a.best || b.avg - a.avg || (a.klass + a.no).localeCompare(b.klass + b.no, "zh-Hant"));
+      list.sort((a, b) => b.avg - a.avg || (a.klass + a.no).localeCompare(b.klass + b.no, "zh-Hant"));
       return list;
     }
 
     function publicRow(r, rank) {
-      return { rank: rank || 0, class: r.klass, no: r.no, date: r.date, left: r.left, right: r.right, best: r.best };
+      return { rank: rank || 0, class: r.klass, no: r.no, date: r.date, left: r.left, right: r.right, avg: r.avg };
     }
 
     function boardPayload(rows) {
@@ -665,7 +668,7 @@
         if (r.klass !== klass || r.no !== no || r.date >= today) return;
         if (!found || r.date > found.date || (r.date === found.date && r.ts > found.ts)) found = r;
       });
-      return found ? { date: found.date, left: found.left, right: found.right, best: found.best } : null;
+      return found ? { date: found.date, left: found.left, right: found.right, avg: found.avg } : null;
     }
 
     async function fetchRecords() {
@@ -734,7 +737,7 @@
       const cur = data.current;
       const prev = data.previous;
       $("resultCard").classList.remove("hidden");
-      $("nowBest").textContent = kg(cur.best);
+      $("nowBest").textContent = kg(cur.avg);
       $("nowSub").textContent = "左 " + kg(cur.left) + "　右 " + kg(cur.right) + "　" + prettyDate(cur.date);
       const banner = $("resultBanner");
       const deltaBox = $("deltaBox");
@@ -749,15 +752,15 @@
           ? "已更新今日成績。這是你的第一次記錄，下星期五再量度即可比較是否進步。"
           : "這是你的第一次記錄。下星期五再量度，即可比較進步或退步。";
       } else {
-        $("prevBest").textContent = kg(prev.best);
+        $("prevBest").textContent = kg(prev.avg);
         $("prevSub").textContent = "左 " + kg(prev.left) + "　右 " + kg(prev.right) + "　" + prettyDate(prev.date);
-        const diff = Math.round((cur.best - prev.best) * 10) / 10;
+        const diff = Math.round((cur.avg - prev.avg) * 10) / 10;
         if (diff > 0) {
           deltaBox.className = "delta up";
           $("deltaArrow").textContent = "▲";
           $("deltaText").textContent = "+" + kg(diff);
           banner.className = "banner up";
-          banner.textContent = "進步了 " + kg(diff) + " kg！較佳手由 " + kg(prev.best) + " 升至 " + kg(cur.best) + " kg。";
+          banner.textContent = "進步了 " + kg(diff) + " kg！平均由 " + kg(prev.avg) + " 升至 " + kg(cur.avg) + " kg。";
         } else if (diff < 0) {
           deltaBox.className = "delta down";
           $("deltaArrow").textContent = "▼";
@@ -769,7 +772,7 @@
           $("deltaArrow").textContent = "＝";
           $("deltaText").textContent = "相同";
           banner.className = "banner same";
-          banner.textContent = "較佳手成績與上次相同，都是 " + kg(cur.best) + " kg。";
+          banner.textContent = "平均成績與上次相同，都是 " + kg(cur.avg) + " kg。";
         }
       }
       const meName = identity().name;
@@ -793,7 +796,7 @@
         <div class="medal">${medal}</div>
         ${name ? `<div class="name">${esc(name)}</div>` : ""}
         <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
-        <div class="kgv">${kg(r.best)} <span style="font-size:14px">kg</span></div>
+        <div class="kgv">${kg(r.avg)} <span style="font-size:14px">kg</span></div>
         <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
       </div>`;
     }
@@ -820,7 +823,7 @@
           <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
           <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
           </div>
-          <div class="best">${kg(r.best)} kg</div>
+          <div class="best">${kg(r.avg)} kg</div>
         </div>`;
       }).join("");
       const empty = board.length === 0;
@@ -915,7 +918,7 @@
         return `<div class="trow">
           <div>
             <div class="name">${esc(who)}</div>
-            <div class="meta">${prettyDate(r.date)}　左 ${kg(r.left)}　右 ${kg(r.right)}　較佳 ${kg(r.best)} kg</div>
+            <div class="meta">${prettyDate(r.date)}　左 ${kg(r.left)}　右 ${kg(r.right)}　平均 ${kg(r.avg)} kg</div>
           </div>
           <div class="tbtns">
             <button class="danger" type="button" data-del="today" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪除今日</button>
@@ -947,7 +950,7 @@
       setTimeout(async () => { await loadBoard(); renderTeacherList(); }, 2500);
     }
 
-    function saveScore(id, left, right, best) {
+    function saveScore(id, left, right, avg) {
       const payload = JSON.stringify({
         token: SCORE_TOKEN,
         activity: ACTIVITY,
@@ -955,7 +958,7 @@
         no: id.no,
         level: state.today,
         result: "左" + left + " 右" + right,
-        stars: String(best),
+        stars: String(avg),
         hero: String(left),
         seconds: String(right)
       });
@@ -976,25 +979,25 @@
         setMsg("請輸入左手和右手成績，範圍 1 至 100 公斤。", "err");
         return;
       }
-      const best = Math.max(left, right);
+      const avg = avgKg(left, right);
       $("submitBtn").disabled = true;
       setMsg("正在儲存…", "");
       const previous = previousOf(state.records || [], id.class, id.no, state.today);
       const optimistic = {
         klass: id.class, no: id.no, date: state.today, ts: Date.now(),
-        left, right, best, avg: Math.round(((left + right) / 2) * 10) / 10
+        left, right, avg
       };
       state.records = (state.records || []).concat([optimistic]);
       const preview = boardPayload(state.records);
       preview.saved = true;
       preview.updated = false;
-      preview.current = { date: state.today, left, right, best };
+      preview.current = { date: state.today, left, right, avg };
       preview.previous = previous;
       renderBoard(preview);
       showResult(preview);
       resetForm();
       try {
-        await saveScore(id, left, right, best);
+        await saveScore(id, left, right, avg);
         setMsg("已儲存今日成績。下一位請重新選擇班別和學號。", "ok");
         toast("已列入龍虎榜");
         setTimeout(loadBoard, 2500);
