@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11i 刪除成績必須先輸入老師密碼 -->
+  <!-- published 2026-09-11j 龍虎榜一路累積個人最佳 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -183,13 +183,6 @@
       text-align: center; font-weight: 800; margin-top: 10px; color: var(--navy);
     }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-    .tabs button {
-      flex: 1; min-height: 44px; background: #fff; border: 3px solid var(--line);
-      color: var(--navy); font-size: 14px;
-    }
-    .tabs button.on { background: var(--gold-2); border-color: #c9a227; color: #7f1010; }
-
     .podium {
       display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 10px;
       align-items: end; margin: 10px 0 16px;
@@ -360,16 +353,11 @@
 
     <section class="card board-card" id="boardCard">
       <h2>龍虎榜　第 1 至 10 名</h2>
-      <p class="hint">以較佳手成績排列（左手、右手取較高者）。榜上顯示班別、學號及姓名。</p>
-      <div class="tabs">
-        <button type="button" class="on" data-scope="today" id="tabToday">今日</button>
-        <button type="button" data-scope="latest" id="tabLatest">每人最新</button>
-        <button type="button" data-scope="best" id="tabBest">個人最佳</button>
-      </div>
+      <p class="hint">一路累積。每人取歷來最高的較佳手成績排列（左手、右手取較高者）。榜上顯示班別、學號及姓名。</p>
       <div class="classes" id="boardFilters"></div>
       <div id="podium" class="podium"></div>
       <div id="boardRows" class="rows"></div>
-      <p class="empty hidden" id="boardEmpty">今日還沒有成績。量度後請在上方提交。</p>
+      <p class="empty hidden" id="boardEmpty">還沒有成績。量度後請在上方提交。</p>
     </section>
     </div>
 
@@ -418,7 +406,6 @@
 
     const state = {
       today: todayYmd(),
-      scope: "today",
       filter: "",
       lastBoard: null,
       roster: {},
@@ -630,16 +617,13 @@
       return Object.keys(byDay).map(k => byDay[k]).filter(r => !r.deleted);
     }
 
-    function pickBoard(rows, scope, today, filter) {
+    function pickBoard(rows, filter) {
       const map = {};
       liveScores(rows).forEach(r => {
         if (filter && r.klass !== filter) return;
-        if (scope === "today" && r.date !== today) return;
         const key = r.klass + "\t" + r.no;
         const cur = map[key];
-        if (scope === "best") {
-          if (!cur || r.best > cur.best || (r.best === cur.best && r.date > cur.date)) map[key] = r;
-        } else if (!cur || r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)) {
+        if (!cur || r.best > cur.best || (r.best === cur.best && (r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)))) {
           map[key] = r;
         }
       });
@@ -653,7 +637,7 @@
     }
 
     function boardPayload(rows) {
-      const list = pickBoard(rows, state.scope, state.today, state.filter);
+      const list = pickBoard(rows, state.filter);
       const id = identity();
       let rank = 0, me = null;
       if (id.ok) {
@@ -1044,13 +1028,6 @@
         $("klass").focus();
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
       };
-      document.querySelectorAll(".tabs button").forEach(b => {
-        b.onclick = () => {
-          state.scope = b.getAttribute("data-scope");
-          document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
-          loadBoard();
-        };
-      });
       $("boardFilters").onclick = (e) => {
         const b = e.target.closest("button");
         if (!b) return;
