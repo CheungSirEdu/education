@@ -54,7 +54,12 @@
     ]
   },
   "labels": {
-    "areas": {},
+    "areas": {
+      "math": {
+        "title": "數學",
+        "blurb": ""
+      }
+    },
     "folders": {},
     "items": {}
   }
