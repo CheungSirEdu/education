@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11r 全螢幕龍虎榜加返回掣 -->
+  <!-- published 2026-09-11s 龍虎榜讀新分頁名稱 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -738,12 +738,17 @@
     }
 
     async function fetchRecords() {
-      const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
-        "/gviz/tq?tqx=out:json;responseHandler:RESPONSE_HANDLER&sheet=" + encodeURIComponent(ACTIVITY) +
-        "&headers=1&t=" + Date.now();
-      const data = await scriptJsonp(src);
-      if (!data || data.status === "error" || !data.table) return [];
-      return recordsFromGviz(data.table);
+      const tabs = ["體育　手握力龍虎榜", ACTIVITY];
+      for (let i = 0; i < tabs.length; i++) {
+        try {
+          const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+            "/gviz/tq?tqx=out:json;responseHandler:RESPONSE_HANDLER&sheet=" + encodeURIComponent(tabs[i]) +
+            "&headers=1&t=" + Date.now();
+          const data = await scriptJsonp(src);
+          if (data && data.status !== "error" && data.table) return recordsFromGviz(data.table);
+        } catch (e) {}
+      }
+      return [];
     }
 
     function renderChips() {
