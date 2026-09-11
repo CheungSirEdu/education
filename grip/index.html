@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11m 低年班／高年班兩張龍虎榜 -->
+  <!-- published 2026-09-11n 龍虎榜只分低年班高年班，唔再按班篩選 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -130,7 +130,6 @@
       min-height: 34px; padding: 4px 2px; background: #fff;
       border: 2px solid var(--line); color: var(--navy); font-size: 13px; border-radius: 10px;
     }
-    #filtersLow.classes, #filtersHigh.classes { display: flex; flex-wrap: wrap; justify-content: center; }
     .boards { display: grid; gap: 14px; order: 1; }
     .board-hero { text-align: center; margin: 0 0 8px; }
     .board-hero img {
@@ -256,7 +255,6 @@
     }
     body.wall .board-card { margin-bottom: 0; min-height: 0; }
     body.wall .board-hero img { width: min(100%, 220px); }
-    body.wall #filtersLow, body.wall #filtersHigh { display: none !important; }
 
     .modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -374,7 +372,6 @@
         <h2>低年班龍虎榜</h2>
         <p class="subhead">一至三年級　第 1 至 10 名</p>
         <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。</p>
-        <div class="classes" id="filtersLow"></div>
         <div id="podiumLow" class="podium"></div>
         <div id="rowsLow" class="rows"></div>
         <p class="empty hidden" id="emptyLow">低年班還沒有成績。量度後請在上方提交。</p>
@@ -386,7 +383,6 @@
         <h2>高年班龍虎榜</h2>
         <p class="subhead">四至六年級　第 1 至 10 名</p>
         <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。</p>
-        <div class="classes" id="filtersHigh"></div>
         <div id="podiumHigh" class="podium"></div>
         <div id="rowsHigh" class="rows"></div>
         <p class="empty hidden" id="emptyHigh">高年班還沒有成績。量度後請在上方提交。</p>
@@ -437,8 +433,8 @@
       high: { key: "high", title: "高年班", empty: "高年班還沒有成績。量度後請在上方提交。" }
     };
     const BAND_BOX = {
-      low: { filters: "filtersLow", podium: "podiumLow", rows: "rowsLow", empty: "emptyLow" },
-      high: { filters: "filtersHigh", podium: "podiumHigh", rows: "rowsHigh", empty: "emptyHigh" }
+      low: { podium: "podiumLow", rows: "rowsLow", empty: "emptyLow" },
+      high: { podium: "podiumHigh", rows: "rowsHigh", empty: "emptyHigh" }
     };
 
     const $ = (id) => document.getElementById(id);
@@ -447,7 +443,6 @@
 
     const state = {
       today: todayYmd(),
-      filter: { low: "", high: "" },
       lastBoard: null,
       roster: {},
       records: [],
@@ -677,11 +672,10 @@
       return Object.keys(byDay).map(k => byDay[k]).filter(r => !r.deleted);
     }
 
-    function pickBoard(rows, filter, band) {
+    function pickBoard(rows, band) {
       const map = {};
       liveScores(rows).forEach(r => {
         if (band && bandOf(r.klass) !== band) return;
-        if (filter && r.klass !== filter) return;
         const key = r.klass + "\t" + r.no;
         const cur = map[key];
         if (!cur || r.avg > cur.avg || (r.avg === cur.avg && (r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)))) {
@@ -697,16 +691,8 @@
       return { rank: rank || 0, class: r.klass, no: r.no, date: r.date, left: r.left, right: r.right, avg: r.avg };
     }
 
-    function classesForBand(band, rows) {
-      const set = {};
-      CLASS_CHIPS_DEFAULT.forEach(c => { if (bandOf(c) === band) set[c] = true; });
-      liveScores(rows).forEach(r => { if (bandOf(r.klass) === band) set[r.klass] = true; });
-      return Object.keys(set).sort();
-    }
-
     function boardPayload(rows, band) {
-      const filter = (state.filter && state.filter[band]) || "";
-      const list = pickBoard(rows, filter, band);
+      const list = pickBoard(rows, band);
       const id = identity();
       let rank = 0, me = null;
       if (id.ok && bandOf(id.class) === band) {
@@ -722,8 +708,7 @@
         total: list.length,
         rank,
         me: me ? publicRow(me, rank) : null,
-        board: list.slice(0, 10).map((r, i) => publicRow(r, i + 1)),
-        classes: classesForBand(band, rows)
+        board: list.slice(0, 10).map((r, i) => publicRow(r, i + 1))
       };
     }
 
@@ -894,14 +879,6 @@
       const empty = board.length === 0;
       $(box.empty).classList.toggle("hidden", !empty);
       $(box.podium).classList.toggle("hidden", empty);
-      const classes = data.classes || [];
-      const chips = ["全部"].concat(classes);
-      const cur = (state.filter && state.filter[band]) || "";
-      $(box.filters).innerHTML = chips.map(c => {
-        const val = c === "全部" ? "" : c;
-        const on = cur === val ? " on" : "";
-        return `<button type="button" class="${on}" data-band="${band}" data-f="${val}">${c}</button>`;
-      }).join("");
     }
 
     function renderBoards(rows) {
@@ -1106,16 +1083,6 @@
         $("klass").focus();
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
       };
-      const onFilter = (e) => {
-        const b = e.target.closest("button");
-        if (!b) return;
-        const band = b.getAttribute("data-band");
-        if (!band || !state.filter) return;
-        state.filter[band] = b.getAttribute("data-f") || "";
-        renderBoards(state.records || []);
-      };
-      $("filtersLow").onclick = onFilter;
-      $("filtersHigh").onclick = onFilter;
       $("wallBtn").onclick = () => {
         location.href = WALL ? PUBLIC_URL : (PUBLIC_URL + "?wall=1");
       };
