@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11c 改用試算表讀榜，停止舊程式誤寫空白行 -->
+  <!-- published 2026-09-11d 小志小蓮 + 老師刪成績 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -70,10 +70,21 @@
       text-align: center; margin: 0 0 14px;
     }
     .device img {
-      width: min(100%, 220px); height: auto; border-radius: 20px;
+      width: min(100%, 560px); height: auto; border-radius: 20px;
       border: 5px solid #fff; box-shadow: 0 8px 0 rgba(127,16,16,.18);
-      background: #fff;
+      background: #e8f3ee;
     }
+    .danger {
+      background: #fff; color: var(--bad); border: 3px solid var(--bad);
+      font-size: 14px; min-height: 40px; padding: 6px 10px; width: auto;
+    }
+    .teacher-list { display: grid; gap: 8px; max-height: 55vh; overflow: auto; }
+    .trow {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+      background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 10px;
+    }
+    .trow .meta { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .tbtns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
     .card {
       background: var(--cream); border: 5px solid var(--red);
       border-radius: 24px; padding: 16px 14px 18px;
@@ -216,7 +227,7 @@
     body.wall .card { border-width: 6px; }
     body.wall .seat .kgv { font-size: 32px; }
     body.wall .row .best { font-size: 26px; }
-    body.wall .form-card, body.wall .result-card, body.wall .device, body.wall .foot, body.wall .tiny { display: none !important; }
+    body.wall .form-card, body.wall .result-card, body.wall .device, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
     body.wall .desk { display: block; }
     body.wall .board-card { margin-bottom: 0; }
 
@@ -244,7 +255,7 @@
     @media (min-width: 980px) {
       .desk { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; align-items: start; }
       .board-card { grid-column: 2; grid-row: 1 / span 3; }
-      .device img { width: min(100%, 260px); }
+      .device img { width: min(100%, 620px); }
     }
   </style>
 </head>
@@ -257,7 +268,7 @@
     </header>
 
     <div class="device" id="deviceBox">
-      <img src="device-crop.jpg" alt="手握力計 Takei Grip-D" />
+      <img src="heroes.jpg" alt="小志和小蓮一齊量手握力" />
     </div>
 
     <div class="desk">
@@ -328,21 +339,30 @@
     </section>
     </div>
 
+    <section class="card teacher-card hidden" id="teacherPanel">
+      <h2>老師管理成績</h2>
+      <p class="hint">學生入錯可以喺呢度刪除。刪除後龍虎榜會更新，同學可以再交一次。</p>
+      <div class="teacher-list" id="teacherList"></div>
+      <p class="empty hidden" id="teacherEmpty">而家冇有效成績。</p>
+      <button class="ghost" id="teacherReload" type="button">重新整理名單</button>
+      <a class="tiny" id="sheetLink" href="https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit" target="_blank" rel="noopener">開啟試算表</a>
+    </section>
+
     <div class="foot">
       <button class="ghost" id="wallBtn" type="button" style="margin:0">大螢幕龍虎榜</button>
-      <button class="ghost" id="teacherBtn" type="button" style="margin:0">老師查看全部成績</button>
+      <button class="ghost" id="teacherBtn" type="button" style="margin:0">老師管理／刪除成績</button>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
   </div>
 
   <div class="modal hidden" id="teacherModal">
     <div class="box">
-      <h2 style="text-align:center;margin-top:0;color:var(--red)">老師查看成績</h2>
-      <p class="hint">請輸入密碼。成績在 Google 試算表「手握力龍虎榜」分頁。</p>
+      <h2 style="text-align:center;margin-top:0;color:var(--red)">老師管理成績</h2>
+      <p class="hint">請輸入密碼。之後可以刪除入錯嘅成績。</p>
       <label class="field">密碼
         <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
       </label>
-      <button class="primary" id="pinGo" type="button" style="margin-top:12px">開啟試算表</button>
+      <button class="primary" id="pinGo" type="button" style="margin-top:12px">進入</button>
       <button class="ghost" id="pinCancel" type="button">取消</button>
     </div>
   </div>
@@ -521,6 +541,20 @@
         const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
         const no = String(parseInt(String(gvizCell(row, iNo)), 10));
         if (!klass || !no || no === "NaN") return;
+        const result = iResult >= 0 ? gvizCell(row, iResult) : "";
+        const stars = iStars >= 0 ? gvizCell(row, iStars) : "";
+        const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+        const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+        const date = (iDate >= 0 && ymdFromGviz("", gvizCell(row, iDate))) ||
+          ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) ||
+          ymdFromGviz("", level) ||
+          state.today;
+        const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+        const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+        if (/DELETE|刪除|\bDEL\b/i.test(String(result) + " " + String(stars))) {
+          out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+          return;
+        }
         let packed = null;
         if (iLeft >= 0 && iRight >= 0) {
           const left = parseKgInput(gvizCell(row, iLeft));
@@ -528,21 +562,9 @@
           if (left !== null && right !== null) packed = { left, right, best: Math.max(left, right) };
         }
         if (!packed) {
-          packed = parsePackedKg(
-            gvizCell(row, iResult),
-            gvizCell(row, iStars),
-            gvizCell(row, iHero),
-            gvizCell(row, iSec)
-          );
+          packed = parsePackedKg(result, stars, gvizCell(row, iHero), gvizCell(row, iSec));
         }
         if (!packed) return;
-        const timeCell = row.c && row.c[iTime];
-        const date = (iDate >= 0 && ymdFromGviz("", gvizCell(row, iDate))) ||
-          ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) ||
-          ymdFromGviz("", gvizCell(row, iLevel)) ||
-          state.today;
-        const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
-        const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
         out.push({
           klass, no, date, ts,
           left: packed.left, right: packed.right, best: packed.best,
@@ -552,9 +574,29 @@
       return out;
     }
 
+    function liveScores(rows) {
+      const allCut = {};
+      (rows || []).forEach(r => {
+        if (r.deleted && r.all) {
+          const k = r.klass + "\t" + r.no;
+          if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+        }
+      });
+      const byDay = {};
+      (rows || []).forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        if (allCut[k] && r.ts <= allCut[k]) return;
+        if (r.all) return;
+        const dk = k + "\t" + r.date;
+        const cur = byDay[dk];
+        if (!cur || r.ts >= cur.ts) byDay[dk] = r;
+      });
+      return Object.keys(byDay).map(k => byDay[k]).filter(r => !r.deleted);
+    }
+
     function pickBoard(rows, scope, today, filter) {
       const map = {};
-      rows.forEach(r => {
+      liveScores(rows).forEach(r => {
         if (filter && r.klass !== filter) return;
         if (scope === "today" && r.date !== today) return;
         const key = r.klass + "\t" + r.no;
@@ -584,7 +626,7 @@
         }
       }
       const classes = [];
-      rows.forEach(r => { if (classes.indexOf(r.klass) < 0) classes.push(r.klass); });
+      liveScores(rows).forEach(r => { if (classes.indexOf(r.klass) < 0) classes.push(r.klass); });
       classes.sort();
       return {
         ok: true,
@@ -599,7 +641,7 @@
 
     function previousOf(rows, klass, no, today) {
       let found = null;
-      rows.forEach(r => {
+      liveScores(rows).forEach(r => {
         if (r.klass !== klass || r.no !== no || r.date >= today) return;
         if (!found || r.date > found.date || (r.date === found.date && r.ts > found.ts)) found = r;
       });
@@ -780,6 +822,7 @@
         state.records = rows;
         const data = boardPayload(rows);
         renderBoard(data);
+        if (!$("teacherPanel").classList.contains("hidden")) renderTeacherList();
         return data;
       } catch (e) {
         $("boardEmpty").classList.remove("hidden");
@@ -788,6 +831,81 @@
         $("boardRows").innerHTML = "";
         return null;
       }
+    }
+
+    function saveDelete(klass, no, all) {
+      const payload = JSON.stringify({
+        token: SCORE_TOKEN,
+        activity: ACTIVITY,
+        class: klass,
+        no: no,
+        level: all ? "ALL" : state.today,
+        result: "DELETE",
+        stars: "DEL",
+        hero: "",
+        seconds: ""
+      });
+      return fetch(SCORE_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: payload
+      }).catch(function () {});
+    }
+
+    function latestByStudent(rows) {
+      const map = {};
+      liveScores(rows).forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        const cur = map[k];
+        if (!cur || r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)) map[k] = r;
+      });
+      return Object.keys(map).map(k => map[k]).sort((a, b) =>
+        a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no)
+      );
+    }
+
+    function openTeacher() {
+      $("teacherPanel").classList.remove("hidden");
+      renderTeacherList();
+      $("teacherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderTeacherList() {
+      const list = latestByStudent(state.records || []);
+      const box = $("teacherList");
+      $("teacherEmpty").classList.toggle("hidden", list.length > 0);
+      box.innerHTML = list.map(r => {
+        const name = lookupName(r.klass, r.no);
+        const who = (name ? name + "　" : "") + r.klass + "　" + r.no + "號";
+        return `<div class="trow">
+          <div>
+            <div class="name">${esc(who)}</div>
+            <div class="meta">${prettyDate(r.date)}　左 ${kg(r.left)}　右 ${kg(r.right)}　較佳 ${kg(r.best)} kg</div>
+          </div>
+          <div class="tbtns">
+            <button class="danger" type="button" data-del="today" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪今日</button>
+            <button class="danger" type="button" data-del="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    async function teacherDelete(klass, no, all) {
+      const name = lookupName(klass, no);
+      const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+      const ok = confirm(all
+        ? "確定刪除 " + who + " 的全部手握力成績？"
+        : "確定刪除 " + who + " 的今日成績？刪除後可以再交一次。");
+      if (!ok) return;
+      state.records = (state.records || []).concat([{
+        klass, no, date: all ? "ALL" : state.today, ts: Date.now(), deleted: true, all: !!all
+      }]);
+      renderBoard(boardPayload(state.records));
+      renderTeacherList();
+      toast("已刪除");
+      await saveDelete(klass, no, all);
+      setTimeout(async () => { await loadBoard(); renderTeacherList(); }, 2500);
     }
 
     function saveScore(id, left, right, best) {
@@ -891,12 +1009,27 @@
       $("wallBtn").onclick = () => {
         location.href = WALL ? PUBLIC_URL : (PUBLIC_URL + "?wall=1");
       };
-      $("teacherBtn").onclick = () => $("teacherModal").classList.remove("hidden");
+      $("teacherBtn").onclick = () => {
+        if (sessionStorage.getItem("grip-teacher") === "1") {
+          openTeacher();
+          return;
+        }
+        $("teacherModal").classList.remove("hidden");
+        $("pin").focus();
+      };
       $("pinCancel").onclick = () => $("teacherModal").classList.add("hidden");
       $("pinGo").onclick = () => {
         if ($("pin").value !== TEACHER_PIN) { toast("密碼不正確"); return; }
-        location.href = TEACHER_SHEET;
+        sessionStorage.setItem("grip-teacher", "1");
+        $("teacherModal").classList.add("hidden");
+        openTeacher();
       };
+      $("teacherList").onclick = (e) => {
+        const b = e.target.closest("button[data-del]");
+        if (!b) return;
+        teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
+      };
+      $("teacherReload").onclick = async () => { await loadBoard(); renderTeacherList(); toast("已重新整理"); };
       if (WALL) {
         document.body.classList.add("wall");
         $("wallBtn").textContent = "返回輸入頁";
