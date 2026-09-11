@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11q 還原上一版排版，拎走累積說明 -->
+  <!-- published 2026-09-11r 全螢幕龍虎榜加返回掣 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -256,6 +256,22 @@
     }
     body.wall .board-card { margin-bottom: 0; min-height: 0; }
     body.wall .board-hero img { width: min(100%, 220px); }
+    #wallBack {
+      display: none;
+      position: fixed;
+      right: 14px;
+      bottom: calc(14px + var(--safe-b));
+      z-index: 15;
+      width: auto;
+      min-height: 44px;
+      margin: 0;
+      padding: 8px 18px;
+      background: #fff;
+      color: var(--navy);
+      border: 3px solid var(--navy);
+      box-shadow: 0 4px 0 var(--navy);
+    }
+    body.wall #wallBack { display: block; }
 
     .modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -404,6 +420,7 @@
       <button class="ghost" id="teacherBtn" type="button" style="margin:0">老師管理／刪除成績</button>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
+    <button class="ghost" id="wallBack" type="button">返回輸入頁</button>
   </div>
 
   <div class="modal hidden" id="teacherModal">
@@ -1095,7 +1112,10 @@
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
       };
       $("wallBtn").onclick = () => {
-        location.href = WALL ? PUBLIC_URL : (PUBLIC_URL + "?wall=1");
+        location.href = PUBLIC_URL + "?wall=1";
+      };
+      $("wallBack").onclick = () => {
+        location.href = PUBLIC_URL;
       };
       try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
       lockTeacher();
@@ -1143,7 +1163,6 @@
       };
       if (WALL) {
         document.body.classList.add("wall");
-        $("wallBtn").textContent = "返回輸入頁";
         document.title = "手握力龍虎榜　全螢幕";
       }
       loadBoard();
