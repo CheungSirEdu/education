@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11n 龍虎榜只分低年班高年班，唔再按班篩選 -->
+  <!-- published 2026-09-11o 老師模式龍虎榜可直接刪除 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -81,7 +81,8 @@
       background: #fff; color: var(--bad); border: 3px solid var(--bad);
       font-size: 14px; min-height: 40px; padding: 6px 10px; width: auto;
     }
-    .podium .danger, .rows .danger { display: none !important; }
+    .podium .tbtns, .rows .tbtns { margin-top: 8px; justify-content: center; }
+    .podium .danger, .rows .danger { font-size: 13px; min-height: 36px; padding: 4px 8px; }
     .teacher-list { display: grid; gap: 8px; max-height: 55vh; overflow: auto; }
     .trow {
       display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
@@ -840,6 +841,14 @@
 
     function teacherOn() { return state.teacher === true && !WALL; }
 
+    function delBtns(klass, no) {
+      if (!teacherOn()) return "";
+      return `<div class="tbtns">
+        <button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪除今日</button>
+        <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪除全部</button>
+      </div>`;
+    }
+
     function seatHtml(r, cls, medal) {
       if (!r) return `<div class="seat ${cls}"><div class="medal">${medal}</div><div class="who">虛位以待</div></div>`;
       const name = lookupName(r.class, r.no);
@@ -849,6 +858,7 @@
         <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
         <div class="kgv">${kg(r.avg)} <span style="font-size:14px">kg</span></div>
         <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+        ${delBtns(r.class, r.no)}
       </div>`;
     }
 
@@ -872,6 +882,7 @@
           <div>${name ? `<div class="name">${esc(name)}</div>` : ""}
           <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
           <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+          ${delBtns(r.class, r.no)}
           </div>
           <div class="best">${kg(r.avg)} kg</div>
         </div>`;
@@ -946,13 +957,15 @@
       $("teacherList").innerHTML = "";
       $("pin").value = "";
       $("teacherModal").classList.add("hidden");
+      renderBoards(state.records || []);
     }
 
     function openTeacher() {
       if (!teacherOn()) return;
       $("teacherPanel").classList.remove("hidden");
+      renderBoards(state.records || []);
       renderTeacherList();
-      $("teacherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("boards").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function renderTeacherList() {
@@ -1113,11 +1126,13 @@
       $("pin").addEventListener("keydown", (e) => {
         if (e.key === "Enter") { e.preventDefault(); tryPin(); }
       });
-      $("teacherList").onclick = (e) => {
+      const onDel = (e) => {
         const b = e.target.closest("button[data-del]");
         if (!b) return;
         teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
       };
+      $("teacherList").onclick = onDel;
+      $("boards").onclick = onDel;
       $("teacherReload").onclick = async () => {
         if (!teacherOn()) return;
         await loadBoard();
