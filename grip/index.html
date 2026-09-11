@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <!-- published 2026-09-11c 改用試算表讀榜，停止舊程式誤寫空白行 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -350,6 +351,7 @@
     const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
     const SCORE_TOKEN = "chilin-edu-2026";
     const ACTIVITY = "手握力龍虎榜";
+    const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
     const TEACHER_PIN = "2246";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
@@ -364,7 +366,8 @@
       scope: "today",
       filter: "",
       lastBoard: null,
-      roster: {}
+      roster: {},
+      records: []
     };
 
     function todayYmd() {
@@ -453,16 +456,9 @@
       setTimeout(() => n.remove(), 2600);
     }
 
-    function jsonp(fields) {
+    function scriptJsonp(src) {
       return new Promise((resolve, reject) => {
         const cb = "grip_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-        const q = new URLSearchParams(Object.assign({
-          token: SCORE_TOKEN,
-          kind: "grip",
-          activity: ACTIVITY,
-          callback: cb,
-          t: String(Date.now())
-        }, fields || {}));
         const s = document.createElement("script");
         const timer = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 18000);
         function cleanup() {
@@ -472,9 +468,151 @@
         }
         window[cb] = function (data) { cleanup(); resolve(data); };
         s.onerror = function () { cleanup(); reject(new Error("network")); };
-        s.src = SCORE_URL + "?" + q.toString();
+        s.src = src.replace("RESPONSE_HANDLER", cb);
         document.head.appendChild(s);
       });
+    }
+
+    function gvizCell(row, i) {
+      const c = row && row.c && row.c[i];
+      if (!c) return "";
+      if (c.v === null || c.v === undefined) return c.f || "";
+      return c.v;
+    }
+
+    function ymdFromGviz(v, formatted) {
+      const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)/);
+      if (m) {
+        const mo = String(Number(m[2]) + 1).padStart(2, "0");
+        const d = String(Number(m[3])).padStart(2, "0");
+        return m[1] + "-" + mo + "-" + d;
+      }
+      const s = String(formatted || v || "");
+      const hk = s.match(/(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+      if (hk) return hk[1] + "-" + String(hk[2]).padStart(2, "0") + "-" + String(hk[3]).padStart(2, "0");
+      const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+      return iso ? iso[1] + "-" + iso[2] + "-" + iso[3] : "";
+    }
+
+    function parsePackedKg(result, stars, hero, seconds) {
+      const text = [result, stars, hero, seconds].map(x => String(x || "")).join(" ");
+      const pair = text.match(/左\s*([\d.]+)\s*右\s*([\d.]+)/) ||
+        text.match(/L\s*([\d.]+)\s*R\s*([\d.]+)/i) ||
+        String(result || "").match(/^([\d.]+)\s*[\/,]\s*([\d.]+)$/);
+      let left = pair ? parseKgInput(pair[1]) : parseKgInput(hero);
+      let right = pair ? parseKgInput(pair[2]) : parseKgInput(seconds);
+      if (left === null && right === null) {
+        const one = parseKgInput(stars);
+        if (one !== null) { left = one; right = one; }
+      }
+      if (left === null || right === null) return null;
+      return { left, right, best: Math.max(left, right) };
+    }
+
+    function recordsFromGviz(table) {
+      const cols = (table.cols || []).map(c => String(c.label || c.id || ""));
+      const idx = (name) => cols.indexOf(name);
+      const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+      const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星");
+      const iHero = idx("角色"), iSec = idx("用時秒");
+      const iDate = idx("日期"), iLeft = idx("左手kg"), iRight = idx("右手kg"), iBest = idx("較佳kg");
+      const out = [];
+      (table.rows || []).forEach(row => {
+        const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+        const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+        if (!klass || !no || no === "NaN") return;
+        let packed = null;
+        if (iLeft >= 0 && iRight >= 0) {
+          const left = parseKgInput(gvizCell(row, iLeft));
+          const right = parseKgInput(gvizCell(row, iRight));
+          if (left !== null && right !== null) packed = { left, right, best: Math.max(left, right) };
+        }
+        if (!packed) {
+          packed = parsePackedKg(
+            gvizCell(row, iResult),
+            gvizCell(row, iStars),
+            gvizCell(row, iHero),
+            gvizCell(row, iSec)
+          );
+        }
+        if (!packed) return;
+        const timeCell = row.c && row.c[iTime];
+        const date = (iDate >= 0 && ymdFromGviz("", gvizCell(row, iDate))) ||
+          ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) ||
+          ymdFromGviz("", gvizCell(row, iLevel)) ||
+          state.today;
+        const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+        const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+        out.push({
+          klass, no, date, ts,
+          left: packed.left, right: packed.right, best: packed.best,
+          avg: Math.round(((packed.left + packed.right) / 2) * 10) / 10
+        });
+      });
+      return out;
+    }
+
+    function pickBoard(rows, scope, today, filter) {
+      const map = {};
+      rows.forEach(r => {
+        if (filter && r.klass !== filter) return;
+        if (scope === "today" && r.date !== today) return;
+        const key = r.klass + "\t" + r.no;
+        const cur = map[key];
+        if (scope === "best") {
+          if (!cur || r.best > cur.best || (r.best === cur.best && r.date > cur.date)) map[key] = r;
+        } else if (!cur || r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)) {
+          map[key] = r;
+        }
+      });
+      const list = Object.keys(map).map(k => map[k]);
+      list.sort((a, b) => b.best - a.best || b.avg - a.avg || (a.klass + a.no).localeCompare(b.klass + b.no, "zh-Hant"));
+      return list;
+    }
+
+    function publicRow(r, rank) {
+      return { rank: rank || 0, class: r.klass, no: r.no, date: r.date, left: r.left, right: r.right, best: r.best };
+    }
+
+    function boardPayload(rows) {
+      const list = pickBoard(rows, state.scope, state.today, state.filter);
+      const id = identity();
+      let rank = 0, me = null;
+      if (id.ok) {
+        for (let i = 0; i < list.length; i++) {
+          if (list[i].klass === id.class && list[i].no === id.no) { rank = i + 1; me = list[i]; break; }
+        }
+      }
+      const classes = [];
+      rows.forEach(r => { if (classes.indexOf(r.klass) < 0) classes.push(r.klass); });
+      classes.sort();
+      return {
+        ok: true,
+        today: state.today,
+        total: list.length,
+        rank,
+        me: me ? publicRow(me, rank) : null,
+        board: list.slice(0, 10).map((r, i) => publicRow(r, i + 1)),
+        classes
+      };
+    }
+
+    function previousOf(rows, klass, no, today) {
+      let found = null;
+      rows.forEach(r => {
+        if (r.klass !== klass || r.no !== no || r.date >= today) return;
+        if (!found || r.date > found.date || (r.date === found.date && r.ts > found.ts)) found = r;
+      });
+      return found ? { date: found.date, left: found.left, right: found.right, best: found.best } : null;
+    }
+
+    async function fetchRecords() {
+      const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+        "/gviz/tq?tqx=out:json;responseHandler:RESPONSE_HANDLER&sheet=" + encodeURIComponent(ACTIVITY) +
+        "&headers=1&t=" + Date.now();
+      const data = await scriptJsonp(src);
+      if (!data || data.status === "error" || !data.table) return [];
+      return recordsFromGviz(data.table);
     }
 
     function renderChips() {
@@ -638,21 +776,38 @@
 
     async function loadBoard() {
       try {
-        const data = await jsonp({
-          op: "board",
-          scope: state.scope,
-          filter: state.filter,
-          class: identity().class,
-          no: identity().no
-        });
-        if (!data || !data.ok) throw new Error("bad");
+        const rows = await fetchRecords();
+        state.records = rows;
+        const data = boardPayload(rows);
         renderBoard(data);
+        return data;
       } catch (e) {
         $("boardEmpty").classList.remove("hidden");
-        $("boardEmpty").textContent = "未能讀取龍虎榜。請老師雙擊桌面「更新成績程式」，把新程式貼上 Apps Script 並部署新版本。";
+        $("boardEmpty").textContent = "未能讀取龍虎榜。請重新整理頁面，或檢查網絡。";
         $("podium").innerHTML = "";
         $("boardRows").innerHTML = "";
+        return null;
       }
+    }
+
+    function saveScore(id, left, right, best) {
+      const payload = JSON.stringify({
+        token: SCORE_TOKEN,
+        activity: ACTIVITY,
+        class: id.class,
+        no: id.no,
+        level: state.today,
+        result: "左" + left + " 右" + right,
+        stars: String(best),
+        hero: String(left),
+        seconds: String(right)
+      });
+      return fetch(SCORE_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: payload
+      }).catch(function () {});
     }
 
     async function submit() {
@@ -664,29 +819,30 @@
         setMsg("請輸入左手和右手成績，範圍 1 至 100 公斤。", "err");
         return;
       }
+      const best = Math.max(left, right);
       $("submitBtn").disabled = true;
       setMsg("正在儲存…", "");
       saveWho();
+      const previous = previousOf(state.records || [], id.class, id.no, state.today);
+      const optimistic = {
+        klass: id.class, no: id.no, date: state.today, ts: Date.now(),
+        left, right, best, avg: Math.round(((left + right) / 2) * 10) / 10
+      };
+      state.records = (state.records || []).concat([optimistic]);
+      const preview = boardPayload(state.records);
+      preview.saved = true;
+      preview.updated = false;
+      preview.current = { date: state.today, left, right, best };
+      preview.previous = previous;
+      renderBoard(preview);
+      showResult(preview);
       try {
-        const data = await jsonp({
-          op: "submit",
-          class: id.class,
-          no: id.no,
-          left: String(left),
-          right: String(right),
-          scope: state.scope,
-          filter: state.filter
-        });
-        if (!data || !data.ok) {
-          if (data && data.error === "kg") throw new Error("kg");
-          throw new Error("save");
-        }
-        setMsg(data.updated ? "已更新今日成績。" : "已儲存今日成績。", "ok");
-        showResult(data);
-        renderBoard(data);
+        await saveScore(id, left, right, best);
+        setMsg("已儲存今日成績。", "ok");
         toast("已入龍虎榜");
+        setTimeout(loadBoard, 2500);
       } catch (e) {
-        setMsg("未能儲存。請告訴老師：雙擊桌面「更新成績程式」，貼上新程式並部署新版本。", "err");
+        setMsg("網絡未穩，請再提交一次。", "err");
       } finally {
         $("submitBtn").disabled = false;
       }
