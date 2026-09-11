@@ -1,15 +1,32 @@
 {
-  "subjects": [
-    "p2-sci",
-    "p4-sci",
-    "p4-math",
-    "p4-pe",
-    "p4-ict",
-    "p5-ict",
+  "areas": [
+    "math",
+    "pe",
+    "sci",
+    "ict",
     "lang",
-    "kits",
     "bett"
   ],
+  "folders": {
+    "math": [
+      "p4-math"
+    ],
+    "pe": [
+      "p4-pe"
+    ],
+    "sci": [
+      "p2-sci",
+      "p4-sci",
+      "kits"
+    ],
+    "ict": [
+      "p4-ict",
+      "p5-ict"
+    ],
+    "lang": [
+      "lang"
+    ]
+  },
   "items": {
     "p2-sci": [
       "mungbean",
@@ -26,6 +43,9 @@
     ],
     "p4-math": [
       "times"
+    ],
+    "p4-pe": [
+      "grip"
     ],
     "lang": [
       "jp",

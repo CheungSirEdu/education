@@ -189,16 +189,24 @@
     本站內容適合小學生閱讀。
   </footer>
   <script>
-    const SUBJECTS = [
-      { id: "p2-sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
-      { id: "p4-sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
-      { id: "kits", title: "科學教具", emoji: "🧪", blurb: "一至六年級教具相片及清單" },
-      { id: "p4-math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
-      { id: "p4-pe", title: "四年級體育", emoji: "⚽", blurb: "手握力龍虎榜" },
-      { id: "p4-ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
-      { id: "p5-ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" },
-      { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" },
+    const AREAS = [
+      { id: "math", title: "數學", emoji: "➕", blurb: "乘數表練習" },
+      { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜" },
+      { id: "sci", title: "科學", emoji: "🔬", blurb: "二年級、四年級、科學教具" },
+      { id: "ict", title: "資訊科技", emoji: "💻", blurb: "四年級、五年級" },
+      { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂", subject: "lang" },
       { id: "bett", title: "BETT SHOW", emoji: "🇬🇧", blurb: "英國遊學團", href: "bett/" }
+    ];
+
+    const FOLDERS = [
+      { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
+      { id: "p4-pe", area: "pe", title: "四年級體育", emoji: "⚽", blurb: "手握力龍虎榜" },
+      { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
+      { id: "p4-sci", area: "sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
+      { id: "kits", area: "sci", title: "科學教具", emoji: "🧪", blurb: "一至六年級教具相片及清單" },
+      { id: "p4-ict", area: "ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
+      { id: "p5-ict", area: "ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" },
+      { id: "lang", area: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" }
     ];
 
     const ITEMS = [
@@ -358,7 +366,8 @@
     let editing = false;
     let ghToken = sessionStorage.getItem("edu-gh") || "";
     let layout = {
-      subjects: SUBJECTS.map(s => s.id),
+      areas: AREAS.map(a => a.id),
+      folders: {},
       items: {}
     };
     let dragId = null;
@@ -437,19 +446,48 @@
 
     function applyLayout(data) {
       if (!data || typeof data !== "object") return;
-      if (Array.isArray(data.subjects)) layout.subjects = data.subjects.slice();
+      if (Array.isArray(data.areas)) layout.areas = data.areas.slice();
+      if (data.folders && typeof data.folders === "object") layout.folders = data.folders;
       if (data.items && typeof data.items === "object") layout.items = data.items;
+      if (Array.isArray(data.subjects) && !Array.isArray(data.areas)) {
+        const byFolder = Object.fromEntries(FOLDERS.map(f => [f.id, f]));
+        const grouped = {};
+        for (const id of data.subjects) {
+          const f = byFolder[id];
+          if (!f) continue;
+          grouped[f.area] = grouped[f.area] || [];
+          if (!grouped[f.area].includes(id)) grouped[f.area].push(id);
+        }
+        layout.folders = grouped;
+      }
     }
 
-    function orderedSubjects() {
-      const byId = Object.fromEntries(SUBJECTS.map(s => [s.id, s]));
+    function orderedList(all, order) {
+      const byId = Object.fromEntries(all.map(x => [x.id, x]));
       const seen = new Set();
       const out = [];
-      for (const id of layout.subjects || []) {
+      for (const id of order || []) {
         if (byId[id] && !seen.has(id)) { out.push(byId[id]); seen.add(id); }
       }
-      for (const s of SUBJECTS) if (!seen.has(s.id)) out.push(s);
+      for (const x of all) if (!seen.has(x.id)) out.push(x);
       return out;
+    }
+
+    function orderedAreas() {
+      return orderedList(AREAS, layout.areas);
+    }
+
+    function orderedFolders(areaId) {
+      const list = FOLDERS.filter(f => f.area === areaId);
+      return orderedList(list, (layout.folders && layout.folders[areaId]) || []);
+    }
+
+    function areaById(id) { return AREAS.find(a => a.id === id); }
+    function folderById(id) { return FOLDERS.find(f => f.id === id); }
+    function areaHref(a) {
+      if (a.href) return a.href;
+      if (a.subject) return "#/s/" + a.subject;
+      return "#/a/" + a.id;
     }
 
     function orderedItems(subjectId) {
@@ -475,29 +513,31 @@
       return next;
     }
 
-    function subjectIds() { return orderedSubjects().map(s => s.id); }
+    function areaIds() { return orderedAreas().map(a => a.id); }
+    function folderIds(areaId) { return orderedFolders(areaId).map(f => f.id); }
     function itemIds(subjectId) { return orderedItems(subjectId).map(it => it.id); }
 
-    async function shiftList(kind, subjectId, id, dir) {
-      if (kind === "subjects") {
-        const ids = subjectIds();
-        const i = ids.indexOf(id);
-        const j = i + dir;
-        if (i < 0 || j < 0 || j >= ids.length) return;
-        const next = ids.slice();
-        const [x] = next.splice(i, 1);
-        next.splice(j, 0, x);
-        layout.subjects = next;
-      } else {
-        const ids = itemIds(subjectId);
-        const i = ids.indexOf(id);
-        const j = i + dir;
-        if (i < 0 || j < 0 || j >= ids.length) return;
-        const next = ids.slice();
-        const [x] = next.splice(i, 1);
-        next.splice(j, 0, x);
-        layout.items = Object.assign({}, layout.items, { [subjectId]: next });
-      }
+    function idsFor(kind, scopeId) {
+      if (kind === "areas") return areaIds();
+      if (kind === "folders") return folderIds(scopeId);
+      return itemIds(scopeId);
+    }
+
+    function writeOrder(kind, scopeId, next) {
+      if (kind === "areas") layout.areas = next;
+      else if (kind === "folders") layout.folders = Object.assign({}, layout.folders, { [scopeId]: next });
+      else layout.items = Object.assign({}, layout.items, { [scopeId]: next });
+    }
+
+    async function shiftList(kind, scopeId, id, dir) {
+      const ids = idsFor(kind, scopeId);
+      const i = ids.indexOf(id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= ids.length) return;
+      const next = ids.slice();
+      const [x] = next.splice(i, 1);
+      next.splice(j, 0, x);
+      writeOrder(kind, scopeId, next);
       route();
       try {
         await saveLayout();
@@ -507,10 +547,9 @@
       }
     }
 
-    async function dropList(kind, subjectId, fromId, toId) {
+    async function dropList(kind, scopeId, fromId, toId) {
       if (!fromId || fromId === toId) return;
-      if (kind === "subjects") layout.subjects = moveInList(subjectIds(), fromId, toId);
-      else layout.items = Object.assign({}, layout.items, { [subjectId]: moveInList(itemIds(subjectId), fromId, toId) });
+      writeOrder(kind, scopeId, moveInList(idsFor(kind, scopeId), fromId, toId));
       route();
       try {
         await saveLayout();
@@ -568,17 +607,36 @@
     function route() {
       const hash = (location.hash || "#/").replace(/^#/, "");
       const parts = hash.split("/").filter(Boolean);
+      if (parts[0] === "a" && parts[1]) return renderArea(parts[1]);
       if (parts[0] === "s" && parts[1]) {
         const sid = parts[1] === "world" ? "lang" : parts[1];
+        if (!folderById(sid) && areaById(sid)) return renderArea(sid);
         return renderSubject(sid);
       }
       if (parts[0] === "i" && parts[1]) return renderItem(parts[1]);
       renderHome();
     }
 
+    function renderCards(list, hrefFor) {
+      return list.map((s, i) => editing ? `
+            <div class="card" data-id="${s.id}" draggable="true">
+              <div class="emoji">${s.emoji}</div>
+              <h2>${s.title}</h2>
+              <p>${s.blurb}</p>
+              ${moveButtons(i, list.length)}
+            </div>
+          ` : `
+            <a class="card" href="${hrefFor(s)}">
+              <div class="emoji">${s.emoji}</div>
+              <h2>${s.title}</h2>
+              <p>${s.blurb}</p>
+            </a>
+          `).join("");
+    }
+
     function renderHome() {
       document.title = "佛教志蓮小學　張老師教學資源";
-      const subjects = orderedSubjects();
+      const areas = orderedAreas();
       $("app").innerHTML = `
         <div class="chars">
           <img src="assets/boy.png" alt="小志">
@@ -586,25 +644,34 @@
         </div>
         <p class="note">${editing
           ? "編輯排版中：拖曳卡片，或撳「上移／下移」。左上角係第一格。改動會儲存，所有裝置都會見到新次序。"
-          : "請選擇年級及科目。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。每項教材均設有連結、二維碼及成績紀錄。"}</p>
+          : "請選擇科目。數學、體育、科學、資訊科技入面再按年級揀教材。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。"}</p>
         <div class="grid">
-          ${subjects.map((s, i) => editing ? `
-            <div class="card" data-id="${s.id}" draggable="true">
-              <div class="emoji">${s.emoji}</div>
-              <h2>${s.title}</h2>
-              <p>${s.blurb}</p>
-              ${moveButtons(i, subjects.length)}
-            </div>
-          ` : `
-            <a class="card" href="${s.href || `#/s/${s.id}`}">
-              <div class="emoji">${s.emoji}</div>
-              <h2>${s.title}</h2>
-              <p>${s.blurb}</p>
-            </a>
-          `).join("")}
+          ${renderCards(areas, areaHref)}
         </div>
       `;
-      bindGrid("subjects");
+      bindGrid("areas");
+    }
+
+    function renderArea(id) {
+      const area = areaById(id);
+      if (!area) return renderHome();
+      if (area.href && !editing) { location.replace(area.href); return; }
+      if (area.subject) return renderSubject(area.subject);
+      const folders = orderedFolders(id);
+      document.title = area.title + "　張老師教學資源";
+      $("app").innerHTML = `
+        <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
+        <h3 class="sec">${area.emoji} ${area.title}</h3>
+        ${folders.length ? `
+          <p class="note">${editing
+            ? "編輯排版中：拖曳或撳上移／下移，以調較本頁次序。"
+            : "請選擇年級或分類。"}</p>
+          <div class="grid">
+            ${renderCards(folders, f => "#/s/" + f.id)}
+          </div>
+        ` : `<div class="empty">此部分教材即將推出。</div>`}
+      `;
+      bindGrid("folders", id);
     }
 
     function itemBasics(it) {
@@ -632,13 +699,16 @@
     }
 
     function renderSubject(id) {
-      const s = SUBJECTS.find(x => x.id === id);
+      const s = folderById(id);
       if (!s) return renderHome();
-      if (s.href && !editing) { location.replace(s.href); return; }
+      const area = areaById(s.area);
       const items = orderedItems(id);
       document.title = s.title + "　張老師教學資源";
       $("app").innerHTML = `
-        <div class="bar"><a class="btn btn-back" href="#/">← 返回目錄</a></div>
+        <div class="bar">
+          <a class="btn btn-back" href="#/">← 返回目錄</a>
+          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${area.title}</a>` : ""}
+        </div>
         <h3 class="sec">${s.emoji} ${s.title}</h3>
         ${items.length ? `
           <p class="note">${editing
@@ -668,11 +738,13 @@
     function renderItem(id) {
       const it = ITEMS.find(x => x.id === id);
       if (!it) return renderHome();
-      const s = SUBJECTS.find(x => x.id === it.subject);
+      const s = folderById(it.subject);
+      const area = s ? areaById(s.area) : null;
       document.title = plainText(it.title) + "　張老師教學資源";
       $("app").innerHTML = `
         <div class="bar">
           <a class="btn btn-back" href="#/">← 返回目錄</a>
+          ${area && !area.subject ? `<a class="btn btn-back" href="#/a/${area.id}">← ${area.title}</a>` : ""}
           <a class="btn btn-back" href="#/s/${it.subject}">← ${s ? s.title : "返回"}</a>
         </div>
         ${itemBasics(it)}
