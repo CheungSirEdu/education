@@ -212,7 +212,7 @@
   <script>
     const AREAS = [
       { id: "math", title: "數學", emoji: "➕", blurb: "乘數表練習" },
-      { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜" },
+      { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜", subject: "pe" },
       { id: "sci", title: "科學", emoji: "🔬", blurb: "二年級、四年級、科學教具" },
       { id: "ict", title: "資訊科技", emoji: "💻", blurb: "四年級、五年級" },
       { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂", subject: "lang" },
@@ -221,7 +221,7 @@
 
     const FOLDERS = [
       { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
-      { id: "p4-pe", area: "pe", title: "四年級體育", emoji: "⚽", blurb: "手握力龍虎榜" },
+      { id: "pe", area: "pe", title: "體育", emoji: "💪", blurb: "手握力龍虎榜" },
       { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
       { id: "p4-sci", area: "sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
       { id: "kits", area: "sci", title: "科學教具", emoji: "🧪", blurb: "一至六年級教具相片及清單" },
@@ -331,7 +331,7 @@
       },
       {
         id: "grip",
-        subject: "p4-pe",
+        subject: "pe",
         type: "game",
         emoji: "💪",
         blurb: "量度左右手握力，查看龍虎榜及自己有沒有進步。",
@@ -779,7 +779,7 @@
       const parts = hash.split("/").filter(Boolean);
       if (parts[0] === "a" && parts[1]) return renderArea(parts[1]);
       if (parts[0] === "s" && parts[1]) {
-        const sid = parts[1] === "world" ? "lang" : parts[1];
+        const sid = parts[1] === "world" ? "lang" : (parts[1] === "p4-pe" ? "pe" : parts[1]);
         if (!folderById(sid) && areaById(sid)) return renderArea(sid);
         return renderSubject(sid);
       }

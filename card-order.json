@@ -12,7 +12,7 @@
       "p4-math"
     ],
     "pe": [
-      "p4-pe"
+      "pe"
     ],
     "sci": [
       "p2-sci",
@@ -44,7 +44,7 @@
     "p4-math": [
       "times"
     ],
-    "p4-pe": [
+    "pe": [
       "grip"
     ],
     "lang": [
