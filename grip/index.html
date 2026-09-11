@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11e 榜上可刪 + 小志小蓮標名 -->
+  <!-- published 2026-09-11f 全部書面語 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -272,14 +272,14 @@
     </header>
 
     <div class="device" id="deviceBox">
-      <img src="heroes.jpg" alt="小志和小蓮一齊量手握力" />
-      <p class="caption">小志　＋　小蓮　一齊量手握力</p>
+      <img src="heroes.jpg" alt="小志和小蓮一起量度手握力" />
+      <p class="caption">小志　＋　小蓮　一起量度手握力</p>
     </div>
 
     <div class="desk">
       <section class="card form-card" id="formCard">
         <h2>輸入今日成績</h2>
-        <p class="hint">測完左右手之後，填班別、學號同成績。日期已預先填上，不用自己輸入。姓名由老師名單對出，不用自己填。</p>
+        <p class="hint">量度左右手後，請填寫班別、學號及成績。日期已預先填上，無須自行輸入。姓名由老師名單對出，無須自行填寫。</p>
         <div class="ids">
           <label class="field">班別
             <input id="klass" maxlength="8" autocomplete="off" placeholder="例如 4A" aria-label="班別" />
@@ -307,7 +307,7 @@
       </section>
 
       <section class="card result-card hidden" id="resultCard">
-        <h2>今次對比上次</h2>
+        <h2>今次與上次比較</h2>
         <div class="compare">
           <div class="scorebox" id="prevBox">
             <div class="lab">上次較佳</div>
@@ -340,21 +340,21 @@
       <div class="classes" id="boardFilters"></div>
       <div id="podium" class="podium"></div>
       <div id="boardRows" class="rows"></div>
-      <p class="empty hidden" id="boardEmpty">今日還沒有成績。測完請在上面提交。</p>
+      <p class="empty hidden" id="boardEmpty">今日還沒有成績。量度後請在上方提交。</p>
     </section>
     </div>
 
     <section class="card teacher-card hidden" id="teacherPanel">
       <h2>老師管理成績</h2>
-      <p class="hint">學生入錯可以喺呢度刪除。刪除後龍虎榜會更新，同學可以再交一次。</p>
+      <p class="hint">若學生輸入錯誤，可在此刪除。刪除後龍虎榜會更新，學生可以再次提交。</p>
       <div class="teacher-list" id="teacherList"></div>
-      <p class="empty hidden" id="teacherEmpty">而家冇有效成績。</p>
+      <p class="empty hidden" id="teacherEmpty">目前沒有有效成績。</p>
       <button class="ghost" id="teacherReload" type="button">重新整理名單</button>
       <a class="tiny" id="sheetLink" href="https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit" target="_blank" rel="noopener">開啟試算表</a>
     </section>
 
     <div class="foot">
-      <button class="ghost" id="wallBtn" type="button" style="margin:0">大螢幕龍虎榜</button>
+      <button class="ghost" id="wallBtn" type="button" style="margin:0">全螢幕龍虎榜</button>
       <button class="ghost" id="teacherBtn" type="button" style="margin:0">老師管理／刪除成績</button>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
@@ -363,7 +363,7 @@
   <div class="modal hidden" id="teacherModal">
     <div class="box">
       <h2 style="text-align:center;margin-top:0;color:var(--red)">老師管理成績</h2>
-      <p class="hint">請輸入密碼。之後可以刪除入錯嘅成績。</p>
+      <p class="hint">請輸入密碼，然後可以刪除輸入錯誤的成績。</p>
       <label class="field">密碼
         <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
       </label>
@@ -734,8 +734,8 @@
         $("deltaText").textContent = "第一次";
         banner.className = "banner first";
         banner.textContent = data.updated
-          ? "已更新今日成績。這是你的第一次記錄，下星期五再來就可以比較進步！"
-          : "這是你的第一次記錄。下星期五再來，就可以比較進步或退步！";
+          ? "已更新今日成績。這是你的第一次記錄，下星期五再量度即可比較是否進步。"
+          : "這是你的第一次記錄。下星期五再量度，即可比較進步或退步。";
       } else {
         $("prevBest").textContent = kg(prev.best);
         $("prevSub").textContent = "左 " + kg(prev.left) + "　右 " + kg(prev.right) + "　" + prettyDate(prev.date);
@@ -751,7 +751,7 @@
           $("deltaArrow").textContent = "▼";
           $("deltaText").textContent = kg(diff);
           banner.className = "banner down";
-          banner.textContent = "今次較上次退了 " + kg(Math.abs(diff)) + " kg。再試一次，下次加油！";
+          banner.textContent = "今次較上次退步了 " + kg(Math.abs(diff)) + " kg。請繼續努力。";
         } else {
           deltaBox.className = "delta same";
           $("deltaArrow").textContent = "＝";
@@ -899,8 +899,8 @@
             <div class="meta">${prettyDate(r.date)}　左 ${kg(r.left)}　右 ${kg(r.right)}　較佳 ${kg(r.best)} kg</div>
           </div>
           <div class="tbtns">
-            <button class="danger" type="button" data-del="today" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪今日</button>
-            <button class="danger" type="button" data-del="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+            <button class="danger" type="button" data-del="today" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪除今日</button>
+            <button class="danger" type="button" data-del="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪除全部</button>
           </div>
         </div>`;
       }).join("");
@@ -911,7 +911,7 @@
       const who = (name ? name + "　" : "") + klass + "　" + no + "號";
       const ok = confirm(all
         ? "確定刪除 " + who + " 的全部手握力成績？"
-        : "確定刪除 " + who + " 的今日成績？刪除後可以再交一次。");
+        : "確定刪除 " + who + " 的今日成績？刪除後可以再次提交。");
       if (!ok) return;
       state.records = (state.records || []).concat([{
         klass, no, date: all ? "ALL" : state.today, ts: Date.now(), deleted: true, all: !!all
@@ -972,10 +972,10 @@
       try {
         await saveScore(id, left, right, best);
         setMsg("已儲存今日成績。", "ok");
-        toast("已入龍虎榜");
+        toast("已列入龍虎榜");
         setTimeout(loadBoard, 2500);
       } catch (e) {
-        setMsg("網絡未穩，請再提交一次。", "err");
+        setMsg("網絡不穩，請再提交一次。", "err");
       } finally {
         $("submitBtn").disabled = false;
       }
@@ -1051,7 +1051,7 @@
       if (WALL) {
         document.body.classList.add("wall");
         $("wallBtn").textContent = "返回輸入頁";
-        document.title = "手握力龍虎榜　大螢幕";
+        document.title = "手握力龍虎榜　全螢幕";
       }
       loadBoard();
       setInterval(loadBoard, WALL ? 8000 : 20000);
