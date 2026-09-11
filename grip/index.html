@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11d 小志小蓮 + 老師刪成績 -->
+  <!-- published 2026-09-11e 榜上可刪 + 小志小蓮標名 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -68,6 +68,9 @@
     }
     .device {
       text-align: center; margin: 0 0 14px;
+    }
+    .device .caption {
+      margin: 8px 0 0; font-weight: 900; color: var(--navy); font-size: 15px;
     }
     .device img {
       width: min(100%, 560px); height: auto; border-radius: 20px;
@@ -227,7 +230,8 @@
     body.wall .card { border-width: 6px; }
     body.wall .seat .kgv { font-size: 32px; }
     body.wall .row .best { font-size: 26px; }
-    body.wall .form-card, body.wall .result-card, body.wall .device, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
+    body.wall .form-card, body.wall .result-card, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
+    body.wall .device img { width: min(100%, 380px); }
     body.wall .desk { display: block; }
     body.wall .board-card { margin-bottom: 0; }
 
@@ -269,6 +273,7 @@
 
     <div class="device" id="deviceBox">
       <img src="heroes.jpg" alt="小志和小蓮一齊量手握力" />
+      <p class="caption">小志　＋　小蓮　一齊量手握力</p>
     </div>
 
     <div class="desk">
@@ -375,7 +380,7 @@
     const TEACHER_PIN = "2246";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
-    const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","6A","6B","6C"];
+    const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","5D","6A","6B","6C","6D"];
 
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
@@ -767,6 +772,13 @@
       $("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
+    function teacherOn() { return sessionStorage.getItem("grip-teacher") === "1"; }
+
+    function delBtn(klass, no) {
+      if (!teacherOn() || WALL) return "";
+      return `<button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}" style="margin-top:6px;width:100%">刪除</button>`;
+    }
+
     function seatHtml(r, cls, medal) {
       if (!r) return `<div class="seat ${cls}"><div class="medal">${medal}</div><div class="who">虛位以待</div></div>`;
       const name = lookupName(r.class, r.no);
@@ -776,6 +788,7 @@
         <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
         <div class="kgv">${kg(r.best)} <span style="font-size:14px">kg</span></div>
         <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+        ${delBtn(r.class, r.no)}
       </div>`;
     }
 
@@ -799,7 +812,8 @@
           <div class="rk">${r.rank}</div>
           <div>${name ? `<div class="name">${esc(name)}</div>` : ""}
           <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
-          <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div></div>
+          <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+          ${delBtn(r.class, r.no)}</div>
           <div class="best">${kg(r.best)} kg</div>
         </div>`;
       }).join("");
@@ -867,6 +881,7 @@
 
     function openTeacher() {
       $("teacherPanel").classList.remove("hidden");
+      renderBoard(boardPayload(state.records || []));
       renderTeacherList();
       $("teacherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -1024,11 +1039,14 @@
         $("teacherModal").classList.add("hidden");
         openTeacher();
       };
-      $("teacherList").onclick = (e) => {
+      const onDel = (e) => {
         const b = e.target.closest("button[data-del]");
         if (!b) return;
         teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
       };
+      $("teacherList").onclick = onDel;
+      $("podium").onclick = onDel;
+      $("boardRows").onclick = onDel;
       $("teacherReload").onclick = async () => { await loadBoard(); renderTeacherList(); toast("已重新整理"); };
       if (WALL) {
         document.body.classList.add("wall");
