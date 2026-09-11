@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11f 全部書面語 -->
+  <!-- published 2026-09-11g 龍虎榜放大、輸入區縮小 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -48,33 +48,33 @@
     button:disabled { opacity: .45; cursor: not-allowed; }
     .hidden { display: none !important; }
     .shell {
-      max-width: 760px; margin: 0 auto;
-      padding: calc(12px + var(--safe-t)) 14px calc(28px + var(--safe-b));
+      max-width: 1180px; margin: 0 auto;
+      padding: calc(10px + var(--safe-t)) 14px calc(24px + var(--safe-b));
     }
     header.top {
       background: linear-gradient(180deg, var(--red) 0%, var(--red-dark) 100%);
       color: #fff; text-align: center; border-radius: 22px;
-      padding: 16px 14px 14px; margin-bottom: 14px;
-      box-shadow: 0 8px 0 var(--red-dark);
+      padding: 12px 14px 12px; margin-bottom: 12px;
+      box-shadow: 0 6px 0 var(--red-dark);
     }
-    header.top .school { margin: 0; font-size: 14px; font-weight: 700; color: var(--gold-2); }
+    header.top .school { margin: 0; font-size: 13px; font-weight: 700; color: var(--gold-2); }
     header.top h1 {
-      margin: 4px 0 0; font-size: clamp(24px, 7vw, 34px);
+      margin: 2px 0 0; font-size: clamp(22px, 5vw, 30px);
       letter-spacing: .12em; font-weight: 900;
     }
     header.top .date {
-      display: inline-block; margin-top: 8px; background: rgba(0,0,0,.22);
-      border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px;
+      display: inline-block; margin-top: 6px; background: rgba(0,0,0,.22);
+      border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 14px;
     }
     .device {
-      text-align: center; margin: 0 0 14px;
+      text-align: center; margin: 0 0 10px;
     }
     .device .caption {
-      margin: 8px 0 0; font-weight: 900; color: var(--navy); font-size: 15px;
+      margin: 4px 0 0; font-weight: 800; color: var(--navy); font-size: 12px;
     }
     .device img {
-      width: min(100%, 560px); height: auto; border-radius: 20px;
-      border: 5px solid #fff; box-shadow: 0 8px 0 rgba(127,16,16,.18);
+      width: min(100%, 220px); height: auto; border-radius: 14px;
+      border: 3px solid #fff; box-shadow: 0 4px 0 rgba(127,16,16,.18);
       background: #e8f3ee;
     }
     .danger {
@@ -93,41 +93,54 @@
       border-radius: 24px; padding: 16px 14px 18px;
       box-shadow: 0 8px 0 var(--red-dark); margin-bottom: 14px;
     }
+    .form-card {
+      padding: 12px 12px 14px; border-width: 4px; box-shadow: 0 5px 0 var(--red-dark);
+    }
+    .form-card h2 { font-size: 18px; margin-bottom: 6px; letter-spacing: .04em; }
+    .form-card .hint { font-size: 12px; margin-bottom: 8px; }
+    .board-card {
+      border-width: 7px; border-color: #c9a227; box-shadow: 0 10px 0 #7f1010;
+      padding: 18px 16px 20px; background: linear-gradient(#fffdf4, #fff8ee);
+    }
+    .board-card h2 {
+      font-size: clamp(24px, 4.2vw, 34px); letter-spacing: .14em; color: #7f1010;
+      margin-bottom: 6px;
+    }
     .card h2 {
       margin: 0 0 10px; text-align: center; color: var(--red);
       font-size: clamp(20px, 5.5vw, 26px); letter-spacing: .08em;
     }
     .hint { text-align: center; font-weight: 700; color: var(--muted); line-height: 1.5; margin: 0 0 12px; }
     .ids { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    label.field { display: block; font-size: 14px; font-weight: 800; color: var(--navy); }
+    label.field { display: block; font-size: 13px; font-weight: 800; color: var(--navy); }
     label.field input, .kg input {
-      width: 100%; margin-top: 4px; font-weight: 800; font-size: 22px;
-      min-height: 52px; padding: 10px 12px; border: 3px solid var(--line);
-      border-radius: 14px; background: #fff; color: var(--ink); text-align: center;
+      width: 100%; margin-top: 4px; font-weight: 800; font-size: 18px;
+      min-height: 44px; padding: 8px 10px; border: 3px solid var(--line);
+      border-radius: 12px; background: #fff; color: var(--ink); text-align: center;
     }
     label.field input:focus, .kg input:focus {
       outline: 0; border-color: var(--navy); background: #eef3ff;
     }
     .classes {
-      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 6px; margin: 8px 0 12px;
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px; margin: 6px 0 8px;
     }
     .classes button {
-      min-height: 40px; padding: 6px 4px; background: #fff;
-      border: 3px solid var(--line); color: var(--navy); font-size: 15px; border-radius: 12px;
+      min-height: 34px; padding: 4px 2px; background: #fff;
+      border: 2px solid var(--line); color: var(--navy); font-size: 13px; border-radius: 10px;
     }
     #boardFilters.classes { display: flex; flex-wrap: wrap; justify-content: center; }
     .classes button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
-    .hands { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 12px; }
+    .hands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
     .kg {
-      background: #fff; border: 3px solid var(--line); border-radius: 16px; padding: 10px;
+      background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 8px;
       text-align: center;
     }
-    .kg .hand { font-weight: 900; color: var(--navy); font-size: 16px; }
-    .kg .unit { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .kg .hand { font-weight: 900; color: var(--navy); font-size: 14px; }
+    .kg .unit { font-size: 11px; font-weight: 700; color: var(--muted); }
     .primary {
-      width: 100%; min-height: 56px; background: var(--red); color: #fff;
-      font-size: 20px; padding: 14px; box-shadow: 0 5px 0 var(--red-dark);
+      width: 100%; min-height: 48px; background: var(--red); color: #fff;
+      font-size: 18px; padding: 12px; box-shadow: 0 4px 0 var(--red-dark);
     }
     .primary:active { transform: translateY(2px); box-shadow: 0 3px 0 var(--red-dark); }
     .ghost {
@@ -177,38 +190,38 @@
     .tabs button.on { background: var(--gold-2); border-color: #c9a227; color: #7f1010; }
 
     .podium {
-      display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px;
-      align-items: end; margin: 8px 0 14px;
+      display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 10px;
+      align-items: end; margin: 10px 0 16px;
     }
     .seat {
-      background: #fff; border: 4px solid var(--line); border-radius: 16px;
-      padding: 10px 6px 12px; text-align: center;
+      background: #fff; border: 4px solid var(--line); border-radius: 18px;
+      padding: 12px 8px 14px; text-align: center;
     }
-    .seat .medal { font-size: 28px; }
-    .seat .name { font-weight: 900; font-size: 18px; color: var(--red-dark); margin: 2px 0 0; line-height: 1.2; }
-    .seat .who { font-weight: 800; font-size: 13px; margin: 2px 0; color: var(--muted); }
-    .seat .kgv { font-weight: 900; font-size: 22px; color: var(--navy); }
-    .seat .lr { font-size: 12px; font-weight: 700; color: var(--muted); }
-    .seat.gold { border-color: var(--gold); background: linear-gradient(#fff8dc, #fff); min-height: 150px; }
-    .seat.silver { border-color: #9ca3af; min-height: 128px; }
-    .seat.bronze { border-color: #b87333; min-height: 116px; }
+    .seat .medal { font-size: 34px; }
+    .seat .name { font-weight: 900; font-size: 22px; color: var(--red-dark); margin: 4px 0 0; line-height: 1.2; }
+    .seat .who { font-weight: 800; font-size: 14px; margin: 2px 0; color: var(--muted); }
+    .seat .kgv { font-weight: 900; font-size: 28px; color: var(--navy); }
+    .seat .lr { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .seat.gold { border-color: var(--gold); background: linear-gradient(#fff8dc, #fff); min-height: 180px; }
+    .seat.silver { border-color: #9ca3af; min-height: 150px; }
+    .seat.bronze { border-color: #b87333; min-height: 136px; }
 
-    .rows { display: grid; gap: 8px; }
+    .rows { display: grid; gap: 10px; }
     .row {
-      display: grid; grid-template-columns: 42px 1fr auto; gap: 8px; align-items: center;
-      background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 8px 10px;
+      display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center;
+      background: #fff; border: 3px solid var(--line); border-radius: 16px; padding: 12px 14px;
     }
     .row.me { border-color: var(--navy); background: #eef3ff; }
-    .row .rk { font-weight: 900; font-size: 20px; color: var(--red); text-align: center; }
-    .row .name { font-weight: 900; font-size: 17px; color: var(--red-dark); }
-    .row .who { font-weight: 800; }
-    .row .lr { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .row .rk { font-weight: 900; font-size: 24px; color: var(--red); text-align: center; }
+    .row .name { font-weight: 900; font-size: 20px; color: var(--red-dark); }
+    .row .who { font-weight: 800; font-size: 15px; }
+    .row .lr { font-size: 13px; font-weight: 700; color: var(--muted); }
     .who-greet {
       text-align: center; font-weight: 900; color: var(--navy);
       background: #eef3ff; border: 3px solid var(--navy); border-radius: 14px;
       padding: 8px 10px; margin: 0 0 10px; font-size: 16px;
     }
-    .row .best { font-weight: 900; font-size: 20px; color: var(--navy); white-space: nowrap; }
+    .row .best { font-weight: 900; font-size: 24px; color: var(--navy); white-space: nowrap; }
 
     .empty { text-align: center; font-weight: 800; color: var(--muted); padding: 18px 8px; }
 
@@ -231,9 +244,9 @@
     body.wall .seat .kgv { font-size: 32px; }
     body.wall .row .best { font-size: 26px; }
     body.wall .form-card, body.wall .result-card, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
-    body.wall .device img { width: min(100%, 380px); }
+    body.wall .device { display: none !important; }
     body.wall .desk { display: block; }
-    body.wall .board-card { margin-bottom: 0; }
+    body.wall .board-card { margin-bottom: 0; min-height: 70vh; }
 
     .modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -249,17 +262,31 @@
       border-radius: 999px; z-index: 30; max-width: 90%;
     }
 
+    .desk { display: flex; flex-direction: column; }
+    .board-card { order: 1; }
+    .form-card { order: 2; }
+    .result-card { order: 3; }
+
     @media (max-width: 430px) {
       .ids, .hands, .foot { grid-template-columns: 1fr 1fr; }
       .compare { grid-template-columns: 1fr; }
       .delta { flex-direction: row; gap: 8px; padding: 4px 0; }
       header.top h1 { letter-spacing: .06em; }
-      .classes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .classes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .seat .name { font-size: 16px; }
+      .seat .kgv { font-size: 22px; }
     }
-    @media (min-width: 980px) {
-      .desk { display: grid; grid-template-columns: 1.05fr .95fr; gap: 14px; align-items: start; }
-      .board-card { grid-column: 2; grid-row: 1 / span 3; }
-      .device img { width: min(100%, 620px); }
+    @media (min-width: 800px) {
+      .desk {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+      }
+      .form-card { order: 0; grid-column: 1; grid-row: 1; }
+      .result-card { order: 0; grid-column: 1; grid-row: 2; }
+      .board-card { order: 0; grid-column: 2; grid-row: 1 / span 4; }
+      .device img { width: min(100%, 200px); }
     }
   </style>
 </head>
@@ -271,13 +298,12 @@
       <div class="date" id="dateLabel">日期載入中</div>
     </header>
 
-    <div class="device" id="deviceBox">
-      <img src="heroes.jpg" alt="小志和小蓮一起量度手握力" />
-      <p class="caption">小志　＋　小蓮　一起量度手握力</p>
-    </div>
-
     <div class="desk">
       <section class="card form-card" id="formCard">
+        <div class="device" id="deviceBox">
+          <img src="heroes.jpg" alt="小志和小蓮一起量度手握力" />
+          <p class="caption">小志　＋　小蓮</p>
+        </div>
         <h2>輸入今日成績</h2>
         <p class="hint">量度左右手後，請填寫班別、學號及成績。日期已預先填上，無須自行輸入。姓名由老師名單對出，無須自行填寫。</p>
         <div class="ids">
