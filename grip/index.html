@@ -170,7 +170,8 @@
       padding: 10px 6px 12px; text-align: center;
     }
     .seat .medal { font-size: 28px; }
-    .seat .who { font-weight: 900; font-size: 15px; margin: 4px 0; }
+    .seat .name { font-weight: 900; font-size: 18px; color: var(--red-dark); margin: 2px 0 0; line-height: 1.2; }
+    .seat .who { font-weight: 800; font-size: 13px; margin: 2px 0; color: var(--muted); }
     .seat .kgv { font-weight: 900; font-size: 22px; color: var(--navy); }
     .seat .lr { font-size: 12px; font-weight: 700; color: var(--muted); }
     .seat.gold { border-color: var(--gold); background: linear-gradient(#fff8dc, #fff); min-height: 150px; }
@@ -184,8 +185,14 @@
     }
     .row.me { border-color: var(--navy); background: #eef3ff; }
     .row .rk { font-weight: 900; font-size: 20px; color: var(--red); text-align: center; }
+    .row .name { font-weight: 900; font-size: 17px; color: var(--red-dark); }
     .row .who { font-weight: 800; }
     .row .lr { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .who-greet {
+      text-align: center; font-weight: 900; color: var(--navy);
+      background: #eef3ff; border: 3px solid var(--navy); border-radius: 14px;
+      padding: 8px 10px; margin: 0 0 10px; font-size: 16px;
+    }
     .row .best { font-weight: 900; font-size: 20px; color: var(--navy); white-space: nowrap; }
 
     .empty { text-align: center; font-weight: 800; color: var(--muted); padding: 18px 8px; }
@@ -255,7 +262,7 @@
     <div class="desk">
       <section class="card form-card" id="formCard">
         <h2>輸入今日成績</h2>
-        <p class="hint">測完左右手之後，填班別、學號同成績。日期已預先填上，不用自己輸入。無須填寫姓名。</p>
+        <p class="hint">測完左右手之後，填班別、學號同成績。日期已預先填上，不用自己輸入。姓名由老師名單對出，不用自己填。</p>
         <div class="ids">
           <label class="field">班別
             <input id="klass" maxlength="8" autocomplete="off" placeholder="例如 4A" aria-label="班別" />
@@ -264,6 +271,7 @@
             <input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12" aria-label="學號" />
           </label>
         </div>
+        <p class="who-greet hidden" id="whoGreet"></p>
         <div class="classes" id="classChips"></div>
         <div class="hands">
           <div class="kg">
@@ -306,7 +314,7 @@
 
     <section class="card board-card" id="boardCard">
       <h2>龍虎榜　第 1 至 10 名</h2>
-      <p class="hint">以較佳手成績排列（左手、右手取較高者）。同一日再交會更新今日成績。</p>
+      <p class="hint">以較佳手成績排列（左手、右手取較高者）。榜上顯示班別、學號及姓名。</p>
       <div class="tabs">
         <button type="button" class="on" data-scope="today" id="tabToday">今日</button>
         <button type="button" data-scope="latest" id="tabLatest">每人最新</button>
@@ -345,7 +353,7 @@
     const TEACHER_PIN = "2246";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
-    const CLASS_CHIPS = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","6A","6B","6C"];
+    const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","6A","6B","6C"];
 
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
@@ -355,7 +363,8 @@
       today: todayYmd(),
       scope: "today",
       filter: "",
-      lastBoard: null
+      lastBoard: null,
+      roster: {}
     };
 
     function todayYmd() {
@@ -392,7 +401,47 @@
       const klass = String($("klass").value || "").trim().toUpperCase().replace(/\s+/g, "").slice(0, 8);
       const no = String($("stuno").value || "").trim();
       const ok = klass.length >= 2 && /^\d{1,3}$/.test(no);
-      return { ok, class: klass, no: ok ? String(parseInt(no, 10)) : no };
+      const num = ok ? String(parseInt(no, 10)) : no;
+      return { ok, class: klass, no: num, name: lookupName(klass, num) };
+    }
+
+    function lookupName(klass, no) {
+      const c = String(klass || "").toUpperCase().replace(/\s+/g, "");
+      const n = String(parseInt(no, 10));
+      if (!c || !n || n === "NaN") return "";
+      const map = state.roster[c];
+      return (map && map[n]) ? String(map[n]) : "";
+    }
+
+    function ingestRoster(data) {
+      const map = {};
+      function add(klass, no, name) {
+        const c = String(klass || "").trim().toUpperCase().replace(/\s+/g, "");
+        const n = String(parseInt(String(no || "").replace(/[^\d]/g, ""), 10));
+        const nm = String(name || "").trim();
+        if (!c || !n || n === "NaN" || !nm) return;
+        if (!map[c]) map[c] = {};
+        map[c][n] = nm;
+      }
+      if (!data) return;
+      const rows = Array.isArray(data) ? data : (data.students || data.list || []);
+      if (Array.isArray(rows)) {
+        rows.forEach(r => add(r.class || r.klass || r.班別, r.no || r.num || r.學號, r.name || r.姓名));
+      } else if (typeof data === "object") {
+        Object.keys(data).forEach(k => {
+          if (k === "note" || k === "students" || k === "list" || k === "updated") return;
+          const v = data[k];
+          if (v && typeof v === "object" && !Array.isArray(v)) {
+            Object.keys(v).forEach(n => add(k, n, v[n]));
+          }
+        });
+      }
+      state.roster = map;
+    }
+
+    function classList() {
+      const keys = Object.keys(state.roster);
+      return keys.length ? keys.sort() : CLASS_CHIPS_DEFAULT;
     }
 
     function toast(msg) {
@@ -430,15 +479,29 @@
 
     function renderChips() {
       const box = $("classChips");
-      box.innerHTML = CLASS_CHIPS.map(c => `<button type="button" data-c="${c}">${c}</button>`).join("");
+      box.innerHTML = classList().map(c => `<button type="button" data-c="${c}">${c}</button>`).join("");
       box.onclick = (e) => {
         const b = e.target.closest("button");
         if (!b) return;
         $("klass").value = b.getAttribute("data-c");
         highlightChips();
         saveWho();
+        refreshGreet();
       };
       highlightChips();
+    }
+
+    function refreshGreet() {
+      const el = $("whoGreet");
+      const id = identity();
+      if (!id.ok) { el.classList.add("hidden"); el.textContent = ""; return; }
+      if (id.name) {
+        el.textContent = id.class + "　" + id.no + "號　" + id.name;
+        el.classList.remove("hidden");
+      } else {
+        el.textContent = id.class + "　" + id.no + "號";
+        el.classList.remove("hidden");
+      }
     }
 
     function highlightChips() {
@@ -512,10 +575,12 @@
           banner.textContent = "較佳手成績與上次相同，都是 " + kg(cur.best) + " kg。";
         }
       }
+      const meName = identity().name;
+      const who = meName ? meName : (identity().class + "　" + identity().no + "號");
       if (data.rank) {
         $("myRank").textContent = data.rank <= 10
-          ? "你現在是龍虎榜第 " + data.rank + " 名！"
-          : "你現在是第 " + data.rank + " 名（榜上共 " + data.total + " 人）。";
+          ? who + "　現在是龍虎榜第 " + data.rank + " 名！"
+          : who + "　現在是第 " + data.rank + " 名（榜上共 " + data.total + " 人）。";
       } else {
         $("myRank").textContent = "";
       }
@@ -524,8 +589,10 @@
 
     function seatHtml(r, cls, medal) {
       if (!r) return `<div class="seat ${cls}"><div class="medal">${medal}</div><div class="who">虛位以待</div></div>`;
+      const name = lookupName(r.class, r.no);
       return `<div class="seat ${cls}">
         <div class="medal">${medal}</div>
+        ${name ? `<div class="name">${esc(name)}</div>` : ""}
         <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
         <div class="kgv">${kg(r.best)} <span style="font-size:14px">kg</span></div>
         <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
@@ -547,9 +614,11 @@
       const rest = board.slice(3);
       $("boardRows").innerHTML = rest.map(r => {
         const mine = id.ok && r.class === id.class && String(r.no) === id.no;
+        const name = lookupName(r.class, r.no);
         return `<div class="row${mine ? " me" : ""}">
           <div class="rk">${r.rank}</div>
-          <div><div class="who">${esc(r.class)}　${esc(r.no)}號</div>
+          <div>${name ? `<div class="name">${esc(name)}</div>` : ""}
+          <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
           <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div></div>
           <div class="best">${kg(r.best)} kg</div>
         </div>`;
@@ -623,18 +692,29 @@
       }
     }
 
-    function boot() {
+    async function loadRoster() {
+      try {
+        const res = await fetch("roster.json?t=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) return;
+        ingestRoster(await res.json());
+      } catch (e) {}
+    }
+
+    async function boot() {
       $("dateLabel").textContent = "今日：" + prettyDate(state.today);
+      await loadRoster();
       renderChips();
       loadWho();
+      refreshGreet();
       ["klass","stuno"].forEach(id => {
-        $(id).addEventListener("input", () => { highlightChips(); saveWho(); });
+        $(id).addEventListener("input", () => { highlightChips(); saveWho(); refreshGreet(); });
       });
       $("submitBtn").onclick = submit;
       $("againBtn").onclick = () => {
         $("left").value = "";
         $("right").value = "";
         $("stuno").value = "";
+        refreshGreet();
         $("stuno").focus();
         $("resultCard").classList.add("hidden");
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
