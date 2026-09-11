@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11g 龍虎榜放大、輸入區縮小 -->
+  <!-- published 2026-09-11h 提交後及重新整理清空班別學號 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -306,12 +306,13 @@
         </div>
         <h2>輸入今日成績</h2>
         <p class="hint">量度左右手後，請填寫班別、學號及成績。日期已預先填上，無須自行輸入。姓名由老師名單對出，無須自行填寫。</p>
+        <form id="scoreForm" autocomplete="off" novalidate>
         <div class="ids">
           <label class="field">班別
-            <input id="klass" maxlength="8" autocomplete="off" placeholder="例如 4A" aria-label="班別" />
+            <input id="klass" name="grip-klass" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="例如 4A" aria-label="班別" />
           </label>
           <label class="field">學號
-            <input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12" aria-label="學號" />
+            <input id="stuno" name="grip-stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="例如 12" aria-label="學號" />
           </label>
         </div>
         <p class="who-greet hidden" id="whoGreet"></p>
@@ -319,17 +320,18 @@
         <div class="hands">
           <div class="kg">
             <div class="hand">左手</div>
-            <input id="left" inputmode="decimal" autocomplete="off" placeholder="例如 18.5" aria-label="左手握力公斤" />
+            <input id="left" name="grip-left" inputmode="decimal" autocomplete="off" placeholder="例如 18.5" aria-label="左手握力公斤" />
             <div class="unit">公斤 kg　範圍 5–100</div>
           </div>
           <div class="kg">
             <div class="hand">右手</div>
-            <input id="right" inputmode="decimal" autocomplete="off" placeholder="例如 20.0" aria-label="右手握力公斤" />
+            <input id="right" name="grip-right" inputmode="decimal" autocomplete="off" placeholder="例如 20.0" aria-label="右手握力公斤" />
             <div class="unit">公斤 kg　範圍 5–100</div>
           </div>
         </div>
-        <button class="primary" id="submitBtn" type="button">提交成績</button>
+        <button class="primary" id="submitBtn" type="submit">提交成績</button>
         <p class="msg" id="formMsg"></p>
+        </form>
       </section>
 
       <section class="card result-card hidden" id="resultCard">
@@ -696,7 +698,6 @@
         if (!b) return;
         $("klass").value = b.getAttribute("data-c");
         highlightChips();
-        saveWho();
         refreshGreet();
       };
       highlightChips();
@@ -722,21 +723,19 @@
       });
     }
 
-    function saveWho() {
-      const id = identity();
-      try { localStorage.setItem("grip-who", JSON.stringify({ class: $("klass").value, no: $("stuno").value })); } catch (e) {}
-    }
-
-    function loadWho() {
-      try {
-        const w = JSON.parse(localStorage.getItem("grip-who") || "null");
-        if (w) {
-          if (w.class) $("klass").value = w.class;
-          if (w.no) $("stuno").value = w.no;
-        }
-      } catch (e) {}
+    function resetForm() {
+      try { localStorage.removeItem("grip-who"); } catch (e) {}
+      ["klass", "stuno", "left", "right"].forEach(id => {
+        const el = $(id);
+        if (el) el.value = "";
+      });
+      refreshGreet();
       highlightChips();
     }
+
+    window.addEventListener("pageshow", resetForm);
+    resetForm();
+    setTimeout(resetForm, 0);
 
     function setMsg(text, kind) {
       const el = $("formMsg");
@@ -981,7 +980,6 @@
       const best = Math.max(left, right);
       $("submitBtn").disabled = true;
       setMsg("正在儲存…", "");
-      saveWho();
       const previous = previousOf(state.records || [], id.class, id.no, state.today);
       const optimistic = {
         klass: id.class, no: id.no, date: state.today, ts: Date.now(),
@@ -995,9 +993,10 @@
       preview.previous = previous;
       renderBoard(preview);
       showResult(preview);
+      resetForm();
       try {
         await saveScore(id, left, right, best);
-        setMsg("已儲存今日成績。", "ok");
+        setMsg("已儲存今日成績。下一位請重新選擇班別和學號。", "ok");
         toast("已列入龍虎榜");
         setTimeout(loadBoard, 2500);
       } catch (e) {
@@ -1019,19 +1018,15 @@
       $("dateLabel").textContent = "今日：" + prettyDate(state.today);
       await loadRoster();
       renderChips();
-      loadWho();
-      refreshGreet();
       ["klass","stuno"].forEach(id => {
-        $(id).addEventListener("input", () => { highlightChips(); saveWho(); refreshGreet(); });
+        $(id).addEventListener("input", () => { highlightChips(); refreshGreet(); });
       });
-      $("submitBtn").onclick = submit;
+      $("scoreForm").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
       $("againBtn").onclick = () => {
-        $("left").value = "";
-        $("right").value = "";
-        $("stuno").value = "";
-        refreshGreet();
-        $("stuno").focus();
+        resetForm();
         $("resultCard").classList.add("hidden");
+        setMsg("", "");
+        $("klass").focus();
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
       };
       document.querySelectorAll(".tabs button").forEach(b => {
