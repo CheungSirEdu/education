@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11h 提交後及重新整理清空班別學號 -->
+  <!-- published 2026-09-11i 刪除成績必須先輸入老師密碼 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -81,6 +81,7 @@
       background: #fff; color: var(--bad); border: 3px solid var(--bad);
       font-size: 14px; min-height: 40px; padding: 6px 10px; width: auto;
     }
+    .podium .danger, .rows .danger { display: none !important; }
     .teacher-list { display: grid; gap: 8px; max-height: 55vh; overflow: auto; }
     .trow {
       display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
@@ -374,10 +375,11 @@
 
     <section class="card teacher-card hidden" id="teacherPanel">
       <h2>老師管理成績</h2>
-      <p class="hint">若學生輸入錯誤，可在此刪除。刪除後龍虎榜會更新，學生可以再次提交。</p>
+      <p class="hint">若學生輸入錯誤，可在此刪除。刪除後龍虎榜會更新，學生可以再次提交。離開前請按「離開老師管理」，以免學生見到刪除掣。</p>
       <div class="teacher-list" id="teacherList"></div>
       <p class="empty hidden" id="teacherEmpty">目前沒有有效成績。</p>
       <button class="ghost" id="teacherReload" type="button">重新整理名單</button>
+      <button class="ghost" id="teacherLock" type="button">離開老師管理</button>
       <a class="tiny" id="sheetLink" href="https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit" target="_blank" rel="noopener">開啟試算表</a>
     </section>
 
@@ -420,7 +422,8 @@
       filter: "",
       lastBoard: null,
       roster: {},
-      records: []
+      records: [],
+      teacher: false
     };
 
     function todayYmd() {
@@ -797,12 +800,7 @@
       $("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function teacherOn() { return sessionStorage.getItem("grip-teacher") === "1"; }
-
-    function delBtn(klass, no) {
-      if (!teacherOn() || WALL) return "";
-      return `<button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}" style="margin-top:6px;width:100%">刪除</button>`;
-    }
+    function teacherOn() { return state.teacher === true && !WALL; }
 
     function seatHtml(r, cls, medal) {
       if (!r) return `<div class="seat ${cls}"><div class="medal">${medal}</div><div class="who">虛位以待</div></div>`;
@@ -813,7 +811,6 @@
         <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
         <div class="kgv">${kg(r.best)} <span style="font-size:14px">kg</span></div>
         <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
-        ${delBtn(r.class, r.no)}
       </div>`;
     }
 
@@ -838,7 +835,7 @@
           <div>${name ? `<div class="name">${esc(name)}</div>` : ""}
           <div class="who">${esc(r.class)}　${esc(r.no)}號</div>
           <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
-          ${delBtn(r.class, r.no)}</div>
+          </div>
           <div class="best">${kg(r.best)} kg</div>
         </div>`;
       }).join("");
@@ -861,7 +858,7 @@
         state.records = rows;
         const data = boardPayload(rows);
         renderBoard(data);
-        if (!$("teacherPanel").classList.contains("hidden")) renderTeacherList();
+        if (teacherOn() && !$("teacherPanel").classList.contains("hidden")) renderTeacherList();
         return data;
       } catch (e) {
         $("boardEmpty").classList.remove("hidden");
@@ -904,14 +901,27 @@
       );
     }
 
+    function lockTeacher() {
+      state.teacher = false;
+      try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
+      $("teacherPanel").classList.add("hidden");
+      $("teacherList").innerHTML = "";
+      $("pin").value = "";
+      $("teacherModal").classList.add("hidden");
+    }
+
     function openTeacher() {
+      if (!teacherOn()) return;
       $("teacherPanel").classList.remove("hidden");
-      renderBoard(boardPayload(state.records || []));
       renderTeacherList();
       $("teacherPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function renderTeacherList() {
+      if (!teacherOn()) {
+        $("teacherList").innerHTML = "";
+        return;
+      }
       const list = latestByStudent(state.records || []);
       const box = $("teacherList");
       $("teacherEmpty").classList.toggle("hidden", list.length > 0);
@@ -932,6 +942,11 @@
     }
 
     async function teacherDelete(klass, no, all) {
+      if (!teacherOn()) {
+        lockTeacher();
+        toast("請先輸入老師密碼");
+        return;
+      }
       const name = lookupName(klass, no);
       const who = (name ? name + "　" : "") + klass + "　" + no + "號";
       const ok = confirm(all
@@ -1045,30 +1060,48 @@
       $("wallBtn").onclick = () => {
         location.href = WALL ? PUBLIC_URL : (PUBLIC_URL + "?wall=1");
       };
+      try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
+      lockTeacher();
       $("teacherBtn").onclick = () => {
-        if (sessionStorage.getItem("grip-teacher") === "1") {
-          openTeacher();
-          return;
-        }
+        $("pin").value = "";
         $("teacherModal").classList.remove("hidden");
         $("pin").focus();
       };
-      $("pinCancel").onclick = () => $("teacherModal").classList.add("hidden");
-      $("pinGo").onclick = () => {
-        if ($("pin").value !== TEACHER_PIN) { toast("密碼不正確"); return; }
-        sessionStorage.setItem("grip-teacher", "1");
+      $("pinCancel").onclick = () => {
+        $("pin").value = "";
+        $("teacherModal").classList.add("hidden");
+      };
+      const tryPin = () => {
+        if ($("pin").value !== TEACHER_PIN) {
+          toast("密碼不正確");
+          $("pin").value = "";
+          $("pin").focus();
+          return;
+        }
+        state.teacher = true;
+        $("pin").value = "";
         $("teacherModal").classList.add("hidden");
         openTeacher();
       };
-      const onDel = (e) => {
+      $("pinGo").onclick = tryPin;
+      $("pin").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); tryPin(); }
+      });
+      $("teacherList").onclick = (e) => {
         const b = e.target.closest("button[data-del]");
         if (!b) return;
         teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
       };
-      $("teacherList").onclick = onDel;
-      $("podium").onclick = onDel;
-      $("boardRows").onclick = onDel;
-      $("teacherReload").onclick = async () => { await loadBoard(); renderTeacherList(); toast("已重新整理"); };
+      $("teacherReload").onclick = async () => {
+        if (!teacherOn()) return;
+        await loadBoard();
+        renderTeacherList();
+        toast("已重新整理");
+      };
+      $("teacherLock").onclick = () => {
+        lockTeacher();
+        toast("已離開老師管理");
+      };
       if (WALL) {
         document.body.classList.add("wall");
         $("wallBtn").textContent = "返回輸入頁";
