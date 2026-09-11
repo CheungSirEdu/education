@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11k 龍虎榜改用左右手平均 -->
+  <!-- published 2026-09-11m 低年班／高年班兩張龍虎榜 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -130,7 +130,18 @@
       min-height: 34px; padding: 4px 2px; background: #fff;
       border: 2px solid var(--line); color: var(--navy); font-size: 13px; border-radius: 10px;
     }
-    #boardFilters.classes { display: flex; flex-wrap: wrap; justify-content: center; }
+    #filtersLow.classes, #filtersHigh.classes { display: flex; flex-wrap: wrap; justify-content: center; }
+    .boards { display: grid; gap: 14px; order: 1; }
+    .board-hero { text-align: center; margin: 0 0 8px; }
+    .board-hero img {
+      width: min(100%, 320px); height: auto; border-radius: 14px;
+      border: 3px solid #fff; box-shadow: 0 4px 0 rgba(127,16,16,.18);
+      background: #e8f3ee;
+    }
+    .board-card .subhead {
+      text-align: center; font-weight: 900; color: var(--navy);
+      margin: -4px 0 8px; font-size: 15px;
+    }
     .classes button.on { background: var(--navy); color: #fff; border-color: var(--navy); }
     .hands { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 10px; }
     .kg {
@@ -240,7 +251,12 @@
     body.wall .form-card, body.wall .result-card, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
     body.wall .device { display: none !important; }
     body.wall .desk { display: block; }
-    body.wall .board-card { margin-bottom: 0; min-height: 70vh; }
+    body.wall .boards {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start;
+    }
+    body.wall .board-card { margin-bottom: 0; min-height: 0; }
+    body.wall .board-hero img { width: min(100%, 220px); }
+    body.wall #filtersLow, body.wall #filtersHigh { display: none !important; }
 
     .modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -257,7 +273,6 @@
     }
 
     .desk { display: flex; flex-direction: column; }
-    .board-card { order: 1; }
     .form-card { order: 2; }
     .result-card { order: 3; }
 
@@ -279,7 +294,7 @@
       }
       .form-card { order: 0; grid-column: 1; grid-row: 1; }
       .result-card { order: 0; grid-column: 1; grid-row: 2; }
-      .board-card { order: 0; grid-column: 2; grid-row: 1 / span 4; }
+      .boards { order: 0; grid-column: 2; grid-row: 1 / span 4; }
       .device img { width: min(100%, 200px); }
     }
   </style>
@@ -351,14 +366,32 @@
         <button class="ghost" id="againBtn" type="button">再為下一位同學輸入</button>
       </section>
 
-    <section class="card board-card" id="boardCard">
-      <h2>龍虎榜　第 1 至 10 名</h2>
-      <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。榜上顯示班別、學號及姓名。</p>
-      <div class="classes" id="boardFilters"></div>
-      <div id="podium" class="podium"></div>
-      <div id="boardRows" class="rows"></div>
-      <p class="empty hidden" id="boardEmpty">還沒有成績。量度後請在上方提交。</p>
-    </section>
+    <div class="boards" id="boards">
+      <section class="card board-card" id="boardLow">
+        <div class="board-hero">
+          <img src="heroes-low.jpg" alt="低年班小志和小蓮一起量度手握力" />
+        </div>
+        <h2>低年班龍虎榜</h2>
+        <p class="subhead">一至三年級　第 1 至 10 名</p>
+        <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。</p>
+        <div class="classes" id="filtersLow"></div>
+        <div id="podiumLow" class="podium"></div>
+        <div id="rowsLow" class="rows"></div>
+        <p class="empty hidden" id="emptyLow">低年班還沒有成績。量度後請在上方提交。</p>
+      </section>
+      <section class="card board-card" id="boardHigh">
+        <div class="board-hero">
+          <img src="heroes-high.jpg" alt="高年班小志和小蓮一起量度手握力" />
+        </div>
+        <h2>高年班龍虎榜</h2>
+        <p class="subhead">四至六年級　第 1 至 10 名</p>
+        <p class="hint">一路累積。每人取歷來最高的左右手平均成績排列（例如左 20 kg、右 10 kg，成績是 15 kg）。</p>
+        <div class="classes" id="filtersHigh"></div>
+        <div id="podiumHigh" class="podium"></div>
+        <div id="rowsHigh" class="rows"></div>
+        <p class="empty hidden" id="emptyHigh">高年班還沒有成績。量度後請在上方提交。</p>
+      </section>
+    </div>
     </div>
 
     <section class="card teacher-card hidden" id="teacherPanel">
@@ -399,6 +432,14 @@
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
     const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","5D","6A","6B","6C","6D"];
+    const BANDS = {
+      low: { key: "low", title: "低年班", empty: "低年班還沒有成績。量度後請在上方提交。" },
+      high: { key: "high", title: "高年班", empty: "高年班還沒有成績。量度後請在上方提交。" }
+    };
+    const BAND_BOX = {
+      low: { filters: "filtersLow", podium: "podiumLow", rows: "rowsLow", empty: "emptyLow" },
+      high: { filters: "filtersHigh", podium: "podiumHigh", rows: "rowsHigh", empty: "emptyHigh" }
+    };
 
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
@@ -406,7 +447,7 @@
 
     const state = {
       today: todayYmd(),
-      filter: "",
+      filter: { low: "", high: "" },
       lastBoard: null,
       roster: {},
       records: [],
@@ -439,6 +480,22 @@
 
     function avgKg(left, right) {
       return Math.round(((Number(left) + Number(right)) / 2) * 10) / 10;
+    }
+
+    function gradeOf(klass) {
+      const m = String(klass || "").match(/^(\d)/);
+      return m ? Number(m[1]) : 0;
+    }
+
+    function bandOf(klass) {
+      const g = gradeOf(klass);
+      if (g >= 1 && g <= 3) return "low";
+      if (g >= 4 && g <= 6) return "high";
+      return "";
+    }
+
+    function bandTitle(band) {
+      return (BANDS[band] && BANDS[band].title) || "龍虎榜";
     }
 
     function parseKgInput(s) {
@@ -620,9 +677,10 @@
       return Object.keys(byDay).map(k => byDay[k]).filter(r => !r.deleted);
     }
 
-    function pickBoard(rows, filter) {
+    function pickBoard(rows, filter, band) {
       const map = {};
       liveScores(rows).forEach(r => {
+        if (band && bandOf(r.klass) !== band) return;
         if (filter && r.klass !== filter) return;
         const key = r.klass + "\t" + r.no;
         const cur = map[key];
@@ -639,26 +697,33 @@
       return { rank: rank || 0, class: r.klass, no: r.no, date: r.date, left: r.left, right: r.right, avg: r.avg };
     }
 
-    function boardPayload(rows) {
-      const list = pickBoard(rows, state.filter);
+    function classesForBand(band, rows) {
+      const set = {};
+      CLASS_CHIPS_DEFAULT.forEach(c => { if (bandOf(c) === band) set[c] = true; });
+      liveScores(rows).forEach(r => { if (bandOf(r.klass) === band) set[r.klass] = true; });
+      return Object.keys(set).sort();
+    }
+
+    function boardPayload(rows, band) {
+      const filter = (state.filter && state.filter[band]) || "";
+      const list = pickBoard(rows, filter, band);
       const id = identity();
       let rank = 0, me = null;
-      if (id.ok) {
+      if (id.ok && bandOf(id.class) === band) {
         for (let i = 0; i < list.length; i++) {
           if (list[i].klass === id.class && list[i].no === id.no) { rank = i + 1; me = list[i]; break; }
         }
       }
-      const classes = [];
-      liveScores(rows).forEach(r => { if (classes.indexOf(r.klass) < 0) classes.push(r.klass); });
-      classes.sort();
       return {
         ok: true,
+        band: band,
+        bandTitle: bandTitle(band),
         today: state.today,
         total: list.length,
         rank,
         me: me ? publicRow(me, rank) : null,
         board: list.slice(0, 10).map((r, i) => publicRow(r, i + 1)),
-        classes
+        classes: classesForBand(band, rows)
       };
     }
 
@@ -777,10 +842,11 @@
       }
       const meName = identity().name;
       const who = meName ? meName : (identity().class + "　" + identity().no + "號");
+      const title = data.bandTitle || "龍虎榜";
       if (data.rank) {
         $("myRank").textContent = data.rank <= 10
-          ? who + "　現在是龍虎榜第 " + data.rank + " 名！"
-          : who + "　現在是第 " + data.rank + " 名（榜上共 " + data.total + " 人）。";
+          ? who + "　現在是" + title + "龍虎榜第 " + data.rank + " 名！"
+          : who + "　現在是" + title + "第 " + data.rank + " 名（榜上共 " + data.total + " 人）。";
       } else {
         $("myRank").textContent = "";
       }
@@ -805,16 +871,15 @@
       return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
     }
 
-    function renderBoard(data) {
-      state.lastBoard = data;
+    function renderOneBoard(band, data) {
+      const box = BAND_BOX[band];
       const board = (data && data.board) || [];
       const id = identity();
-      $("podium").innerHTML =
+      $(box.podium).innerHTML =
         seatHtml(board[1], "silver", "🥈") +
         seatHtml(board[0], "gold", "🥇") +
         seatHtml(board[2], "bronze", "🥉");
-      const rest = board.slice(3);
-      $("boardRows").innerHTML = rest.map(r => {
+      $(box.rows).innerHTML = board.slice(3).map(r => {
         const mine = id.ok && r.class === id.class && String(r.no) === id.no;
         const name = lookupName(r.class, r.no);
         return `<div class="row${mine ? " me" : ""}">
@@ -827,31 +892,40 @@
         </div>`;
       }).join("");
       const empty = board.length === 0;
-      $("boardEmpty").classList.toggle("hidden", !empty);
-      $("podium").classList.toggle("hidden", empty);
-      const filters = $("boardFilters");
+      $(box.empty).classList.toggle("hidden", !empty);
+      $(box.podium).classList.toggle("hidden", empty);
       const classes = data.classes || [];
       const chips = ["全部"].concat(classes);
-      filters.innerHTML = chips.map(c => {
+      const cur = (state.filter && state.filter[band]) || "";
+      $(box.filters).innerHTML = chips.map(c => {
         const val = c === "全部" ? "" : c;
-        const on = state.filter === val ? " on" : "";
-        return `<button type="button" class="${on}" data-f="${val}">${c}</button>`;
+        const on = cur === val ? " on" : "";
+        return `<button type="button" class="${on}" data-band="${band}" data-f="${val}">${c}</button>`;
       }).join("");
+    }
+
+    function renderBoards(rows) {
+      const dataLow = boardPayload(rows, "low");
+      const dataHigh = boardPayload(rows, "high");
+      state.lastBoard = { low: dataLow, high: dataHigh };
+      renderOneBoard("low", dataLow);
+      renderOneBoard("high", dataHigh);
+      return { low: dataLow, high: dataHigh };
     }
 
     async function loadBoard() {
       try {
         const rows = await fetchRecords();
         state.records = rows;
-        const data = boardPayload(rows);
-        renderBoard(data);
+        const data = renderBoards(rows);
         if (teacherOn() && !$("teacherPanel").classList.contains("hidden")) renderTeacherList();
         return data;
       } catch (e) {
-        $("boardEmpty").classList.remove("hidden");
-        $("boardEmpty").textContent = "未能讀取龍虎榜。請重新整理頁面，或檢查網絡。";
-        $("podium").innerHTML = "";
-        $("boardRows").innerHTML = "";
+        ["emptyLow", "emptyHigh"].forEach(id => {
+          $(id).classList.remove("hidden");
+          $(id).textContent = "未能讀取龍虎榜。請重新整理頁面，或檢查網絡。";
+        });
+        ["podiumLow", "podiumHigh", "rowsLow", "rowsHigh"].forEach(id => { $(id).innerHTML = ""; });
         return null;
       }
     }
@@ -943,7 +1017,7 @@
       state.records = (state.records || []).concat([{
         klass, no, date: all ? "ALL" : state.today, ts: Date.now(), deleted: true, all: !!all
       }]);
-      renderBoard(boardPayload(state.records));
+      renderBoards(state.records);
       renderTeacherList();
       toast("已刪除");
       await saveDelete(klass, no, all);
@@ -988,12 +1062,13 @@
         left, right, avg
       };
       state.records = (state.records || []).concat([optimistic]);
-      const preview = boardPayload(state.records);
+      const band = bandOf(id.class) || "high";
+      const preview = boardPayload(state.records, band);
       preview.saved = true;
       preview.updated = false;
       preview.current = { date: state.today, left, right, avg };
       preview.previous = previous;
-      renderBoard(preview);
+      renderBoards(state.records);
       showResult(preview);
       resetForm();
       try {
@@ -1031,12 +1106,16 @@
         $("klass").focus();
         $("formCard").scrollIntoView({ behavior: "smooth", block: "start" });
       };
-      $("boardFilters").onclick = (e) => {
+      const onFilter = (e) => {
         const b = e.target.closest("button");
         if (!b) return;
-        state.filter = b.getAttribute("data-f") || "";
-        loadBoard();
+        const band = b.getAttribute("data-band");
+        if (!band || !state.filter) return;
+        state.filter[band] = b.getAttribute("data-f") || "";
+        renderBoards(state.records || []);
       };
+      $("filtersLow").onclick = onFilter;
+      $("filtersHigh").onclick = onFilter;
       $("wallBtn").onclick = () => {
         location.href = WALL ? PUBLIC_URL : (PUBLIC_URL + "?wall=1");
       };
