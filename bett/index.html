@@ -61,6 +61,11 @@
       display: block;
       vertical-align: middle;
     }
+    .player.portrait video {
+      max-height: min(72vh, 640px);
+      object-fit: contain;
+      background: #111;
+    }
     #more { min-height: 8px; }
     footer {
       text-align: center; padding: 8px 16px 28px; color: var(--green-dark);
@@ -88,6 +93,22 @@
           title="綠惜小先鋒"
         >
           <source src="green-pioneers.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </div>
+    <div class="item">
+      <h2>Cutebot 沿黑線轉彎</h2>
+      <p>用黑膠紙貼線，小車會自己跟着走、自己轉彎。屋企可以咁玩。</p>
+      <div class="player portrait">
+        <video
+          controls
+          playsinline
+          webkit-playsinline
+          preload="metadata"
+          poster="cutebot-line.jpg"
+          title="Cutebot 沿黑線轉彎"
+        >
+          <source src="cutebot-line.mp4" type="video/mp4" />
         </video>
       </div>
     </div>
