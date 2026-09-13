@@ -40,9 +40,26 @@ a.pick p { margin: 0; font-weight: 700; color: #3d5c40; }
   overflow-wrap: anywhere; word-break: break-word;
 }
 @media (min-width: 700px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
 </style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
 <div class="wrap">
   <a class="home-link" href="../index.html#/s/lang">← 返回目錄</a>
   <h1>🌍 外語小學堂</h1>

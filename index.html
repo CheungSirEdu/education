@@ -41,9 +41,18 @@
     header .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--yellow); }
     header h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
     header p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; opacity: .95; }
-    .btn-edit {
+    img.zhang-sir-mark {
       position: absolute;
       right: 10px;
+      top: max(8px, env(safe-area-inset-top));
+      width: 44px;
+      height: 44px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    .btn-edit {
+      position: absolute;
+      right: 60px;
       top: max(10px, env(safe-area-inset-top));
       background: var(--yellow);
       color: var(--green-dark);
@@ -146,7 +155,7 @@
       z-index: 40;
     }
     @media (max-width: 560px) {
-      header { padding-right: 96px; text-align: left; }
+      header { padding-right: 148px; text-align: left; }
       .btn-edit { font-size: 13px; padding: 8px 10px; }
     }
     .empty {
@@ -202,6 +211,7 @@
     <h1>張老師教學資源</h1>
     <p>供學生及家長使用。開始遊戲或測驗前，請填寫班別及學號，無須填寫姓名。</p>
     <button class="btn-edit" id="btn-edit" type="button">編輯排版</button>
+    <img class="zhang-sir-mark" src="assets/zhang-sir.png" alt="張Sir" width="44" height="44">
   </header>
   <main class="wrap" id="app"></main>
   <footer>

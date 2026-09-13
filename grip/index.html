@@ -312,9 +312,26 @@
       .boards { order: 0; grid-column: 2; grid-row: 1 / span 4; }
       .device img { width: min(100%, 200px); }
     }
-  </style>
+  
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
+</style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
   <div class="shell">
     <header class="top">
       <p class="school">佛教志蓮小學　體育</p>

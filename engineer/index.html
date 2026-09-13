@@ -53,7 +53,7 @@
     .primary.blue { background: #00897b; margin-top: 8px; }
     .primary:disabled { background: #9aaa9b; }
     .hud {
-      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 7;
+      position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 64px; z-index: 7;
       display: flex; justify-content: space-between; align-items: center;
       pointer-events: none; text-shadow: 0 2px 0 rgba(0,0,0,.25);
       color: #fff; font-weight: 900; font-size: 18px;
@@ -110,9 +110,26 @@
       min-height: 48px;
     }
     .ids input:focus { outline: 0; border-color: #1565c0; background: #e3f2fd; }
-  </style>
+  
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
+</style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
   <div id="wrap">
     <canvas id="game"></canvas>
     <div class="hud" id="hud"><span id="hudZone"></span><span id="hudTime">時間 50</span><span id="hudStar"></span></div>

@@ -60,6 +60,7 @@ button {
   display: flex;
   gap: 8px;
   align-items: center;
+  padding-right: 56px;
 }
 .home-link {
   display: inline-flex;
@@ -333,9 +334,26 @@ button {
         .btn-demo { background: #0047a0; color: #fff; box-shadow: 0 4px 0 #003375; }
         .btn-start { background: #cd2e3a; }
     
+
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
 </style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
 <div class="topbar">
   <a class="home-link" href="index.html">← 外語小學堂</a>
   <span class="device-tag">iPad · iPhone · 電腦</span>

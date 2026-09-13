@@ -326,9 +326,26 @@
       .cup-body { height: 112px; }
       .sprouts { height: 280px; bottom: 84px; }
     }
-  </style>
+  
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
+</style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
   <section id="start" class="panel">
     <div class="card">
       <h1>綠豆幼苗會對光的方向做出反應嗎？</h1>

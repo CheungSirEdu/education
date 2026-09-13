@@ -60,7 +60,7 @@ canvas {
 .timer-panel {
   position: absolute;
   top: max(10px, env(safe-area-inset-top));
-  right: max(12px, env(safe-area-inset-right));
+  right: max(68px, calc(env(safe-area-inset-right) + 56px));
   color: #ff5252;
 }
 #player-info-display { font-size: 13px; font-weight: 800; color: #f8b4b4; margin-bottom: 2px; }
@@ -339,9 +339,26 @@ canvas {
   .instruction-hint { display: none; }
   #mini-map { height: 120px; }
 }
+
+img.zhang-sir-mark {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  z-index: 1000;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (min-width: 700px) {
+  img.zhang-sir-mark { width: 56px; height: 56px; }
+}
 </style>
 </head>
 <body>
+<img class="zhang-sir-mark" src="zhang-sir.png" alt="張Sir" width="48" height="48">
+
 <div id="game-container">
   <div id="weather-overlay"></div>
   <div id="fire-mode-label">🔥 自動連發模式!</div>
