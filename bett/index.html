@@ -66,6 +66,20 @@
       object-fit: contain;
       background: #111;
     }
+    a.btn {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      background: var(--green);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      padding: 14px 16px;
+      border-radius: 16px;
+      box-shadow: 0 5px 0 var(--green-dark);
+    }
+    a.btn:active { transform: translateY(2px); box-shadow: 0 3px 0 var(--green-dark); }
     #more { min-height: 8px; }
     footer {
       text-align: center; padding: 8px 16px 28px; color: var(--green-dark);
@@ -111,6 +125,11 @@
           <source src="cutebot-line.mp4" type="video/mp4" />
         </video>
       </div>
+    </div>
+    <div class="item">
+      <h2>沿着黑色線</h2>
+      <p>撳下面打開積木程式，下載到 micro:bit。</p>
+      <a class="btn" href="https://makecode.microbit.org/_2xW4XVFDr0mu">打開積木程式</a>
     </div>
     <div id="more"></div>
   </main>
