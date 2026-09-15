@@ -5,8 +5,8 @@
     "sci",
     "ict",
     "lang",
-    "pre1",
-    "bett"
+    "bett",
+    "pre1"
   ],
   "folders": {
     "pre1": [
@@ -63,6 +63,11 @@
   "labels": {
     "areas": {},
     "folders": {},
-    "items": {}
+    "items": {
+      "stars": {
+        "title": "未來小學",
+        "blurb": "拖曳上、下、左、右，幫助機械人取得星星。適合五至六歲準小一。"
+      }
+    }
   }
 }
