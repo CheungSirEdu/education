@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="小志小蓮食星星" />
+  <meta name="theme-color" content="#7c4dff" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>小志小蓮食星星</title>
+  <link rel="icon" href="assets/star.png" />
+  <link rel="apple-touch-icon" href="assets/star.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #00e5ff;
+      --green-dark: #00838f;
+      --go: #7c4dff;
+      --go-dark: #5e35b1;
+      --yellow: #ffd54f;
+      --ink: #eaf2ff;
+      --card: rgba(10, 18, 52, .94);
+      --sky: #0a1030;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+      --safe-l: env(safe-area-inset-left);
+      --safe-r: env(safe-area-inset-right);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: #0a1030 url("assets/garden.jpg") center / cover no-repeat fixed;
+      touch-action: manipulation; user-select: none;
+      overscroll-behavior: none;
+    }
+    button { font: inherit; color: inherit; }
+    .hidden { display: none !important; }
+    img.zhang-sir-mark {
+      position: fixed;
+      top: max(8px, var(--safe-t));
+      right: max(8px, var(--safe-r));
+      width: 48px; height: 48px;
+      z-index: 1000; pointer-events: none;
+    }
+    @media (min-width: 700px) {
+      img.zhang-sir-mark { width: 56px; height: 56px; }
+    }
+
+    /* ===== start ===== */
+    #start {
+      position: fixed; inset: 0; z-index: 20;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: max(12px, var(--safe-t)) max(56px, var(--safe-r)) max(16px, var(--safe-b)) 12px;
+    }
+    .card {
+      background: var(--card);
+      border: 6px solid var(--green);
+      border-radius: 28px;
+      padding: 16px 16px 18px;
+      max-width: 560px; width: 100%;
+      margin: 10px auto 24px;
+      box-shadow: 0 10px 0 #7c4dff, 0 0 28px rgba(0, 229, 255, .35);
+    }
+    .hero-row {
+      display: flex; align-items: flex-end; justify-content: center;
+      gap: 8px; margin: 4px 0 8px; min-height: 110px;
+    }
+    .hero-row img { height: 108px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .hero-row .title-carrot { height: 92px; }
+    h1 {
+      margin: 0 0 4px; text-align: center; color: #00e5ff;
+      font-size: clamp(26px, 7vw, 36px); line-height: 1.2; font-weight: 900;
+      text-shadow: 0 0 14px rgba(0, 229, 255, .45);
+    }
+    .sub {
+      text-align: center; margin: 0 0 12px; font-weight: 700;
+      color: #b3e5fc; font-size: clamp(15px, 3.8vw, 18px);
+    }
+    .how {
+      background: rgba(255,255,255,.08); border: 4px solid #4dd0e1; border-radius: 20px;
+      padding: 10px 12px; margin: 0 0 14px;
+    }
+    .how ol { margin: 0; padding: 0; list-style: none; }
+    .how li {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 900; font-size: clamp(15px, 4vw, 18px);
+      line-height: 1.35; padding: 6px 0;
+    }
+    .how li + li { border-top: 2px dashed #4dd0e1; }
+    .num {
+      flex: 0 0 32px; height: 32px; border-radius: 50%;
+      background: var(--yellow); color: #1a237e;
+      display: grid; place-items: center; font-weight: 900;
+      box-shadow: 0 3px 0 #f9a825;
+    }
+    .chars { display: flex; gap: 12px; justify-content: center; margin: 0 0 14px; }
+    .char-btn {
+      flex: 1; border: 4px solid #4dd0e1; background: #fff; border-radius: 20px;
+      padding: 10px 8px 8px; cursor: pointer; font-weight: 900; font-size: 18px;
+      color: #0d1b4c;
+    }
+    .char-btn img { width: 100%; max-height: 150px; object-fit: contain; display: block; }
+    .char-btn.pick { border-color: #7c4dff; background: #e8eaf6; box-shadow: 0 0 0 4px var(--yellow); }
+    .primary {
+      width: 100%; border: 0; background: var(--green); color: #fff;
+      font-weight: 900; font-size: 22px; padding: 14px; border-radius: 16px;
+      cursor: pointer; box-shadow: 0 6px 0 var(--green-dark);
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--green-dark); }
+    .primary:disabled { background: #9aaa9a; box-shadow: none; cursor: not-allowed; transform: none; }
+    .start-actions { display: flex; gap: 10px; margin-top: 4px; align-items: stretch; }
+    .start-actions .primary,
+    .start-actions .contest-btn { margin: 0; flex: 1 1 0; width: auto; min-width: 0; }
+    .contest-btn {
+      flex: 1; border: 0; background: #ff9800; color: #fff;
+      font-weight: 900; font-size: 20px; padding: 14px; border-radius: 16px;
+      cursor: pointer; box-shadow: 0 6px 0 #e65100;
+    }
+    .contest-btn:active { transform: translateY(2px); box-shadow: 0 4px 0 #e65100; }
+    .contest-btn:disabled { background: #9aaa9a; box-shadow: none; cursor: not-allowed; transform: none; }
+    .hint { text-align: center; margin: 10px 0 0; font-size: 13px; font-weight: 700; color: #90caf9; }
+
+    /* ===== play ===== */
+    #game {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      padding: max(8px, var(--safe-t)) max(8px, var(--safe-r)) max(8px, var(--safe-b)) max(8px, var(--safe-l));
+    }
+    .hud {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding-right: 56px; flex-wrap: wrap;
+    }
+    .lv-chip {
+      background: var(--card); border: 4px solid var(--green); border-radius: 16px;
+      padding: 6px 12px; font-weight: 900; color: #00e5ff;
+      font-size: clamp(16px, 4vw, 20px); white-space: nowrap;
+    }
+    .lv-chip small { display: block; font-size: 11px; color: #80deea; font-weight: 700; }
+    .lv-chip.diff-1 { border-color: #69f0ae; color: #b9f6ca; }
+    .lv-chip.diff-1 small { color: #69f0ae; }
+    .lv-chip.diff-2 { border-color: #00e5ff; color: #84ffff; }
+    .lv-chip.diff-2 small { color: #80deea; }
+    .lv-chip.diff-3 { border-color: #ffd54f; color: #ffe082; }
+    .lv-chip.diff-3 small { color: #ffe082; }
+    .lv-chip.diff-4 { border-color: #ff9800; color: #ffcc80; }
+    .lv-chip.diff-4 small { color: #ffb74d; }
+    .lv-chip.diff-5 { border-color: #f48fb1; color: #f8bbd0; }
+    .lv-chip.diff-5 small { color: #f48fb1; }
+    .timer-chip, .score-chip {
+      background: var(--card); border: 4px solid #ff9800; border-radius: 16px;
+      padding: 6px 12px; font-weight: 900; color: #ffcc80;
+      font-size: clamp(16px, 4vw, 22px); white-space: nowrap;
+    }
+    .timer-chip.warn { border-color: #ff5252; color: #ff8a80; animation: pulse 0.7s ease-in-out infinite; }
+    .score-chip { border-color: #ffd54f; color: #ffe082; }
+    .score-chip small, .timer-chip small { display: block; font-size: 11px; font-weight: 700; color: #ffcc80; }
+    .score-big { display: block; font-size: clamp(42px, 12vw, 64px); line-height: 1.1; color: #ff6d00; margin: 4px 0; }
+    .hud-btn {
+      border: 0; border-radius: 14px; font-weight: 900; cursor: pointer;
+      min-height: 44px; padding: 8px 12px; color: #fff; font-size: 14px;
+    }
+    #homeBtn { background: #5a7aa8; box-shadow: 0 4px 0 #3d5a86; margin-left: auto; }
+    #resetBtn { background: #6d4c41; box-shadow: 0 4px 0 #4e342e; }
+
+    .speech-row {
+      display: flex; align-items: center; gap: 8px;
+      margin: 8px 0; flex-shrink: 0;
+    }
+    .buddy {
+      height: 64px; width: auto; flex-shrink: 0;
+      filter: drop-shadow(0 4px 0 rgba(0,0,0,.12));
+    }
+    #speech {
+      margin: 0; flex: 1;
+      background: var(--card); border: 4px solid var(--yellow); border-radius: 18px;
+      padding: 8px 12px; font-weight: 900; font-size: clamp(15px, 3.8vw, 18px);
+      line-height: 1.4; min-height: 48px; color: #eaf2ff;
+    }
+
+    .stage {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .board-col {
+      flex: 1; min-height: 0; min-width: 0; width: 100%;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .deco {
+      position: absolute; width: min(18vw, 120px); pointer-events: none;
+      filter: drop-shadow(0 6px 0 rgba(0,0,0,.1));
+    }
+    .deco-l { left: 2%; bottom: 4%; }
+    .deco-r { right: 2%; bottom: 8%; transform: scaleX(-1); }
+    .board-wrap {
+      position: relative;
+      max-width: 100%;
+      max-height: 100%;
+      min-width: 0;
+    }
+    #board {
+      display: grid;
+      gap: clamp(8px, 1.6vw, 14px);
+    }
+    .cell {
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,.5) 0%, transparent 42%),
+        linear-gradient(#29b6f6, #0277bd);
+      border: 5px solid #b3e5fc;
+      box-shadow: 0 8px 0 #01579b, 0 0 16px rgba(0, 229, 255, .35), inset 0 -8px 0 rgba(0,0,0,.12);
+      position: relative;
+    }
+    .cell.goal { box-shadow: 0 8px 0 #01579b, 0 0 0 4px #ffd54f, 0 0 22px rgba(255, 213, 79, .65); }
+    .cell.blocked {
+      background:
+        radial-gradient(circle at 32% 28%, #b39ddb 0%, transparent 42%),
+        linear-gradient(#5e4b8b, #2a2048);
+      border-color: #ce93d8;
+      box-shadow: 0 8px 0 #1a1233, inset 0 -8px 0 rgba(0,0,0,.28);
+    }
+    .cell.blocked::after {
+      content: "";
+      position: absolute;
+      left: 18%; right: 18%; top: 18%; bottom: 22%;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 28%, #e1bee7, #7e57c2 54%, #311b92);
+      box-shadow: 0 6px 0 #1a1233, inset 0 3px 0 rgba(255,255,255,.25);
+    }
+    .cell.start::after {
+      content: "";
+      position: absolute; left: 18%; right: 18%; bottom: 10%;
+      height: 10%; border-radius: 999px;
+      background: rgba(255,255,255,.45);
+    }
+    .star-item {
+      position: absolute; left: 50%; top: 50%;
+      height: 62%; width: auto;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 0 10px rgba(255, 213, 79, .8));
+      animation: wiggle 2.2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .star-item.gone { opacity: 0; transform: translate(-50%, -50%) scale(.2); transition: .35s; }
+    @keyframes wiggle {
+      0%, 100% { transform: translate(-50%, -50%) rotate(-5deg); }
+      50% { transform: translate(-50%, -50%) rotate(5deg) scale(1.06); }
+    }
+    #hero {
+      position: absolute;
+      height: 86%;
+      width: auto;
+      max-width: 92%;
+      transform: translate(-50%, -82%);
+      transform-origin: 50% 90%;
+      transition: left .48s cubic-bezier(.2,.85,.3,1), top .48s cubic-bezier(.2,.85,.3,1);
+      z-index: 4; pointer-events: none;
+      filter: drop-shadow(0 10px 0 rgba(0,0,0,.16));
+    }
+    #hero.flip { transform: translate(-50%, -82%) scaleX(-1); }
+    #hero.hop { animation: hop .48s ease; }
+    #hero.shake { animation: shake .5s ease; }
+    @keyframes hop {
+      0% { margin-top: 0; }
+      40% { margin-top: -16%; }
+      100% { margin-top: 0; }
+    }
+    @keyframes shake {
+      0%,100% { margin-left: 0; }
+      25% { margin-left: -10px; }
+      75% { margin-left: 10px; }
+    }
+
+    .panel {
+      flex: 0 0 auto;
+      background: rgba(10, 18, 52, .92);
+      border: 5px solid var(--green);
+      border-radius: 24px;
+      padding: 10px 10px 12px;
+      box-shadow: 0 8px 0 #7c4dff, 0 0 22px rgba(0, 229, 255, .28);
+    }
+    .plan-label {
+      text-align: center; font-weight: 900; color: #00e5ff;
+      font-size: 15px; margin-bottom: 6px;
+    }
+    .plan-tip { font-size: 12px; color: #80deea; font-weight: 700; }
+    #slots {
+      display: flex; gap: 8px; justify-content: center; margin-bottom: 10px;
+      min-height: 62px;
+    }
+    .slot {
+      width: 58px; height: 58px; border-radius: 16px;
+      border: 4px dashed #4dd0e1; background: rgba(255,255,255,.08);
+      display: grid; place-items: center;
+      color: #00e5ff;
+      touch-action: none;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .slot.filled { border-style: solid; border-color: #ffd54f; background: #1a237e; color: #ffd54f; cursor: grab; }
+    .slot.lifted { opacity: .3; }
+    .slot.now { box-shadow: 0 0 0 4px #7c4dff; }
+    .slot svg { width: 34px; height: 34px; fill: currentColor; }
+    .slot.drop-target {
+      border-style: solid; border-color: #00e5ff; background: #004d60;
+      transform: scale(1.12); box-shadow: 0 0 0 4px #ffd54f;
+    }
+    #slots.hint-drop .slot:not(.filled) {
+      animation: slotPulse .45s ease 0s 3;
+    }
+    @keyframes slotPulse {
+      50% { transform: scale(1.1); border-color: #00e5ff; background: #004d60; }
+    }
+    .drag-ghost {
+      position: fixed; z-index: 80; pointer-events: none;
+      width: 64px; height: 64px; border-radius: 18px;
+      background: #00e5ff; color: #003844;
+      display: grid; place-items: center;
+      box-shadow: 0 14px 0 rgba(0,172,193,.45), 0 18px 28px rgba(0,0,0,.28);
+      transform: translate(-50%, -50%) scale(1.08);
+    }
+    .drag-ghost svg { width: 36px; height: 36px; fill: #003844; }
+    body.dragging { cursor: grabbing; touch-action: none; }
+    body.dragging .dir, body.dragging .slot.filled { cursor: grabbing; }
+
+    .pad {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 0 auto 10px;
+    }
+    .dir {
+      width: 58px; height: 58px; min-width: 58px; min-height: 58px;
+      border: 0; cursor: grab; border-radius: 16px;
+      background: #00e5ff; color: #003844;
+      box-shadow: 0 5px 0 #00acc1;
+      display: grid; place-items: center;
+      touch-action: none;
+      flex: 0 0 auto;
+    }
+    .dir.lifted { opacity: .35; }
+    .dir svg { width: 34px; height: 34px; fill: #003844; }
+    #goBtn {
+      display: block;
+      width: 100%;
+      border: 0; cursor: pointer; border-radius: 18px;
+      min-height: 58px;
+      background: var(--go); color: #fff; font-weight: 900;
+      font-size: 22px; line-height: 1.1;
+      letter-spacing: 1px;
+      box-shadow: 0 6px 0 var(--go-dark);
+      animation: pulse 1.6s ease-in-out infinite;
+      margin: 0 0 8px;
+    }
+    #goBtn:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--go-dark); }
+    #goBtn:disabled, .dir:disabled, .edit-row button:disabled {
+      opacity: .45; cursor: not-allowed; animation: none; transform: none;
+    }
+    @keyframes pulse {
+      0%,100% { filter: brightness(1); }
+      50% { filter: brightness(1.12); }
+    }
+    .edit-row { display: flex; gap: 8px; }
+    .edit-row button {
+      flex: 1; border: 3px solid var(--green); background: rgba(255,255,255,.08);
+      color: #eaf2ff; font-weight: 900; border-radius: 14px;
+      min-height: 44px; cursor: pointer; font-size: 15px;
+    }
+
+    /* ===== overlay ===== */
+    #overlay {
+      position: fixed; inset: 0; z-index: 30;
+      background: rgba(20, 50, 20, .5);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .modal {
+      background: #f4f7ff; border: 6px solid var(--yellow); border-radius: 28px;
+      padding: 18px 16px 16px; max-width: 420px; width: 100%;
+      text-align: center; box-shadow: 0 12px 0 #7c4dff;
+      position: relative; color: #0d1b4c;
+    }
+    .modal.fail { border-color: #ef6c00; box-shadow: 0 12px 0 #e65100; }
+    .modal img.yay { height: 160px; width: auto; margin: 0 auto 8px; display: block; }
+    .modal h2 { margin: 0 0 6px; font-size: clamp(24px, 7vw, 32px); color: #4527a0; }
+    .modal p { margin: 0 0 12px; font-weight: 700; font-size: 17px; line-height: 1.45; }
+    .stars { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+    .stars img { height: 42px; animation: pop 1s ease infinite alternate; }
+    .stars img:nth-child(2) { animation-delay: .15s; }
+    .stars img:nth-child(3) { animation-delay: .3s; }
+    @keyframes pop { from { transform: scale(.9) rotate(-8deg); } to { transform: scale(1.1) rotate(8deg); } }
+    .modal .primary { margin-top: 6px; }
+    .modal .soon {
+      width: 100%; margin-top: 8px; border: 4px solid #ce93d8; background: #fff;
+      color: #7e57c2; font-weight: 900; font-size: 16px; padding: 12px; border-radius: 14px;
+      box-shadow: none; cursor: pointer;
+    }
+    .confetti {
+      position: fixed; top: -10px; width: 12px; height: 18px; border-radius: 3px;
+      z-index: 40; animation: fall 1.8s linear forwards; pointer-events: none;
+    }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(360deg); opacity: .2; }
+    }
+
+    body.running .dir, body.running .slot, body.running .edit-row button, body.running #goBtn { pointer-events: none; }
+
+    @media (orientation: landscape) and (max-height: 820px) {
+      .hero-row { min-height: 0; margin: 0 0 2px; }
+      .hero-row img { height: 72px; }
+      .hero-row .title-carrot { height: 60px; }
+      h1 { font-size: 26px; margin-bottom: 2px; }
+      .sub { margin-bottom: 8px; font-size: 15px; }
+      .how { padding: 6px 10px; margin-bottom: 8px; }
+      .how li { font-size: 14px; padding: 3px 0; }
+      .chars { margin-bottom: 8px; }
+      .char-btn { padding: 6px 6px 4px; font-size: 16px; }
+      .char-btn img { max-height: 88px; }
+      .card { padding: 10px 14px 12px; margin: 6px auto 10px; }
+      .start-actions button { padding: 12px; font-size: 18px; }
+      .hint { margin-top: 8px; }
+    }
+    @media (orientation: landscape) and (min-width: 740px) {
+      .stage { flex-direction: row; align-items: stretch; }
+      .board-col { flex: 1.3; }
+      .panel {
+        flex: 0 0 min(38%, 360px);
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .buddy { height: 76px; }
+      .board-wrap { max-width: 100%; }
+    }
+    @media (orientation: landscape) and (max-height: 500px) {
+      .hero-row img { height: 72px; }
+      .buddy { height: 40px; }
+      .speech-row { margin: 4px 0; }
+      #speech { font-size: 13px; min-height: 0; padding: 4px 10px; }
+      .lv-chip small, .timer-chip small, .score-chip small { display: none; }
+      .timer-chip, .score-chip { font-size: 16px; padding: 4px 8px; }
+      .hud-btn { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+      .panel { padding: 6px 8px 8px; overflow: auto; }
+      .plan-label { font-size: 12px; margin-bottom: 2px; }
+      #slots { margin-bottom: 4px; gap: 6px; }
+      .slot { width: 40px; height: 40px; border-radius: 12px; }
+      .slot svg { width: 22px; height: 22px; }
+      .pad { gap: 6px; margin-bottom: 6px; }
+      .dir { width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 12px; }
+      #goBtn { min-height: 40px; font-size: 16px; border-radius: 12px; margin-bottom: 6px; }
+      .dir svg { width: 22px; height: 22px; }
+      .edit-row button { min-height: 32px; font-size: 13px; }
+      .card { padding: 10px; }
+      .deco { display: none; }
+    }
+    @media (max-width: 520px) {
+      .start-actions { flex-direction: column; }
+      .contest-btn { font-size: 22px; }
+    }
+    @media (max-width: 420px) {
+      .char-btn img { max-height: 110px; }
+      .slot { width: 50px; height: 50px; }
+      .dir { width: 50px; height: 50px; min-width: 50px; min-height: 50px; }
+      .deco { width: 64px; }
+      img.zhang-sir-mark { width: 36px; height: 36px; }
+      .hud { padding-right: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <img class="zhang-sir-mark" src="assets/zhang-sir-gold.png" alt="張Sir" width="48" height="48">
+  <script src="zhang-sir.js"></script>
+
+  <div id="start">
+    <div class="card">
+      <div class="hero-row">
+        <img src="assets/boy.png?v=yellow" alt="小志">
+        <img class="title-carrot" src="assets/star.png" alt="星星">
+        <img src="assets/girl.png?v=yellow" alt="小蓮">
+      </div>
+      <h1>小志小蓮食星星</h1>
+      <p class="sub" id="startSub">由超簡單至非常難，共三十關</p>
+      <div class="how">
+        <ol>
+          <li><span class="num">1</span>請選擇機械人小志或小蓮</li>
+          <li><span class="num">2</span>請把上、下、左、右拖入計劃格</li>
+          <li><span class="num">3</span>請按「出發」，幫助機械人取得星星</li>
+        </ol>
+      </div>
+      <div class="chars">
+        <button class="char-btn" id="pickBoy" type="button"><img src="assets/boy.png?v=yellow" alt="小志">小志</button>
+        <button class="char-btn" id="pickGirl" type="button"><img src="assets/girl.png?v=yellow" alt="小蓮">小蓮</button>
+      </div>
+      <div class="start-actions">
+        <button class="primary" id="startBtn" type="button" disabled>開始練習</button>
+        <button class="contest-btn" id="contestBtn" type="button" disabled>開始比賽（三分鐘）</button>
+      </div>
+      <p class="hint">練習模式：逐關學習。比賽模式：限時三分鐘，中等至困難關卡，完成越多越好。</p>
+    </div>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="hud">
+      <div class="lv-chip" id="lvChip">第 1 關<small>共 30 關</small></div>
+      <div class="timer-chip hidden" id="timerChip">3:00<small>剩餘時間</small></div>
+      <div class="score-chip hidden" id="scoreChip">0<small>已過關數</small></div>
+      <button class="hud-btn" id="homeBtn" type="button">返回</button>
+      <button class="hud-btn" id="resetBtn" type="button">重設</button>
+    </div>
+    <div class="speech-row">
+      <img class="buddy" id="buddy" alt="">
+      <p id="speech"></p>
+    </div>
+    <div class="stage">
+      <div class="board-col">
+        <img class="deco deco-l" src="assets/flowers.png" alt="">
+        <img class="deco deco-r" src="assets/flowers.png" alt="">
+        <div class="board-wrap" id="boardWrap">
+          <div id="board"></div>
+          <img id="hero" alt="">
+        </div>
+      </div>
+      <aside class="panel">
+        <div class="plan-label">我的計劃　<span class="plan-tip">請把箭嘴拖入格子</span></div>
+        <div id="slots"></div>
+        <div class="pad">
+          <button class="dir" type="button" data-dir="up" aria-label="上"><svg viewBox="0 0 64 64"><path d="M32 8 L56 36 H42 V56 H22 V36 H8 Z"/></svg></button>
+          <button class="dir" type="button" data-dir="down" aria-label="下"><svg viewBox="0 0 64 64"><path d="M32 56 L8 28 H22 V8 H42 V28 H56 Z"/></svg></button>
+          <button class="dir" type="button" data-dir="left" aria-label="左"><svg viewBox="0 0 64 64"><path d="M8 32 L36 8 V22 H56 V42 H36 V56 Z"/></svg></button>
+          <button class="dir" type="button" data-dir="right" aria-label="右"><svg viewBox="0 0 64 64"><path d="M56 32 L28 8 V22 H8 V42 H28 V56 Z"/></svg></button>
+        </div>
+        <button id="goBtn" type="button">出發 GO</button>
+        <div class="edit-row">
+          <button id="undoBtn" type="button">刪除</button>
+          <button id="clearBtn" type="button">清除</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="modal" id="modal">
+      <img class="yay" id="yayImg" alt="">
+      <div class="stars hidden" id="starRow">
+        <img src="assets/star.png" alt="">
+        <img src="assets/star.png" alt="">
+        <img src="assets/star.png" alt="">
+      </div>
+      <h2 id="ovTitle"></h2>
+      <p id="ovMsg"></p>
+      <button class="primary hidden" id="nextBtn" type="button">下一關</button>
+      <button class="primary" id="againBtn" type="button">再試一次</button>
+    </div>
+  </div>
+
+  <div id="dragGhost" class="drag-ghost hidden"></div>
+
+<script>
+const TOTAL = 30;
+const DIFF_CLASS = { "超簡單": "diff-1", "簡單": "diff-2", "中間": "diff-3", "困難": "diff-4", "非常難": "diff-5" };
+const LEVELS = [
+  { id: 1, diff: "超簡單", name: "第一步", rows: 1, cols: 3, start: [0, 0], goal: [0, 2], blocked: [], maxMoves: 4, speech: "星星在右邊。請拖兩個「向右」，再按「出發」。", hint1: "星星在右邊，請拖「向右」。", hint2: "請拖兩個向右，再出發。" },
+  { id: 2, diff: "超簡單", name: "向下兩步", rows: 3, cols: 1, start: [0, 0], goal: [2, 0], blocked: [], maxMoves: 4, speech: "星星在下面。請拖兩個「向下」，再按「出發」。", hint1: "星星在下面，請拖「向下」。", hint2: "請拖兩個向下，再出發。" },
+  { id: 3, diff: "超簡單", name: "向左兩步", rows: 1, cols: 3, start: [0, 2], goal: [0, 0], blocked: [], maxMoves: 4, speech: "星星在左邊。請拖兩個「向左」，再按「出發」。", hint1: "這次請向左走。", hint2: "請拖兩個向左，再出發。" },
+  { id: 4, diff: "超簡單", name: "向上兩步", rows: 3, cols: 1, start: [2, 0], goal: [0, 0], blocked: [], maxMoves: 4, speech: "星星在上面。請拖兩個「向上」，再按「出發」。", hint1: "這次請向上走。", hint2: "請拖兩個向上，再出發。" },
+  { id: 5, diff: "超簡單", name: "再向右", rows: 1, cols: 4, start: [0, 1], goal: [0, 3], blocked: [], maxMoves: 4, speech: "從中間出發，再向右走兩步。", hint1: "請數一數，右邊兩格就是星星。", hint2: "請拖兩個向右，再出發。" },
+  { id: 6, diff: "超簡單", name: "再向下", rows: 4, cols: 1, start: [1, 0], goal: [3, 0], blocked: [], maxMoves: 4, speech: "從上面第二格出發，再向下走兩步。", hint1: "請數一數，下面兩格就是星星。", hint2: "請拖兩個向下，再出發。" },
+  { id: 7, diff: "簡單", name: "轉個彎", rows: 2, cols: 2, start: [0, 0], goal: [1, 1], blocked: [], maxMoves: 4, speech: "這關要轉彎。請同時使用「向下」和「向右」。", hint1: "不是直線了，需要兩種箭嘴。", hint2: "請試試：向下、向右。" },
+  { id: 8, diff: "簡單", name: "向上轉", rows: 2, cols: 2, start: [1, 0], goal: [0, 1], blocked: [], maxMoves: 4, speech: "請使用「向右」和「向上」兩種箭嘴。", hint1: "請轉向右上方。", hint2: "請試試：向右、向上。" },
+  { id: 9, diff: "簡單", name: "向左轉", rows: 2, cols: 2, start: [0, 1], goal: [1, 0], blocked: [], maxMoves: 4, speech: "請使用「向下」和「向左」兩種箭嘴。", hint1: "請轉向左下方。", hint2: "請試試：向下、向左。" },
+  { id: 10, diff: "簡單", name: "回到角落", rows: 2, cols: 2, start: [1, 1], goal: [0, 0], blocked: [], maxMoves: 4, speech: "請使用「向左」和「向上」兩種箭嘴。", hint1: "請走向左上方。", hint2: "請試試：向左、向上。" },
+  { id: 11, diff: "簡單", name: "右下角", rows: 2, cols: 3, start: [0, 0], goal: [1, 2], blocked: [], maxMoves: 4, speech: "請走三步，並使用「向下」和「向右」。", hint1: "請先轉彎，再繼續走。", hint2: "請拖：向下、向右、向右，再出發。" },
+  { id: 12, diff: "簡單", name: "下右角", rows: 3, cols: 2, start: [0, 0], goal: [2, 1], blocked: [], maxMoves: 4, speech: "請走三步，並使用「向下」和「向右」。", hint1: "可以先向下走兩步。", hint2: "請拖：向下、向下、向右，再出發。" },
+  { id: 13, diff: "中間", name: "左下角", rows: 2, cols: 3, start: [0, 2], goal: [1, 0], blocked: [], maxMoves: 4, speech: "星星在左下方。請使用「向下」和「向左」。", hint1: "請轉彎走向左邊。", hint2: "請拖：向下、向左、向左，再出發。" },
+  { id: 14, diff: "中間", name: "上右邊", rows: 2, cols: 3, start: [1, 0], goal: [0, 2], blocked: [], maxMoves: 4, speech: "星星在右上方。請使用「向右」和「向上」。", hint1: "請先向右走。", hint2: "請拖：向右、向右、向上，再出發。" },
+  { id: 15, diff: "中間", name: "向上轉右", rows: 3, cols: 2, start: [2, 0], goal: [0, 1], blocked: [], maxMoves: 4, speech: "請使用「向上」和「向右」兩種箭嘴。", hint1: "請先向上走。", hint2: "請拖：向上、向右、向上，再出發。" },
+  { id: 16, diff: "中間", name: "向下轉左", rows: 3, cols: 2, start: [0, 1], goal: [2, 0], blocked: [], maxMoves: 4, speech: "請使用「向下」和「向左」兩種箭嘴。", hint1: "請先向下走。", hint2: "請拖：向下、向下、向左，再出發。" },
+  { id: 17, diff: "中間", name: "避開石塊", rows: 2, cols: 3, start: [0, 0], goal: [1, 2], blocked: [[0, 1]], maxMoves: 4, speech: "紫色圓石不能踩。請繞路過去。", hint1: "有石塊擋住，請走第二條路。", hint2: "請拖：向下、向右、向右，再出發。" },
+  { id: 18, diff: "中間", name: "石塊擋右", rows: 3, cols: 2, start: [0, 0], goal: [2, 1], blocked: [[0, 1]], maxMoves: 4, speech: "紫色圓石不能踩。請繞路過去。", hint1: "右邊有石塊，請先向下走。", hint2: "請拖：向下、向下、向右，再出發。" },
+  { id: 19, diff: "困難", name: "繞路取星", rows: 2, cols: 3, start: [0, 0], goal: [0, 2], blocked: [[0, 1]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向下、向右、向右、向上，再出發。" },
+  { id: 20, diff: "困難", name: "走第二條路", rows: 3, cols: 3, start: [0, 0], goal: [2, 0], blocked: [[1, 0]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向右、向下、向下、向左，再出發。" },
+  { id: 21, diff: "困難", name: "右邊有石", rows: 3, cols: 3, start: [0, 2], goal: [2, 2], blocked: [[1, 2]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向左、向下、向下、向右，再出發。" },
+  { id: 22, diff: "困難", name: "中間有石", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[1, 1]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向下、向下、向右、向右，再出發。" },
+  { id: 23, diff: "困難", name: "兩顆石", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[0, 1], [1, 1]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向下、向下、向右、向右，再出發。" },
+  { id: 24, diff: "困難", name: "一堵牆", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[1, 0], [1, 1]], maxMoves: 4, speech: "有石塊擋住。請多走幾步，想清楚再出發。", hint1: "請不要踩紫色圓石。", hint2: "請拖：向右、向右、向下、向下，再出發。" },
+  { id: 25, diff: "非常難", name: "先向下走", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[0, 1], [1, 2]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向下、向下、向右、向右，再出發。" },
+  { id: 26, diff: "非常難", name: "彎路前進", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[0, 2], [1, 0]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向右、向下、向下、向右，再出發。" },
+  { id: 27, diff: "非常難", name: "三顆石", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[0, 2], [1, 0], [1, 2]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向右、向下、向下、向右，再出發。" },
+  { id: 28, diff: "非常難", name: "角落陷阱", rows: 3, cols: 3, start: [0, 0], goal: [2, 2], blocked: [[0, 1], [2, 1]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向下、向右、向右、向下，再出發。" },
+  { id: 29, diff: "非常難", name: "窄通道", rows: 3, cols: 3, start: [2, 2], goal: [0, 0], blocked: [[0, 2], [1, 0], [1, 2]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向左、向上、向上、向左，再出發。" },
+  { id: 30, diff: "非常難", name: "最後一關", rows: 3, cols: 3, start: [0, 2], goal: [2, 0], blocked: [[0, 0], [1, 0], [1, 2]], maxMoves: 4, speech: "非常難！請看清楚每顆石，排好四步再出發。", hint1: "第一步走錯就會撞石。請慢慢想。", hint2: "請拖：向左、向下、向下、向左，再出發。" }
+];
+
+const DELTA = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
+const ARROW = {
+  up: '<svg viewBox="0 0 64 64"><path d="M32 8 L56 36 H42 V56 H22 V36 H8 Z"/></svg>',
+  down: '<svg viewBox="0 0 64 64"><path d="M32 56 L8 28 H22 V8 H42 V28 H56 Z"/></svg>',
+  left: '<svg viewBox="0 0 64 64"><path d="M8 32 L36 8 V22 H56 V42 H36 V56 Z"/></svg>',
+  right: '<svg viewBox="0 0 64 64"><path d="M56 32 L28 8 V22 H8 V42 H28 V56 Z"/></svg>'
+};
+
+const NAMES = { boy: "小志", girl: "小蓮" };
+
+let hero = null;
+let levelIndex = 0;
+let program = [];
+let pos = { r: 0, c: 0 };
+let facing = 1;
+let running = false;
+let fails = 0;
+let audioCtx = null;
+let drag = null;
+let mode = "campaign";
+let overlayKind = "fail";
+let savedCampaignIndex = 0;
+let contestScore = 0;
+let contestEndsAt = 0;
+let contestOrder = [];
+let contestPtr = 0;
+let contestTick = null;
+let contestOver = false;
+let autoNextTimer = null;
+const CONTEST_MS = Math.max(10, parseInt(new URLSearchParams(location.search).get("secs") || "180", 10) || 180) * 1000;
+
+function emptyProgram() {
+  return Array(level().maxMoves).fill(null);
+}
+function steps() {
+  return program.filter(Boolean);
+}
+
+const $ = id => document.getElementById(id);
+const level = () => LEVELS[levelIndex];
+
+(function readLevelQuery() {
+  const n = parseInt(new URLSearchParams(location.search).get("lv") || "", 10);
+  if (n >= 1 && n <= LEVELS.length) levelIndex = n - 1;
+})();
+
+function updateHud() {
+  const n = levelIndex + 1;
+  const lv = level();
+  const contestOn = mode === "contest" && !contestOver;
+  $("lvChip").classList.toggle("hidden", contestOn);
+  $("timerChip").classList.toggle("hidden", !contestOn);
+  $("scoreChip").classList.toggle("hidden", !contestOn);
+  $("lvChip").className = "lv-chip " + (DIFF_CLASS[lv.diff] || "") + (contestOn ? " hidden" : "");
+  $("lvChip").innerHTML = "第 " + n + " 關<small>" + lv.diff + " · " + lv.name + "</small>";
+  $("scoreChip").innerHTML = contestScore + "<small>已過關數</small>";
+  $("homeBtn").textContent = contestOn ? "退出" : "返回";
+  $("startSub").textContent = "由超簡單至非常難　第 " + n + " 關／" + TOTAL + " 關（" + lv.diff + "）";
+  $("startBtn").textContent = "開始第 " + n + " 關";
+  if (contestOn) paintTimer();
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function contestPool() {
+  return LEVELS.map((_, i) => i).filter(i => LEVELS[i].diff === "中間" || LEVELS[i].diff === "困難");
+}
+function contestLeft() {
+  if (mode !== "contest" || contestOver) return 0;
+  return Math.max(0, contestEndsAt - Date.now());
+}
+function paintTimer() {
+  const ms = contestLeft();
+  const s = Math.ceil(ms / 1000);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  $("timerChip").innerHTML = m + ":" + String(r).padStart(2, "0") + "<small>剩餘時間</small>";
+  $("timerChip").classList.toggle("warn", s <= 30);
+}
+function stopContestTick() {
+  if (contestTick) { clearInterval(contestTick); contestTick = null; }
+}
+function startContestTick() {
+  stopContestTick();
+  paintTimer();
+  contestTick = setInterval(() => {
+    if (mode !== "contest" || contestOver) { stopContestTick(); return; }
+    paintTimer();
+    if (contestLeft() <= 0) endContest();
+  }, 100);
+}
+function startContest() {
+  if (!hero) return;
+  unlockAudio();
+  savedCampaignIndex = levelIndex;
+  mode = "contest";
+  contestOver = false;
+  contestScore = 0;
+  contestOrder = shuffle(contestPool());
+  contestPtr = 0;
+  levelIndex = contestOrder[0];
+  contestEndsAt = Date.now() + CONTEST_MS;
+  document.body.classList.add("contest");
+  startContestTick();
+  startLevel();
+  setSpeech("比賽開始！請在三分鐘內完成盡量多的關卡！");
+}
+function nextContestLevel() {
+  if (mode !== "contest" || contestOver) return;
+  if (contestLeft() <= 0) { endContest(); return; }
+  const last = contestOrder[contestPtr];
+  contestPtr += 1;
+  if (contestPtr >= contestOrder.length) {
+    contestOrder = shuffle(contestPool());
+    if (contestOrder.length > 1 && contestOrder[0] === last) {
+      const t = contestOrder[0]; contestOrder[0] = contestOrder[1]; contestOrder[1] = t;
+    }
+    contestPtr = 0;
+  }
+  levelIndex = contestOrder[contestPtr];
+  startLevel();
+}
+function endContest() {
+  if (contestOver) return;
+  contestOver = true;
+  clearAutoNext();
+  running = false;
+  document.body.classList.remove("running");
+  stopContestTick();
+  paintTimer();
+  overlayKind = "contest";
+  $("modal").classList.remove("fail");
+  $("yayImg").src = "assets/" + hero + "-yay.png?v=yellow";
+  $("yayImg").classList.toggle("hidden", contestScore === 0);
+  $("starRow").classList.toggle("hidden", contestScore === 0);
+  $("ovTitle").textContent = "時間到！";
+  $("ovMsg").innerHTML = "你完成了<span class=\"score-big\">" + contestScore + "</span>關！" +
+    (contestScore === 0 ? "請再接再厲！" : contestScore >= 6 ? "非常厲害！請比較誰完成最多關卡！" : "表現很好！再比賽一次可以完成更多關卡！");
+  $("againBtn").textContent = "再比賽一次";
+  $("againBtn").className = "primary";
+  $("againBtn").classList.remove("hidden");
+  $("nextBtn").classList.remove("hidden");
+  $("nextBtn").textContent = "返回練習";
+  $("overlay").classList.remove("hidden");
+  if (contestScore > 0) burst();
+  sfx(contestScore > 0 ? "win" : "fail");
+}
+function leaveContest() {
+  clearAutoNext();
+  stopContestTick();
+  mode = "campaign";
+  contestOver = false;
+  document.body.classList.remove("contest");
+  levelIndex = savedCampaignIndex;
+  $("overlay").classList.add("hidden");
+  $("game").classList.add("hidden");
+  $("start").classList.remove("hidden");
+  updateHud();
+}
+
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+  } catch (e) {}
+}
+function tone(freq, dur, type, vol) {
+  try {
+    unlockAudio();
+    if (!audioCtx) return;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.07, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+function sfx(kind) {
+  if (kind === "tap") tone(520, 0.08, "triangle", 0.05);
+  if (kind === "go") { tone(392, 0.12, "square", 0.05); setTimeout(() => tone(523, 0.16, "square", 0.05), 90); }
+  if (kind === "step") tone(330, 0.1, "sine", 0.05);
+  if (kind === "win") { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.22, "triangle", 0.07), i * 120)); }
+  if (kind === "fail") { tone(220, 0.18, "sawtooth", 0.04); setTimeout(() => tone(165, 0.28, "sawtooth", 0.04), 140); }
+}
+
+function setSpeech(text) { $("speech").textContent = text; }
+
+function renderSlots() {
+  const lv = level();
+  const box = $("slots");
+  box.innerHTML = "";
+  for (let i = 0; i < lv.maxMoves; i++) {
+    const el = document.createElement("div");
+    el.className = "slot" + (program[i] ? " filled" : "");
+    el.dataset.index = String(i);
+    if (program[i]) el.innerHTML = ARROW[program[i]];
+    box.appendChild(el);
+  }
+  box.querySelectorAll(".slot.filled").forEach(el => {
+    el.addEventListener("pointerdown", ev => {
+      if (ev.button != null && ev.button !== 0) return;
+      startDrag(ev, program[Number(el.dataset.index)], Number(el.dataset.index));
+    });
+  });
+}
+
+function cellEl(r, c) {
+  return document.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
+}
+
+function placeHero(r, c, extraX, extraY) {
+  const wrap = $("boardWrap").getBoundingClientRect();
+  const cell = cellEl(Math.max(0, Math.min(level().rows - 1, r)), Math.max(0, Math.min(level().cols - 1, c)));
+  if (!cell) return;
+  const cr = cell.getBoundingClientRect();
+  let x = cr.left - wrap.left + cr.width / 2;
+  let y = cr.top - wrap.top + cr.height * 0.78;
+  if (extraX) x += extraX * cr.width;
+  if (extraY) y += extraY * cr.height;
+  const img = $("hero");
+  img.style.left = x + "px";
+  img.style.top = y + "px";
+  img.classList.toggle("flip", facing < 0);
+}
+
+function sizeBoard() {
+  const lv = level();
+  const col = document.querySelector(".board-col");
+  const board = $("board");
+  if (!col || !board) return;
+  const gap = 10;
+  const rect = col.getBoundingClientRect();
+  const availW = Math.max(100, Math.floor(rect.width) - 12);
+  const availH = Math.max(80, Math.floor(rect.height) - 12);
+  const cell = Math.max(40, Math.min(160,
+    Math.floor((availW - gap * (lv.cols - 1)) / lv.cols),
+    Math.floor((availH - gap * (lv.rows - 1)) / lv.rows)
+  ));
+  board.style.gap = gap + "px";
+  board.style.gridTemplateColumns = "repeat(" + lv.cols + ", " + cell + "px)";
+  board.style.gridTemplateRows = "repeat(" + lv.rows + ", " + cell + "px)";
+  $("hero").style.height = Math.round(cell * 0.88) + "px";
+}
+
+function buildBoard() {
+  const lv = level();
+  const board = $("board");
+  board.innerHTML = "";
+  for (let r = 0; r < lv.rows; r++) {
+    for (let c = 0; c < lv.cols; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      if (lv.blocked.some(b => b[0] === r && b[1] === c)) cell.classList.add("blocked");
+      if (r === lv.start[0] && c === lv.start[1]) cell.classList.add("start");
+      if (r === lv.goal[0] && c === lv.goal[1]) {
+        cell.classList.add("goal");
+        const img = document.createElement("img");
+        img.src = "assets/star.png";
+        img.alt = "星星";
+        img.className = "star-item";
+        img.id = "carrot";
+        cell.appendChild(img);
+      }
+      board.appendChild(cell);
+    }
+  }
+  $("hero").src = "assets/" + hero + ".png?v=yellow";
+  $("hero").alt = NAMES[hero];
+  const other = hero === "boy" ? "girl" : "boy";
+  $("buddy").src = "assets/" + other + ".png?v=yellow";
+  $("buddy").alt = NAMES[other];
+  sizeBoard();
+}
+
+function resetRun(keepProgram) {
+  const lv = level();
+  pos = { r: lv.start[0], c: lv.start[1] };
+  facing = 1;
+  running = false;
+  document.body.classList.remove("running");
+  if (!keepProgram) program = emptyProgram();
+  const carrot = $("carrot");
+  if (carrot) carrot.classList.remove("gone");
+  $("hero").classList.remove("hop", "shake");
+  renderSlots();
+  placeHero(pos.r, pos.c);
+  if (mode === "contest") setSpeech(lv.speech);
+  else setSpeech(fails >= 2 ? lv.hint2 : fails === 1 ? lv.hint1 : lv.speech);
+}
+
+function clearAutoNext() {
+  if (autoNextTimer) {
+    clearTimeout(autoNextTimer);
+    autoNextTimer = null;
+  }
+}
+
+function goNextLevel() {
+  clearAutoNext();
+  if (levelIndex < LEVELS.length - 1) {
+    levelIndex += 1;
+    startLevel();
+  }
+}
+
+function startLevel() {
+  fails = 0;
+  clearAutoNext();
+  $("start").classList.add("hidden");
+  $("overlay").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  updateHud();
+  buildBoard();
+  resetRun(false);
+  requestAnimationFrame(() => {
+    sizeBoard();
+    placeHero(pos.r, pos.c);
+    requestAnimationFrame(() => {
+      sizeBoard();
+      placeHero(pos.r, pos.c);
+    });
+  });
+}
+
+function placeDir(index, dir) {
+  if (running) return false;
+  const lv = level();
+  if (index < 0 || index >= lv.maxMoves) return false;
+  program[index] = dir;
+  sfx("tap");
+  renderSlots();
+  const n = steps().length;
+  if (n === 1) setSpeech("很好！請再拖一個箭嘴進去。");
+  else if (n >= 2) setSpeech("可以了。如果準備好，請按「出發」。");
+  return true;
+}
+
+function firstEmpty() {
+  return program.findIndex(x => !x);
+}
+
+function undo() {
+  if (running) return;
+  for (let i = program.length - 1; i >= 0; i--) {
+    if (program[i]) {
+      program[i] = null;
+      sfx("tap");
+      renderSlots();
+      return;
+    }
+  }
+}
+
+function slotAtPoint(x, y) {
+  const slots = [...$("slots").querySelectorAll(".slot")];
+  let best = null, bestDist = Infinity;
+  for (const el of slots) {
+    const r = el.getBoundingClientRect();
+    const pad = 14;
+    const hit = x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
+    if (!hit) continue;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+    if (d < bestDist) { bestDist = d; best = el; }
+  }
+  if (best) return best;
+  const row = $("slots").getBoundingClientRect();
+  if (x >= row.left - 20 && x <= row.right + 20 && y >= row.top - 24 && y <= row.bottom + 24) {
+    const i = firstEmpty();
+    if (i >= 0) return $("slots").children[i];
+  }
+  return null;
+}
+
+function clearDropMarks() {
+  document.querySelectorAll(".slot.drop-target").forEach(el => el.classList.remove("drop-target"));
+}
+
+function endDrag(dropped) {
+  if (!drag) return;
+  const ghost = $("dragGhost");
+  ghost.classList.add("hidden");
+  ghost.innerHTML = "";
+  document.body.classList.remove("dragging");
+  document.querySelectorAll(".lifted").forEach(el => el.classList.remove("lifted"));
+  clearDropMarks();
+  if (drag.fromEl) {
+    try { drag.fromEl.releasePointerCapture(drag.pointerId); } catch (e) {}
+  }
+  drag = null;
+}
+
+function startDrag(ev, dir, fromSlot) {
+  if (running || drag) return;
+  ev.preventDefault();
+  const ghost = $("dragGhost");
+  ghost.innerHTML = ARROW[dir];
+  ghost.classList.remove("hidden");
+  const lift = ev.pointerType === "mouse" ? 0 : 52;
+  ghost.style.left = ev.clientX + "px";
+  ghost.style.top = (ev.clientY - lift) + "px";
+  drag = {
+    dir,
+    fromSlot: fromSlot == null ? null : fromSlot,
+    pointerId: ev.pointerId,
+    fromEl: ev.currentTarget,
+    startX: ev.clientX,
+    startY: ev.clientY,
+    moved: false,
+    lift
+  };
+  document.body.classList.add("dragging");
+  ev.currentTarget.classList.add("lifted");
+  try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (e) {}
+}
+
+function onDragMove(ev) {
+  if (!drag || ev.pointerId !== drag.pointerId) return;
+  ev.preventDefault();
+  const dx = ev.clientX - drag.startX;
+  const dy = ev.clientY - drag.startY;
+  if (dx * dx + dy * dy > 36) drag.moved = true;
+  const ghost = $("dragGhost");
+  ghost.style.left = ev.clientX + "px";
+  ghost.style.top = (ev.clientY - drag.lift) + "px";
+  clearDropMarks();
+  const slot = slotAtPoint(ev.clientX, ev.clientY);
+  if (slot) slot.classList.add("drop-target");
+}
+
+function onDragUp(ev) {
+  if (!drag || ev.pointerId !== drag.pointerId) return;
+  const info = drag;
+  const slot = slotAtPoint(ev.clientX, ev.clientY);
+  if (slot) {
+    const idx = Number(slot.dataset.index);
+    if (info.fromSlot != null && info.fromSlot !== idx) program[info.fromSlot] = null;
+    endDrag(true);
+    placeDir(idx, info.dir);
+    return;
+  }
+  if (!info.moved && info.fromSlot == null) {
+    endDrag(true);
+    $("slots").classList.add("hint-drop");
+    setSpeech("請把這個箭嘴拖入上面的計劃格。");
+    setTimeout(() => $("slots").classList.remove("hint-drop"), 900);
+    return;
+  }
+  if (info.fromSlot != null && info.moved) {
+    program[info.fromSlot] = null;
+    endDrag(true);
+    sfx("tap");
+    renderSlots();
+    return;
+  }
+  endDrag(false);
+}
+
+function cellKind(r, c) {
+  const lv = level();
+  if (r < 0 || c < 0 || r >= lv.rows || c >= lv.cols) return "edge";
+  if (lv.blocked.some(b => b[0] === r && b[1] === c)) return "block";
+  return "ok";
+}
+function inBounds(r, c) {
+  return cellKind(r, c) === "ok";
+}
+
+function wait(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function runProgram() {
+  if (running) return;
+  if (mode === "contest" && (contestOver || contestLeft() <= 0)) { endContest(); return; }
+  if (!steps().length) {
+    setSpeech("尚未編寫計劃！請把藍色箭嘴拖入格子。");
+    tone(180, 0.12, "square", 0.04);
+    return;
+  }
+  running = true;
+  document.body.classList.add("running");
+  sfx("go");
+  setSpeech("出發！");
+  const lv = level();
+  await wait(280);
+  for (let i = 0; i < program.length; i++) {
+    if (mode === "contest" && contestLeft() <= 0) { endContest(); return; }
+    const dir = program[i];
+    if (!dir) continue;
+    const slots = $("slots").children;
+    for (const s of slots) s.classList.remove("now");
+    if (slots[i]) slots[i].classList.add("now");
+    if (dir === "left") facing = -1;
+    if (dir === "right") facing = 1;
+    const nr = pos.r + DELTA[dir][0];
+    const nc = pos.c + DELTA[dir][1];
+    const heroEl = $("hero");
+    heroEl.classList.remove("hop");
+    void heroEl.offsetWidth;
+    heroEl.classList.add("hop");
+    sfx("step");
+    const kind = cellKind(nr, nc);
+    if (kind !== "ok") {
+      placeHero(pos.r, pos.c, DELTA[dir][1] * 0.45, DELTA[dir][0] * 0.45);
+      await wait(420);
+      heroEl.classList.add("shake");
+      sfx("fail");
+      fails += 1;
+      if (kind === "block") showFail("撞到石頭了！", "紫色圓石不能踩。請刪除後改走另一條路。");
+      else showFail("走出界外了！", "格子外面沒有路。請刪除後再想一想。");
+      return;
+    }
+    pos = { r: nr, c: nc };
+    placeHero(pos.r, pos.c);
+    await wait(520);
+    if (pos.r === lv.goal[0] && pos.c === lv.goal[1]) {
+      const carrot = $("carrot");
+      if (carrot) carrot.classList.add("gone");
+      sfx("win");
+      showWin();
+      return;
+    }
+  }
+  sfx("fail");
+  fails += 1;
+  $("hero").classList.add("shake");
+  showFail("尚未取得星星！", "計劃走完仍未到達。請檢查方向是否正確。");
+}
+
+function contestSoftFail(title, msg) {
+  running = false;
+  document.body.classList.remove("running");
+  const lv = level();
+  pos = { r: lv.start[0], c: lv.start[1] };
+  facing = 1;
+  const carrot = $("carrot");
+  if (carrot) carrot.classList.remove("gone");
+  $("hero").classList.remove("hop");
+  $("hero").classList.add("shake");
+  for (const s of $("slots").children) s.classList.remove("now");
+  placeHero(pos.r, pos.c);
+  setSpeech(title + "請修改計劃，再按「出發」！");
+}
+
+function burst() {
+  const colors = ["#f4d35e", "#43a047", "#ef6c00", "#ec407a", "#42a5f5", "#fff"];
+  for (let i = 0; i < 36; i++) {
+    const el = document.createElement("div");
+    el.className = "confetti";
+    el.style.left = Math.random() * 100 + "vw";
+    el.style.background = colors[i % colors.length];
+    el.style.animationDuration = 1.2 + Math.random() * 1.2 + "s";
+    el.style.transform = "rotate(" + (Math.random() * 180) + "deg)";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2200);
+  }
+}
+
+function showWin() {
+  running = false;
+  document.body.classList.remove("running");
+  if (mode === "contest" && !contestOver) {
+    if (contestLeft() <= 0) { endContest(); return; }
+    contestScore += 1;
+    updateHud();
+    setSpeech("成功！已完成 " + contestScore + " 關！下一關開始！");
+    burst();
+    setTimeout(() => {
+      if (mode !== "contest" || contestOver) return;
+      if (contestLeft() <= 0) { endContest(); return; }
+      nextContestLevel();
+    }, 850);
+    return;
+  }
+  overlayKind = "win";
+  $("modal").classList.remove("fail");
+  $("yayImg").src = "assets/" + hero + "-yay.png?v=yellow";
+  $("yayImg").classList.remove("hidden");
+  $("starRow").classList.remove("hidden");
+  const n = levelIndex + 1;
+  const last = n >= TOTAL;
+  $("ovTitle").textContent = last ? "全部完成！" : "取得星星了！";
+  if (last) {
+    $("ovMsg").textContent = "三十關全部完成！機械人" + NAMES[hero] + "是編程小高手！";
+    $("againBtn").textContent = "再玩一次";
+    $("againBtn").className = "primary";
+    $("againBtn").classList.remove("hidden");
+    $("nextBtn").classList.add("hidden");
+  } else {
+    $("ovMsg").textContent = "第 " + n + " 關完成！3 秒後自動進入下一關。";
+    $("againBtn").classList.add("hidden");
+    $("nextBtn").classList.add("hidden");
+    clearAutoNext();
+    autoNextTimer = setTimeout(goNextLevel, 3000);
+  }
+  $("overlay").classList.remove("hidden");
+  burst();
+}
+
+function showFail(title, msg) {
+  running = false;
+  document.body.classList.remove("running");
+  if (mode === "contest" && !contestOver) {
+    contestSoftFail(title, msg);
+    return;
+  }
+  overlayKind = "fail";
+  $("modal").classList.add("fail");
+  $("yayImg").classList.add("hidden");
+  $("starRow").classList.add("hidden");
+  $("ovTitle").textContent = title;
+  $("ovMsg").textContent = msg;
+  $("againBtn").textContent = "再試一次";
+  $("againBtn").className = "primary";
+  $("againBtn").classList.remove("hidden");
+  $("nextBtn").classList.add("hidden");
+  $("overlay").classList.remove("hidden");
+}
+
+$("pickBoy").onclick = () => {
+  hero = "boy";
+  $("pickBoy").classList.add("pick");
+  $("pickGirl").classList.remove("pick");
+  $("startBtn").disabled = false;
+  $("contestBtn").disabled = false;
+  sfx("tap");
+};
+$("pickGirl").onclick = () => {
+  hero = "girl";
+  $("pickGirl").classList.add("pick");
+  $("pickBoy").classList.remove("pick");
+  $("startBtn").disabled = false;
+  $("contestBtn").disabled = false;
+  sfx("tap");
+};
+$("startBtn").onclick = () => {
+  unlockAudio();
+  mode = "campaign";
+  document.body.classList.remove("contest");
+  stopContestTick();
+  startLevel();
+};
+$("contestBtn").onclick = () => startContest();
+$("homeBtn").onclick = () => {
+  clearAutoNext();
+  if (mode === "contest" && !contestOver) { endContest(); return; }
+  if (mode === "contest") { leaveContest(); return; }
+  $("game").classList.add("hidden");
+  $("overlay").classList.add("hidden");
+  $("start").classList.remove("hidden");
+  updateHud();
+};
+$("resetBtn").onclick = () => { fails = 0; resetRun(false); };
+document.querySelectorAll(".dir").forEach(btn => {
+  btn.addEventListener("pointerdown", ev => {
+    if (ev.button != null && ev.button !== 0) return;
+    startDrag(ev, btn.dataset.dir, null);
+  });
+});
+document.addEventListener("pointermove", onDragMove, { passive: false });
+document.addEventListener("pointerup", onDragUp);
+document.addEventListener("pointercancel", onDragUp);
+$("goBtn").onclick = () => runProgram();
+$("undoBtn").onclick = undo;
+$("clearBtn").onclick = () => { if (!running) { program = emptyProgram(); renderSlots(); sfx("tap"); } };
+$("nextBtn").onclick = () => {
+  if (overlayKind === "contest") { leaveContest(); return; }
+  goNextLevel();
+};
+$("againBtn").onclick = () => {
+  clearAutoNext();
+  if (overlayKind === "contest") { startContest(); return; }
+  $("overlay").classList.add("hidden");
+  const won = !$("modal").classList.contains("fail");
+  if (won) { fails = 0; resetRun(false); }
+  else {
+    const lv = level();
+    pos = { r: lv.start[0], c: lv.start[1] };
+    facing = 1;
+    const carrot = $("carrot");
+    if (carrot) carrot.classList.remove("gone");
+    $("hero").classList.remove("hop", "shake");
+    for (const s of $("slots").children) s.classList.remove("now");
+    placeHero(pos.r, pos.c);
+    setSpeech(fails >= 2 ? lv.hint2 : fails === 1 ? lv.hint1 : lv.speech);
+  }
+};
+
+updateHud();
+
+window.addEventListener("keydown", e => {
+  if ($("start").classList.contains("hidden") === false) return;
+  if ($("overlay").classList.contains("hidden") === false) return;
+  if (e.key === "Enter") { e.preventDefault(); runProgram(); }
+});
+
+window.addEventListener("resize", () => {
+  if (!$("game").classList.contains("hidden")) {
+    sizeBoard();
+    placeHero(pos.r, pos.c);
+  }
+});
+
+(function bootFromQuery() {
+  const q = new URLSearchParams(location.search);
+  if (q.get("contest") === "1") {
+    hero = "boy";
+    startContest();
+    return;
+  }
+  if (q.get("play") === "1") {
+    hero = "boy";
+    startLevel();
+  }
+})();
+</script>
+</body>
+</html>

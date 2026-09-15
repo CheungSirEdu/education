@@ -1,5 +1,6 @@
 {
   "areas": [
+    "pre1",
     "math",
     "pe",
     "sci",
@@ -8,6 +9,9 @@
     "bett"
   ],
   "folders": {
+    "pre1": [
+      "pre1"
+    ],
     "math": [
       "p4-math"
     ],
@@ -33,6 +37,9 @@
     "items": {}
   },
   "items": {
+    "pre1": [
+      "stars"
+    ],
     "p2-sci": [
       "mungbean",
       "beanlog",

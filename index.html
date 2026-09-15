@@ -222,6 +222,7 @@
   </footer>
   <script>
     const AREAS = [
+      { id: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲", subject: "pre1" },
       { id: "math", title: "數學", emoji: "➕", blurb: "乘數表練習" },
       { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜", subject: "pe" },
       { id: "sci", title: "科學", emoji: "🔬", blurb: "二年級、四年級、科學教具" },
@@ -231,6 +232,7 @@
     ];
 
     const FOLDERS = [
+      { id: "pre1", area: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲" },
       { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
       { id: "pe", area: "pe", title: "體育", emoji: "💪", blurb: "手握力龍虎榜" },
       { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
@@ -242,6 +244,19 @@
     ];
 
     const ITEMS = [
+      {
+        id: "stars",
+        subject: "pre1",
+        type: "game",
+        emoji: "⭐",
+        blurb: "拖曳上、下、左、右，幫助機械人取得星星。適合五至六歲準小一。",
+        title: "小志小蓮食星星",
+        description: "拖曳上、下、左、右，幫助機械人取得星星。適合五至六歲準小一。三十關由超簡單至非常難，另有三分鐘比賽。",
+        play: "https://cheungsiredu.github.io/education/stars/",
+        qr: "qrs/stars.png",
+        noScore: true,
+        playLabel: "立即遊玩"
+      },
       {
         id: "jump",
         subject: "p2-sci",
@@ -829,7 +844,7 @@
         </div>
         <p class="note">${editing
           ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
-          : "請選擇科目。數學、體育、科學、資訊科技入面再按年級揀教材。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。"}</p>
+          : "請選擇分類。準小一入學適合五至六歲。數學、體育、科學、資訊科技入面再按年級揀教材。遊戲及小測驗均可在電腦、平板電腦或智能電話遊玩。"}</p>
         <div class="grid" data-kind="areas">
           ${renderCards(areas, areaHref, "areas")}
         </div>

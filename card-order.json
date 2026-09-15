@@ -1,13 +1,17 @@
 {
   "areas": [
-    "sci",
+    "pre1",
     "math",
     "pe",
+    "sci",
     "ict",
     "lang",
     "bett"
   ],
   "folders": {
+    "pre1": [
+      "pre1"
+    ],
     "math": [
       "p4-math"
     ],
@@ -27,7 +31,15 @@
       "lang"
     ]
   },
+  "labels": {
+    "areas": {},
+    "folders": {},
+    "items": {}
+  },
   "items": {
+    "pre1": [
+      "stars"
+    ],
     "p2-sci": [
       "mungbean",
       "beanlog",
@@ -52,20 +64,5 @@
       "fr",
       "ko"
     ]
-  },
-  "labels": {
-    "areas": {
-      "math": {
-        "title": "數學",
-        "blurb": "四年級"
-      }
-    },
-    "folders": {},
-    "items": {
-      "beanlog": {
-        "title": "第三課 種綠豆",
-        "blurb": "每日拍攝綠豆盆栽，記錄生長情況。"
-      }
-    }
   }
 }
