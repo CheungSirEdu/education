@@ -166,6 +166,13 @@
     }
     #homeBtn { background: #5a7aa8; box-shadow: 0 4px 0 #3d5a86; margin-left: auto; }
     #resetBtn { background: #6d4c41; box-shadow: 0 4px 0 #4e342e; }
+    #skipHud { background: #7c4dff; box-shadow: 0 4px 0 #5e35b1; }
+    #skipBtn {
+      width: 100%; margin-top: 8px; border: 4px solid #ffd54f; background: #fff;
+      color: #5e35b1; font-weight: 900; font-size: 16px; min-height: 44px;
+      border-radius: 14px; cursor: pointer;
+    }
+    #skipBtn:disabled, #skipHud:disabled { opacity: .4; cursor: not-allowed; }
 
     .speech-row {
       display: flex; align-items: center; gap: 8px;
@@ -408,7 +415,7 @@
       to { transform: translateY(110vh) rotate(360deg); opacity: .2; }
     }
 
-    body.running .dir, body.running .slot, body.running .edit-row button, body.running #goBtn { pointer-events: none; }
+    body.running .dir, body.running .slot, body.running .edit-row button, body.running #goBtn, body.running #skipBtn, body.running #skipHud { pointer-events: none; }
 
     @media (orientation: landscape) and (max-height: 820px) {
       .hero-row { min-height: 0; margin: 0 0 2px; }
@@ -453,6 +460,7 @@
       #goBtn { min-height: 40px; font-size: 16px; border-radius: 12px; margin-bottom: 6px; }
       .dir svg { width: 22px; height: 22px; }
       .edit-row button { min-height: 32px; font-size: 13px; }
+      #skipBtn { min-height: 36px; font-size: 14px; margin-top: 6px; }
       .card { padding: 10px; }
       .deco { display: none; }
     }
@@ -509,6 +517,7 @@
       <div class="score-chip hidden" id="scoreChip">0<small>已過關數</small></div>
       <button class="hud-btn" id="homeBtn" type="button">返回</button>
       <button class="hud-btn" id="resetBtn" type="button">重設</button>
+      <button class="hud-btn" id="skipHud" type="button">下一關</button>
     </div>
     <div class="speech-row">
       <img class="buddy" id="buddy" alt="">
@@ -537,6 +546,7 @@
           <button id="undoBtn" type="button">刪除</button>
           <button id="clearBtn" type="button">清除</button>
         </div>
+        <button id="skipBtn" type="button">跳至下一關</button>
       </aside>
     </div>
   </div>
@@ -651,6 +661,10 @@ function updateHud() {
   $("lvChip").innerHTML = "第 " + n + " 關<small>" + lv.diff + " · " + lv.name + "</small>";
   $("scoreChip").innerHTML = contestScore + "<small>已過關數</small>";
   $("homeBtn").textContent = contestOn ? "退出" : "返回";
+  const lastCampaign = mode !== "contest" && levelIndex >= LEVELS.length - 1;
+  $("skipBtn").disabled = lastCampaign;
+  $("skipHud").disabled = lastCampaign;
+  $("skipBtn").textContent = lastCampaign ? "這是最後一關" : "跳至下一關";
   $("startSub").textContent = "由超簡單至非常難　第 " + n + " 關／" + TOTAL + " 關（" + lv.diff + "）";
   $("startBtn").textContent = "開始第 " + n + " 關";
   if (contestOn) paintTimer();
@@ -908,6 +922,23 @@ function goNextLevel() {
     levelIndex += 1;
     startLevel();
   }
+}
+
+function skipLevel() {
+  if (running) return;
+  sfx("tap");
+  if (mode === "contest") {
+    if (contestOver || contestLeft() <= 0) { endContest(); return; }
+    nextContestLevel();
+    setSpeech("已跳至下一關。請再試試看。");
+    return;
+  }
+  if (levelIndex >= LEVELS.length - 1) {
+    setSpeech("這已是最後一關。");
+    return;
+  }
+  goNextLevel();
+  setSpeech("已跳至下一關。請再試試看。");
 }
 
 function startLevel() {
@@ -1258,6 +1289,8 @@ $("homeBtn").onclick = () => {
   updateHud();
 };
 $("resetBtn").onclick = () => { fails = 0; resetRun(false); };
+$("skipBtn").onclick = skipLevel;
+$("skipHud").onclick = skipLevel;
 document.querySelectorAll(".dir").forEach(btn => {
   btn.addEventListener("pointerdown", ev => {
     if (ev.button != null && ev.button !== 0) return;
