@@ -1,7 +1,7 @@
 {
   "areas": [
-    "pre1",
     "math",
+    "pre1",
     "pe",
     "sci",
     "ict",
@@ -31,11 +31,6 @@
       "lang"
     ]
   },
-  "labels": {
-    "areas": {},
-    "folders": {},
-    "items": {}
-  },
   "items": {
     "pre1": [
       "stars"
@@ -64,5 +59,10 @@
       "fr",
       "ko"
     ]
+  },
+  "labels": {
+    "areas": {},
+    "folders": {},
+    "items": {}
   }
 }
