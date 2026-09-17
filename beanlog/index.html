@@ -235,7 +235,7 @@ img.zhang-sir-mark {
       </div>
       <div class="how">把綠豆種在杯中的棉花上，放在家中有陽光的地方。<br>每日拍攝一張相片，選擇生長情況，亦可用語音記錄。</div>
       <button class="primary" id="startBtn" disabled>開始觀察</button>
-      <button class="ghost" id="teacherBtn" type="button">老師查看成績</button>
+      <a class="ghost" id="adminBtn" href="https://cheungsiredu.github.io/education/grip/admin.html?from=beanlog#/i/beanlog" style="display:flex;align-items:center;justify-content:center;text-decoration:none">成績後台</a>
     </div>
   </section>
 
@@ -308,7 +308,7 @@ img.zhang-sir-mark {
   <script>
     const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
     const SCORE_TOKEN = "chilin-edu-2026";
-    const TEACHER_PIN = "2246";
+    const TEACHER_PIN = "22463959";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit?gid=1274157422#gid=1274157422";
     const ACTIVITY = "家中種綠豆";
     const MAX_DAY = 20;
@@ -832,32 +832,6 @@ img.zhang-sir-mark {
       $("btnSave").disabled = false;
       toast("已儲存，並已交給老師。");
     };
-
-    function openTeacherSheet() {
-      const pin = ($("teacherPin").value || "").trim();
-      if (pin !== TEACHER_PIN) {
-        toast("密碼不正確。", true);
-        $("teacherPin").value = "";
-        $("teacherPin").focus();
-        return;
-      }
-      $("teacherModal").classList.add("hidden");
-      $("teacherPin").value = "";
-      window.open(TEACHER_SHEET, "_blank");
-    }
-    $("teacherBtn").onclick = function () {
-      $("teacherModal").classList.remove("hidden");
-      $("teacherPin").value = "";
-      setTimeout(function () { $("teacherPin").focus(); }, 50);
-    };
-    $("teacherNo").onclick = function () {
-      $("teacherModal").classList.add("hidden");
-      $("teacherPin").value = "";
-    };
-    $("teacherYes").onclick = openTeacherSheet;
-    $("teacherPin").addEventListener("keydown", function (ev) {
-      if (ev.key === "Enter") openTeacherSheet();
-    });
 
     $("startBtn").onclick = async function () {
       const id = identityOk();

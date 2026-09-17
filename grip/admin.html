@@ -368,6 +368,45 @@
     body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot { display: none !important; }
     body.dash-on #dash { display: block; }
     #dash { display: none; }
+    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash { display: none !important; }
+    body.bean-on #bean { display: block; }
+    #bean { display: none; }
+    .bean-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
+    .bean-top .kicker { color: #f4d35e; }
+    .photo-wall {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+      gap: 10px;
+    }
+    .photo-card {
+      background: #fff; border: 3px solid var(--line); border-radius: 16px;
+      overflow: hidden; cursor: pointer; text-align: left; padding: 0; width: 100%;
+      box-shadow: 0 3px 0 rgba(27,94,32,.16);
+    }
+    .photo-card img {
+      width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #e8f5e9;
+    }
+    .photo-card .cap {
+      padding: 8px 10px 10px; font-weight: 800; font-size: 13px; line-height: 1.35; color: var(--ink);
+    }
+    .photo-card .cap .who { color: #1b5e20; font-size: 15px; }
+    .photo-card .cap .meta { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .photo-card.miss {
+      min-height: 120px; display: flex; align-items: center; justify-content: center;
+      background: #fff6f6; border-color: #f0c4c4; cursor: default;
+    }
+    #beanLight {
+      position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 60;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 16px; cursor: zoom-out;
+    }
+    #beanLight img {
+      max-width: min(96vw, 920px); max-height: 78vh; object-fit: contain;
+      border-radius: 16px; background: #111; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+    }
+    #beanLight .cap {
+      color: #fff; font-weight: 800; text-align: center; margin-top: 12px; line-height: 1.5;
+    }
     @media (max-width: 560px) {
       header.hub { padding-right: 148px; text-align: left; }
       .btn-edit { font-size: 13px; padding: 8px 10px; }
@@ -423,6 +462,39 @@
     <section class="panel" id="main"></section>
   </div>
 </div>
+
+<div id="bean">
+  <header class="top bean-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　科學 · 成績後台</p>
+      <h1>家中種綠豆</h1>
+      <p class="sub">一眼睇晒所有盆栽相片</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a id="beanPlay" href="../beanlog/">學生輸入頁</a>
+        <button type="button" id="beanReload">重新整理</button>
+        <button type="button" id="beanLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="beanStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="beanTabs">
+        <button type="button" data-btab="photos" class="on">全部相片</button>
+        <button type="button" data-btab="miss">未交名單</button>
+      </div>
+      <div class="classes" id="beanClassChips"></div>
+      <div class="dates" id="beanDayChips"></div>
+      <div class="search">
+        <input id="beanQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+      </div>
+      <p class="status" id="beanStatus">正在讀取相片…</p>
+    </div>
+    <section class="panel" id="beanMain"></section>
+  </div>
+</div>
+<div id="beanLight" class="hidden"></div>
 
 <script>
   const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
@@ -493,7 +565,13 @@
     roster: {},
     records: [],
     personClass: "",
-    personNo: ""
+    personNo: "",
+    beanRecords: [],
+    beanLoaded: false,
+    beanTab: "photos",
+    beanFilter: "all",
+    beanDay: "all",
+    beanQ: ""
   };
 
   function todayYmd() {
@@ -1082,9 +1160,13 @@
   function hideDash() {
     document.body.classList.add("hub-on");
     document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    const light = $("beanLight");
+    if (light) light.classList.add("hidden");
   }
   function showDash() {
     document.body.classList.remove("hub-on");
+    document.body.classList.remove("bean-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1093,6 +1175,195 @@
       loadBoard();
     }
   }
+  function showBeanDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.add("bean-on");
+    renderBean();
+    if (!state.beanLoaded) {
+      state.beanLoaded = true;
+      loadBean();
+    }
+  }
+  function driveFileId(url) {
+    const s = String(url || "");
+    const m = s.match(/\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
+      s.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+    return m ? m[1] : "";
+  }
+  function beanNorm(raw) {
+    const klass = String(raw.klass || raw.class || "").trim().toUpperCase().replace(/\s+/g, "");
+    const no = String(parseInt(String(raw.no || "").replace(/[^\d]/g, ""), 10));
+    const day = String(raw.day || "").trim();
+    const fileId = raw.fileId || driveFileId(raw.photo || raw.url || "");
+    return {
+      klass, no: no === "NaN" ? "" : no,
+      day, stage: String(raw.stage || "").trim(),
+      note: String(raw.note || "").trim(),
+      photo: String(raw.photo || ""),
+      fileId, ts: Number(raw.ts || 0)
+    };
+  }
+  function beanThumb(r) {
+    if (r.fileId) return "https://lh3.googleusercontent.com/d/" + r.fileId;
+    return "";
+  }
+  function beanName(r) { return lookupName(r.klass, r.no) || "名單以外"; }
+  function beanPassQ(r) {
+    const q = state.beanQ.trim().toLowerCase();
+    if (!q) return true;
+    return (r.klass + " " + r.no + "號 " + beanName(r) + " " + r.day + " " + r.stage).toLowerCase().indexOf(q) >= 0;
+  }
+  function beanMatch(r) {
+    if (state.beanFilter !== "all" && r.klass !== state.beanFilter) return false;
+    if (state.beanDay !== "all" && r.day !== state.beanDay) return false;
+    return beanPassQ(r);
+  }
+  function beanLive(rows) {
+    const map = {};
+    (rows || []).forEach(r => {
+      if (!r.klass || !r.no || !r.day) return;
+      const k = r.klass + "\t" + r.no + "\t" + r.day;
+      const cur = map[k];
+      if (!cur || r.ts >= cur.ts) map[k] = r;
+    });
+    return Object.keys(map).map(k => map[k]);
+  }
+  async function fetchBeanGviz() {
+    const cb = "bean_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("家中種綠豆") +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iClass = idx("班別"), iNo = idx("學號"), iDay = idx("第幾日");
+    const iStage = idx("生長情況"), iNote = idx("觀察"), iUrl = idx("相片連結");
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      const day = String(gvizCell(row, iDay) || "").trim();
+      const url = String(gvizCell(row, iUrl) || "");
+      if (!klass || !no || no === "NaN") return;
+      out.push(beanNorm({
+        klass, no, day,
+        stage: iStage >= 0 ? gvizCell(row, iStage) : "",
+        note: iNote >= 0 ? gvizCell(row, iNote) : "",
+        photo: url
+      }));
+    });
+    return out;
+  }
+  async function loadBean() {
+    $("beanStatus").textContent = "正在讀取相片…";
+    try {
+      const cb = "bean_all_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      const src = SCORE_URL + "?view=photosjson&token=" + encodeURIComponent(SCORE_TOKEN) +
+        "&callback=" + encodeURIComponent(cb) + "&t=" + Date.now();
+      const data = await scriptJsonp(src, cb);
+      if (data && data.ok && Array.isArray(data.items)) {
+        state.beanRecords = data.items.map(beanNorm);
+        const n = state.beanRecords.filter(r => r.fileId).length;
+        $("beanStatus").textContent = "已更新　共 " + n + " 張相片";
+        renderBean();
+        return;
+      }
+    } catch (e) {}
+    try {
+      state.beanRecords = await fetchBeanGviz();
+      $("beanStatus").textContent = "已讀取紀錄。若相片空白，請雙擊「更新成績程式」。";
+      renderBean();
+    } catch (e) {
+      $("beanStatus").textContent = "未能讀取相片。請檢查網絡。";
+    }
+  }
+  function renderBeanChips() {
+    const live = beanLive(state.beanRecords);
+    const classes = {};
+    classList().forEach(c => { classes[c] = true; });
+    live.forEach(r => { if (r.klass) classes[r.klass] = true; });
+    const cls = ["all"].concat(Object.keys(classes).sort((a, b) => String(a).localeCompare(String(b), "zh-Hant")));
+    $("beanClassChips").innerHTML = cls.map(c =>
+      `<button class="chip${state.beanFilter === c ? " on" : ""}" type="button" data-bclass="${c}">${c === "all" ? "全校" : c}</button>`
+    ).join("");
+    const days = {};
+    live.forEach(r => { if (r.day) days[r.day] = true; });
+    const dayList = Object.keys(days).sort((a, b) => {
+      const na = parseInt(String(a).replace(/[^\d]/g, ""), 10) || 0;
+      const nb = parseInt(String(b).replace(/[^\d]/g, ""), 10) || 0;
+      return na - nb;
+    });
+    $("beanDayChips").innerHTML = [`<button class="chip${state.beanDay === "all" ? " on" : ""}" type="button" data-bday="all">全部日子</button>`]
+      .concat(dayList.map(d => `<button class="chip${state.beanDay === d ? " on" : ""}" type="button" data-bday="${esc(d)}">${esc(d)}</button>`)).join("");
+  }
+  function renderBeanStats() {
+    const live = beanLive(state.beanRecords).filter(r => state.beanFilter === "all" || r.klass === state.beanFilter);
+    const photos = live.filter(r => r.fileId && (state.beanDay === "all" || r.day === state.beanDay));
+    const done = {};
+    live.forEach(r => { if (r.fileId) done[r.klass + "\t" + r.no] = true; });
+    const roster = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter);
+    const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
+    $("beanStats").innerHTML = `
+      <div class="stat ok"><div class="lab">相片</div><div class="big num">${photos.length}</div><div class="tiny">一目了然</div></div>
+      <div class="stat"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">至少一張相片</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">日子</div><div class="big num">${state.beanDay === "all" ? "全部" : state.beanDay.replace("第","").replace("日","")}</div><div class="tiny">${state.beanFilter === "all" ? "全校" : state.beanFilter}</div></div>`;
+  }
+  function openBeanLight(r) {
+    const src = beanThumb(r);
+    const name = beanName(r);
+    $("beanLight").innerHTML = `
+      <img src="${esc(src)}" alt="">
+      <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${r.note ? "<br>" + esc(r.note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>`;
+    $("beanLight").classList.remove("hidden");
+  }
+  function renderBean() {
+    if (!$("beanMain")) return;
+    renderBeanChips();
+    renderBeanStats();
+    document.querySelectorAll("#beanTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-btab") === state.beanTab));
+    const live = beanLive(state.beanRecords).filter(beanMatch);
+    if (state.beanTab === "miss") {
+      const done = {};
+      beanLive(state.beanRecords).forEach(r => {
+        if (!r.fileId) return;
+        if (state.beanFilter !== "all" && r.klass !== state.beanFilter) return;
+        done[r.klass + "\t" + r.no] = true;
+      });
+      const missing = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter)
+        .filter(s => !done[s.klass + "\t" + s.no] && beanPassQ({ klass: s.klass, no: s.no, day: "", stage: "" }));
+      $("beanMain").innerHTML = `<h2 class="h2">未交　${missing.length}</h2>
+        <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
+      return;
+    }
+    const photos = live.filter(r => r.fileId).sort((a, b) =>
+      a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no) || String(a.day).localeCompare(String(b.day))
+    );
+    if (!photos.length) {
+      const gallery = SCORE_URL + "?view=photos&token=" + encodeURIComponent(SCORE_TOKEN);
+      $("beanMain").innerHTML = `<h2 class="h2">全部相片</h2>
+        <iframe src="${gallery}" title="綠豆相片總覽" style="width:100%;min-height:72vh;border:4px solid #2f7d32;border-radius:18px;background:#e8f5e9"></iframe>`;
+      return;
+    }
+    $("beanMain").innerHTML = `<h2 class="h2">全部相片　${photos.length}</h2>
+      <div class="photo-wall">${photos.map((r, i) => `
+        <button class="photo-card" type="button" data-bean="${i}">
+          <img src="${esc(beanThumb(r))}" alt="" data-id="${esc(r.fileId)}" onerror="window.beanImgErr&&window.beanImgErr(this)">
+          <div class="cap"><div class="who">${esc(beanName(r))}</div>
+          <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
+        </button>`).join("")}</div>`;
+    $("beanMain")._photos = photos;
+  }
+  window.beanImgErr = function (img) {
+    const id = img.getAttribute("data-id");
+    if (!id) { img.style.display = "none"; return; }
+    const next = "https://drive.google.com/thumbnail?id=" + id + "&sz=w800";
+    if (img.src.indexOf("thumbnail") < 0) { img.onerror = function () { img.style.background = "#eee"; img.removeAttribute("src"); }; img.src = next; }
+    else { img.style.background = "#eee"; }
+  };
   function renderLogin() {
     hideDash();
     $("lockBtn").classList.add("hidden");
@@ -1105,7 +1376,7 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="index.html">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${new URLSearchParams(location.search).get("from")==="beanlog" ? "../beanlog/" : "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
@@ -1151,6 +1422,7 @@
     const it = withLabel("items", ITEMS.find(x => x.id === id));
     if (!it) return renderHome();
     if (it.id === "grip") { showDash(); return; }
+    if (it.id === "beanlog") { showBeanDash(); return; }
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
@@ -1206,6 +1478,38 @@
     } catch (e) {}
     $("lockBtn").onclick = lock;
     $("dashLock").onclick = lock;
+    $("beanLock").onclick = lock;
+    $("beanReload").onclick = () => loadBean();
+    $("beanTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-btab]");
+      if (!b) return;
+      state.beanTab = b.getAttribute("data-btab");
+      renderBean();
+    };
+    $("beanClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-bclass]");
+      if (!b) return;
+      state.beanFilter = b.getAttribute("data-bclass");
+      renderBean();
+    };
+    $("beanDayChips").onclick = (e) => {
+      const b = e.target.closest("button[data-bday]");
+      if (!b) return;
+      state.beanDay = b.getAttribute("data-bday");
+      renderBean();
+    };
+    $("beanQ").addEventListener("input", () => {
+      state.beanQ = $("beanQ").value;
+      renderBean();
+    });
+    $("beanMain").onclick = (e) => {
+      const card = e.target.closest("button[data-bean]");
+      if (!card) return;
+      const photos = $("beanMain")._photos || [];
+      const r = photos[Number(card.getAttribute("data-bean"))];
+      if (r) openBeanLight(r);
+    };
+    $("beanLight").onclick = () => $("beanLight").classList.add("hidden");
     $("shell").addEventListener("click", (e) => {
       if (e.target.id === "pinGo") tryPin();
     });
