@@ -1224,10 +1224,18 @@
       const id = img.getAttribute("data-id");
       const full = img.getAttribute("data-full") === "1";
       const cb = "bimg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-      const src = SCORE_URL + "?view=imgjson&token=" + encodeURIComponent(SCORE_TOKEN) +
-        "&id=" + encodeURIComponent(id) + "&thumb=" + (full ? "0" : "1") +
-        "&callback=" + encodeURIComponent(cb) + "&t=" + Date.now();
-      scriptJsonp(src, cb).then(data => {
+      const q = new URLSearchParams({
+        token: SCORE_TOKEN,
+        view: "imgjson",
+        op: "imgjson",
+        activity: "家中種綠豆",
+        kind: "beanlog",
+        id: id,
+        thumb: full ? "0" : "1",
+        callback: cb,
+        t: String(Date.now())
+      });
+      scriptJsonp(SCORE_URL + "?" + q.toString(), cb).then(data => {
         if (data && data.src && data.src.indexOf("data:") === 0) {
           img.src = data.src;
           const recs = state.beanRecords || [];
@@ -1288,28 +1296,54 @@
     });
     return out;
   }
+  async function beanJsonp(extra) {
+    const cb = "bean_all_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    const q = new URLSearchParams(Object.assign({
+      token: SCORE_TOKEN,
+      callback: cb,
+      t: String(Date.now())
+    }, extra || {}));
+    const data = await scriptJsonp(SCORE_URL + "?" + q.toString(), cb);
+    return data;
+  }
   async function loadBean() {
     $("beanStatus").textContent = "正在讀取相片…";
-    try {
-      const cb = "bean_all_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
-      const src = SCORE_URL + "?view=photosjson&token=" + encodeURIComponent(SCORE_TOKEN) +
-        "&callback=" + encodeURIComponent(cb) + "&t=" + Date.now();
-      const data = await scriptJsonp(src, cb);
-      if (data && data.ok && Array.isArray(data.items)) {
-        state.beanRecords = data.items.map(beanNorm);
-        const n = state.beanRecords.filter(beanHasPhoto).length;
-        $("beanStatus").textContent = "已更新　共 " + n + " 張相片";
-        renderBean();
-        return;
-      }
-    } catch (e) {}
-    try {
-      state.beanRecords = await fetchBeanGviz();
-      $("beanStatus").textContent = "已讀取紀錄。若相片空白，請雙擊「更新成績程式」。";
-      renderBean();
-    } catch (e) {
-      $("beanStatus").textContent = "未能讀取相片。請檢查網絡。";
+    const tries = [
+      { view: "photosjson" },
+      { activity: "家中種綠豆", op: "listall" },
+      { activity: "家中種綠豆", kind: "beanlog", op: "list", class: "2A", no: "1" }
+    ];
+    let items = [];
+    for (let i = 0; i < tries.length; i++) {
+      try {
+        const data = await beanJsonp(tries[i]);
+        if (data && data.ok && Array.isArray(data.items) && data.items.length) {
+          items = data.items;
+          if (tries[i].op === "list") {
+            const more = ["2B", "2C", "1A", "1B", "4A", "4B", "4C"];
+            for (let c = 0; c < more.length; c++) {
+              try {
+                const extra = await beanJsonp({ activity: "家中種綠豆", kind: "beanlog", op: "list", class: more[c], no: "1" });
+                if (extra && extra.ok && extra.items) items = items.concat(extra.items);
+              } catch (e2) {}
+            }
+          }
+          break;
+        }
+      } catch (e) {}
     }
+    if (items.length) {
+      state.beanRecords = items.map(beanNorm);
+    } else {
+      try { state.beanRecords = await fetchBeanGviz(); }
+      catch (e) { state.beanRecords = []; }
+    }
+    const n = state.beanRecords.filter(beanHasPhoto).length;
+    const total = beanLive(state.beanRecords).length;
+    $("beanStatus").textContent = total
+      ? ("已更新　" + total + " 筆紀錄，" + n + " 張可顯示相片")
+      : "暫時未有紀錄。若剛儲存，請等數秒再撳重新整理。";
+    renderBean();
   }
   function renderBeanChips() {
     const live = beanLive(state.beanRecords);
@@ -1371,19 +1405,19 @@
         <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
       return;
     }
-    const photos = live.filter(beanHasPhoto).sort((a, b) =>
+    const photos = live.slice().sort((a, b) =>
       a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no) || String(a.day).localeCompare(String(b.day))
     );
     if (!photos.length) {
-      $("beanMain").innerHTML = `<p class="empty">暫時未有相片。學生儲存後會出現在這裏，無須 Google 授權。</p>`;
+      $("beanMain").innerHTML = `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
       return;
     }
     $("beanMain").innerHTML = `<h2 class="h2">全部相片　${photos.length}</h2>
       <div class="photo-wall">${photos.map((r, i) => `
         <button class="photo-card" type="button" data-bean="${i}">
-          <img src="${esc(beanThumb(r))}" alt="" data-id="${esc(r.fileId || "")}">
+          <img src="${esc(beanThumb(r))}" alt="" data-id="${esc(r.fileId || "")}" style="${beanThumb(r) || r.fileId ? "" : "min-height:140px;background:#e8f5e9"}">
           <div class="cap"><div class="who">${esc(beanName(r))}</div>
-          <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
+          <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${r.fileId || beanThumb(r) ? "" : "　相片載入需更新成績程式"}</div></div>
         </button>`).join("")}</div>`;
     $("beanMain")._photos = photos;
     fillBeanImages($("beanMain"));
