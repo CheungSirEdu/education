@@ -231,7 +231,7 @@
     .empty { text-align: center; font-weight: 800; color: var(--muted); padding: 18px 8px; }
 
     .foot {
-      display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 4px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;
     }
     .admin-entry {
       display: flex; align-items: center; justify-content: center;
@@ -427,12 +427,34 @@ img.zhang-sir-mark {
     </div>
     </div>
 
+    <section class="card teacher-card hidden" id="teacherPanel">
+      <h2>刪除成績</h2>
+      <p class="hint">若學生輸入錯誤，可在此刪除。刪除後龍虎榜會更新，學生可以再次提交。離開前請按「離開刪除」，以免學生見到刪除掣。</p>
+      <div class="teacher-list" id="teacherList"></div>
+      <p class="empty hidden" id="teacherEmpty">目前沒有有效成績。</p>
+      <button class="ghost" id="teacherReload" type="button">重新整理名單</button>
+      <button class="ghost" id="teacherLock" type="button">離開刪除</button>
+    </section>
+
     <div class="foot">
       <button class="ghost" id="wallBtn" type="button" style="margin:0">全螢幕龍虎榜</button>
+      <button class="ghost" id="delBtn" type="button" style="margin:0">刪除成績</button>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
-    <a class="ghost admin-entry" id="teacherBtn" href="admin.html">成績後台</a>
+    <a class="ghost admin-entry" id="teacherBtn" href="admin.html#/i/grip">成績後台</a>
     <button class="ghost" id="wallBack" type="button">返回輸入頁</button>
+  </div>
+
+  <div class="modal hidden" id="teacherModal">
+    <div class="box">
+      <h2 style="text-align:center;margin-top:0;color:var(--red)">刪除成績</h2>
+      <p class="hint">請輸入密碼，然後可以刪除輸入錯誤的成績。</p>
+      <label class="field">密碼
+        <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+      </label>
+      <button class="primary" id="pinGo" type="button" style="margin-top:12px">進入</button>
+      <button class="ghost" id="pinCancel" type="button">取消</button>
+    </div>
   </div>
 
   <script>
@@ -440,6 +462,7 @@ img.zhang-sir-mark {
     const SCORE_TOKEN = "chilin-edu-2026";
     const ACTIVITY = "手握力龍虎榜";
     const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
+    const TEACHER_PIN = "22463959";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
     const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","5D","6A","6B","6C","6D"];
@@ -856,7 +879,11 @@ img.zhang-sir-mark {
     function teacherOn() { return state.teacher === true && !WALL; }
 
     function delBtns(klass, no) {
-      return "";
+      if (!teacherOn()) return "";
+      return `<div class="tbtns">
+        <button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪除今日</button>
+        <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪除全部</button>
+      </div>`;
     }
 
     function seatHtml(r, cls, medal) {
@@ -916,6 +943,7 @@ img.zhang-sir-mark {
         const rows = await fetchRecords();
         state.records = rows;
         const data = renderBoards(rows);
+        if (teacherOn() && !$("teacherPanel").classList.contains("hidden")) renderTeacherList();
         return data;
       } catch (e) {
         ["emptyLow", "emptyHigh"].forEach(id => {
@@ -931,6 +959,8 @@ img.zhang-sir-mark {
       const payload = JSON.stringify({
         token: SCORE_TOKEN,
         activity: ACTIVITY,
+        kind: "grip",
+        op: "delete",
         class: klass,
         no: no,
         level: all ? "ALL" : state.today,
@@ -1110,6 +1140,51 @@ img.zhang-sir-mark {
       };
       $("wallBack").onclick = () => {
         location.href = PUBLIC_URL;
+      };
+      try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
+      lockTeacher();
+      $("delBtn").onclick = () => {
+        $("pin").value = "";
+        $("teacherModal").classList.remove("hidden");
+        $("pin").focus();
+      };
+      $("pinCancel").onclick = () => {
+        $("pin").value = "";
+        $("teacherModal").classList.add("hidden");
+      };
+      const tryPin = () => {
+        if ($("pin").value !== TEACHER_PIN) {
+          toast("密碼不正確");
+          $("pin").value = "";
+          $("pin").focus();
+          return;
+        }
+        state.teacher = true;
+        try { sessionStorage.setItem("grip-teacher", "1"); } catch (e) {}
+        $("pin").value = "";
+        $("teacherModal").classList.add("hidden");
+        openTeacher();
+      };
+      $("pinGo").onclick = tryPin;
+      $("pin").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); tryPin(); }
+      });
+      const onDel = (e) => {
+        const b = e.target.closest("button[data-del]");
+        if (!b) return;
+        teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
+      };
+      $("teacherList").onclick = onDel;
+      $("boards").onclick = onDel;
+      $("teacherReload").onclick = async () => {
+        if (!teacherOn()) return;
+        await loadBoard();
+        renderTeacherList();
+        toast("已重新整理");
+      };
+      $("teacherLock").onclick = () => {
+        lockTeacher();
+        toast("已離開刪除");
       };
       if (WALL) {
         document.body.classList.add("wall");
