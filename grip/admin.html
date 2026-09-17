@@ -1195,18 +1195,49 @@
     const klass = String(raw.klass || raw.class || "").trim().toUpperCase().replace(/\s+/g, "");
     const no = String(parseInt(String(raw.no || "").replace(/[^\d]/g, ""), 10));
     const day = String(raw.day || "").trim();
-    const fileId = raw.fileId || driveFileId(raw.photo || raw.url || "");
+    const fileId = raw.fileId || driveFileId(raw.photo || raw.url || raw.src || "");
+    const src = String(raw.src || "");
     return {
       klass, no: no === "NaN" ? "" : no,
       day, stage: String(raw.stage || "").trim(),
       note: String(raw.note || "").trim(),
       photo: String(raw.photo || ""),
+      src: src.indexOf("data:") === 0 ? src : "",
       fileId, ts: Number(raw.ts || 0)
     };
   }
   function beanThumb(r) {
-    if (r.fileId) return "https://lh3.googleusercontent.com/d/" + r.fileId;
+    if (r && r.src && r.src.indexOf("data:") === 0) return r.src;
     return "";
+  }
+  function beanHasPhoto(r) { return !!(r && (r.fileId || beanThumb(r))); }
+  function fillBeanImages(root) {
+    const imgs = Array.from((root || document).querySelectorAll("img[data-id]")).filter(img => {
+      const id = img.getAttribute("data-id");
+      return id && !(img.src && img.src.indexOf("data:") === 0);
+    });
+    let i = 0;
+    const workers = 3;
+    function next() {
+      if (i >= imgs.length) return;
+      const img = imgs[i++];
+      const id = img.getAttribute("data-id");
+      const full = img.getAttribute("data-full") === "1";
+      const cb = "bimg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      const src = SCORE_URL + "?view=imgjson&token=" + encodeURIComponent(SCORE_TOKEN) +
+        "&id=" + encodeURIComponent(id) + "&thumb=" + (full ? "0" : "1") +
+        "&callback=" + encodeURIComponent(cb) + "&t=" + Date.now();
+      scriptJsonp(src, cb).then(data => {
+        if (data && data.src && data.src.indexOf("data:") === 0) {
+          img.src = data.src;
+          const recs = state.beanRecords || [];
+          recs.forEach(r => { if (r.fileId === id && !r.src) r.src = data.src; });
+        } else {
+          img.style.background = "#e8f5e9";
+        }
+      }).catch(function () { img.style.background = "#e8f5e9"; }).then(next);
+    }
+    for (let w = 0; w < workers; w++) next();
   }
   function beanName(r) { return lookupName(r.klass, r.no) || "名單以外"; }
   function beanPassQ(r) {
@@ -1266,7 +1297,7 @@
       const data = await scriptJsonp(src, cb);
       if (data && data.ok && Array.isArray(data.items)) {
         state.beanRecords = data.items.map(beanNorm);
-        const n = state.beanRecords.filter(r => r.fileId).length;
+        const n = state.beanRecords.filter(beanHasPhoto).length;
         $("beanStatus").textContent = "已更新　共 " + n + " 張相片";
         renderBean();
         return;
@@ -1301,9 +1332,9 @@
   }
   function renderBeanStats() {
     const live = beanLive(state.beanRecords).filter(r => state.beanFilter === "all" || r.klass === state.beanFilter);
-    const photos = live.filter(r => r.fileId && (state.beanDay === "all" || r.day === state.beanDay));
+    const photos = live.filter(r => beanHasPhoto(r) && (state.beanDay === "all" || r.day === state.beanDay));
     const done = {};
-    live.forEach(r => { if (r.fileId) done[r.klass + "\t" + r.no] = true; });
+    live.forEach(r => { if (beanHasPhoto(r)) done[r.klass + "\t" + r.no] = true; });
     const roster = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter);
     const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
     $("beanStats").innerHTML = `
@@ -1316,9 +1347,10 @@
     const src = beanThumb(r);
     const name = beanName(r);
     $("beanLight").innerHTML = `
-      <img src="${esc(src)}" alt="">
+      <img src="${esc(src)}" alt="" data-id="${esc(r.fileId || "")}" data-full="1">
       <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${r.note ? "<br>" + esc(r.note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>`;
     $("beanLight").classList.remove("hidden");
+    fillBeanImages($("beanLight"));
   }
   function renderBean() {
     if (!$("beanMain")) return;
@@ -1329,7 +1361,7 @@
     if (state.beanTab === "miss") {
       const done = {};
       beanLive(state.beanRecords).forEach(r => {
-        if (!r.fileId) return;
+        if (!beanHasPhoto(r)) return;
         if (state.beanFilter !== "all" && r.klass !== state.beanFilter) return;
         done[r.klass + "\t" + r.no] = true;
       });
@@ -1339,30 +1371,22 @@
         <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
       return;
     }
-    const photos = live.filter(r => r.fileId).sort((a, b) =>
+    const photos = live.filter(beanHasPhoto).sort((a, b) =>
       a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no) || String(a.day).localeCompare(String(b.day))
     );
     if (!photos.length) {
-      const gallery = SCORE_URL + "?view=photos&token=" + encodeURIComponent(SCORE_TOKEN);
-      $("beanMain").innerHTML = `<h2 class="h2">全部相片</h2>
-        <iframe src="${gallery}" title="綠豆相片總覽" style="width:100%;min-height:72vh;border:4px solid #2f7d32;border-radius:18px;background:#e8f5e9"></iframe>`;
+      $("beanMain").innerHTML = `<p class="empty">暫時未有相片。學生儲存後會出現在這裏，無須 Google 授權。</p>`;
       return;
     }
     $("beanMain").innerHTML = `<h2 class="h2">全部相片　${photos.length}</h2>
       <div class="photo-wall">${photos.map((r, i) => `
         <button class="photo-card" type="button" data-bean="${i}">
-          <img src="${esc(beanThumb(r))}" alt="" data-id="${esc(r.fileId)}" onerror="window.beanImgErr&&window.beanImgErr(this)">
+          <img src="${esc(beanThumb(r))}" alt="" data-id="${esc(r.fileId || "")}">
           <div class="cap"><div class="who">${esc(beanName(r))}</div>
           <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
         </button>`).join("")}</div>`;
     $("beanMain")._photos = photos;
-  }
-  window.beanImgErr = function (img) {
-    const id = img.getAttribute("data-id");
-    if (!id) { img.style.display = "none"; return; }
-    const next = "https://drive.google.com/thumbnail?id=" + id + "&sz=w800";
-    if (img.src.indexOf("thumbnail") < 0) { img.onerror = function () { img.style.background = "#eee"; img.removeAttribute("src"); }; img.src = next; }
-    else { img.style.background = "#eee"; }
+    fillBeanImages($("beanMain"));
   };
   function renderLogin() {
     hideDash();
