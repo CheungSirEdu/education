@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="robots" content="noindex,nofollow" />
-  <meta name="theme-color" content="#7f1010" />
+  <meta name="theme-color" content="#1e3a8a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="手握力後台" />
-  <title>手握力老師後台　佛教志蓮小學</title>
+  <meta name="apple-mobile-web-app-title" content="成績後台" />
+  <title>張老師成績後台　佛教志蓮小學</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
   <style>
@@ -129,7 +129,7 @@
       text-decoration: none; display: inline-flex; align-items: center; font-size: 14px;
     }
 
-    .wrap { max-width: 1120px; margin: 0 auto; padding: 16px 14px calc(28px + var(--safe-b)); }
+    .dash-wrap { max-width: 1120px; margin: 0 auto; padding: 16px 14px calc(28px + var(--safe-b)); }
 
     .stats {
       display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
@@ -261,43 +261,148 @@
       .search { grid-template-columns: 1fr; }
       img.zhang-sir-mark { width: 44px; height: 44px; }
     }
+
+    /* 同教學網站第一頁同一個排版，只換深藍，一眼知係後台 */
+    :root {
+      --hub: #1e3a8a;
+      --hub-dark: #12245c;
+      --hub-card: #fffef6;
+      --hub-ink: #1a1a28;
+      --hub-muted: #3d4a66;
+      --hub-line: #c5cde0;
+      --hub-shadow: #8fa0c4;
+    }
+    body.hub-on {
+      color: var(--hub-ink);
+      background: linear-gradient(#8fa8d8, #e4d2c0) fixed;
+    }
+    body.hub-on::before { display: none; }
+    header.hub {
+      background: var(--hub);
+      color: #fff;
+      text-align: center;
+      padding: max(14px, env(safe-area-inset-top)) 16px 16px;
+      box-shadow: 0 8px 0 var(--hub-dark);
+      position: relative;
+    }
+    header.hub .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--gold-2); }
+    header.hub h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
+    header.hub p { margin: 8px 0 0; font-size: 15px; line-height: 1.5; opacity: .95; }
+    header.hub img.zhang-sir-mark {
+      position: absolute;
+      right: 10px;
+      top: max(8px, env(safe-area-inset-top));
+      width: 44px; height: 44px; z-index: 5;
+      pointer-events: none;
+    }
+    .btn-edit {
+      position: absolute;
+      right: 60px;
+      top: max(10px, env(safe-area-inset-top));
+      background: var(--gold-2);
+      color: var(--hub-dark);
+      border: 3px solid #c9a227;
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 14px;
+      box-shadow: 0 3px 0 #a7861c;
+    }
+    .hub-wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
+    .chars { display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px; }
+    .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .note {
+      background: var(--hub-card);
+      border: 5px solid var(--hub);
+      border-radius: 22px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 0 var(--hub-dark);
+      line-height: 1.55;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+      gap: 14px;
+    }
+    a.card {
+      display: block; text-decoration: none; color: inherit;
+      background: var(--hub-card);
+      border: 5px solid var(--hub-line);
+      border-radius: 24px;
+      padding: 16px 16px 14px;
+      box-shadow: 0 6px 0 var(--hub-shadow);
+      cursor: pointer;
+      min-height: 44px;
+    }
+    a.card:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--hub-shadow); }
+    a.card .emoji { font-size: 42px; line-height: 1; }
+    a.card h2 { margin: 8px 0 6px; font-size: 20px; color: var(--hub-dark); line-height: 1.4; }
+    a.card p { margin: 0; color: var(--hub-muted); font-size: 15px; font-weight: 700; line-height: 1.5; }
+    .bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .btn-back {
+      background: #fff; color: var(--hub-dark); border: 4px solid var(--hub);
+      min-height: 44px; border-radius: 16px; padding: 12px 16px;
+      font-weight: 900; text-decoration: none; display: inline-block;
+    }
+    h3.sec { margin: 0 0 12px; font-size: 24px; color: var(--hub-dark); }
+    .hub-foot {
+      text-align: center; padding: 8px 16px 28px; color: var(--hub-dark);
+      font-size: 13px; font-weight: 700; line-height: 1.6;
+    }
+    .pin-row { margin-top: 12px; }
+    .pin-row input {
+      width: 100%; min-height: 52px; text-align: center;
+      font-size: 22px; font-weight: 900; letter-spacing: .24em;
+      border: 3px solid var(--hub-line); border-radius: 14px; background: #fff;
+    }
+    .pin-row input:focus { outline: 0; border-color: var(--hub); background: #eef3ff; }
+    .pin-go {
+      width: 100%; min-height: 52px; margin-top: 12px;
+      background: var(--hub); color: #fff; font-size: 18px;
+      box-shadow: 0 4px 0 var(--hub-dark);
+    }
+    .pin-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--hub-dark); }
+    .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
+    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot { display: none !important; }
+    body.dash-on #dash { display: block; }
+    #dash { display: none; }
+    @media (max-width: 560px) {
+      header.hub { padding-right: 148px; text-align: left; }
+      .btn-edit { font-size: 13px; padding: 8px 10px; }
+    }
   </style>
 </head>
-<body>
-<img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="48" height="48">
-<script src="zhang-sir.js"></script>
+<body class="hub-on">
+<header class="hub">
+  <p class="school">佛教志蓮小學</p>
+  <h1>張老師成績後台</h1>
+  <p>供教師查看成績。學生及家長不會看到這一頁。</p>
+  <button class="btn-edit hidden" id="lockBtn" type="button">離開後台</button>
+  <img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="44" height="44">
+  <script src="zhang-sir.js"></script>
+</header>
+<main class="hub-wrap" id="shell"></main>
+<footer class="hub-foot" id="hubFoot">此頁只供教師使用。<br>學生及家長不會看到成績後台。</footer>
 
-<section id="gate">
-  <div class="gate-card">
-    <img class="hero" src="heroes.jpg" alt="小志和小蓮一起量度手握力" />
-    <p class="school">佛教志蓮小學　體育</p>
-    <h1>成績後台</h1>
-    <p class="hint">手握力龍虎榜　全班成績、未量名單、進步比較。學生看不到這一頁。</p>
-    <label class="field">老師密碼
-      <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
-    </label>
-    <button class="primary" id="pinGo" type="button">進入後台</button>
-    <a class="ghost" href="index.html" style="display:block;line-height:40px;text-decoration:none">返回學生輸入頁</a>
-    <p class="gate-msg" id="gateMsg"></p>
-  </div>
-</section>
-
-<div id="app">
+<div id="dash">
   <header class="top">
     <div class="top-inner">
       <p class="kicker">佛教志蓮小學　體育 · 成績後台</p>
       <h1>手握力成績</h1>
       <p class="sub" id="dateLabel">日期載入中</p>
       <div class="top-actions">
+        <a href="#/">返回目錄</a>
         <a href="index.html">學生輸入頁</a>
         <button type="button" id="reloadBtn">重新整理</button>
         <button type="button" id="csvBtn">匯出 CSV</button>
-        <button type="button" id="lockBtn">離開後台</button>
+        <button type="button" id="dashLock">離開後台</button>
       </div>
     </div>
   </header>
 
-  <div class="wrap">
+  <div class="dash-wrap">
     <div class="stats" id="stats"></div>
 
     <div class="toolbar">
@@ -326,6 +431,56 @@
   const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
   const TEACHER_PIN = "22463959";
   const BANDS = { low: [1, 2, 3], high: [4, 5, 6] };
+
+  const AREAS = [
+    { id: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲", subject: "pre1" },
+    { id: "math", title: "數學", emoji: "➕", blurb: "乘數表練習" },
+    { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜", subject: "pe" },
+    { id: "sci", title: "科學", emoji: "🔬", blurb: "二年級、四年級、科學教具" },
+    { id: "ict", title: "資訊科技", emoji: "💻", blurb: "四年級、五年級" },
+    { id: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂", subject: "lang" },
+    { id: "bett", title: "BETT SHOW", emoji: "🇬🇧", blurb: "英國遊學團" }
+  ];
+  const FOLDERS = [
+    { id: "pre1", area: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲" },
+    { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
+    { id: "pe", area: "pe", title: "體育", emoji: "💪", blurb: "手握力龍虎榜" },
+    { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
+    { id: "p4-sci", area: "sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
+    { id: "kits", area: "sci", title: "科學教具", emoji: "🧪", blurb: "一至六年級教具相片及清單" },
+    { id: "p4-ict", area: "ict", title: "四年級資訊科技", emoji: "💻", blurb: "教材即將推出" },
+    { id: "p5-ict", area: "ict", title: "五年級資訊科技", emoji: "🖥️", blurb: "教材即將推出" },
+    { id: "lang", area: "lang", title: "外語", emoji: "🗣️", blurb: "日文、法文、韓文小學堂" }
+  ];
+  const ITEMS = [
+    { id: "stars", subject: "pre1", emoji: "⭐", title: "小志小蓮食星星", blurb: "拖曳上、下、左、右，幫助機械人取得星星。適合五至六歲準小一。", noScore: true },
+    { id: "jump", subject: "p2-sci", emoji: "🦘", title: "小小發明家跳跳關", blurb: "小小發明家跳跳關，溫習上學期科學課題。" },
+    { id: "p2jump", subject: "p2-sci", emoji: "⭐", title: "二年班科學志蓮跳跳小遊戲", blurb: "跳跳小遊戲。左右移動、跳躍、蹲低，食星星答題。", noScore: true },
+    { id: "mungbean", subject: "p2-sci", emoji: "🌱", title: "第三課 動手種植物", blurb: "種綠豆，綠豆幼苗會對光的方向作出反應嗎？" },
+    { id: "beanlog", subject: "p2-sci", emoji: "📷", title: "第三課 家中種綠豆", blurb: "每日拍攝綠豆盆栽，記錄生長情況。" },
+    { id: "engineer", subject: "p4-sci", emoji: "🔧", title: "小小工程師跳跳關", blurb: "小小工程師跳跳關，溫習相關科學課題。" },
+    { id: "drift", subject: "p4-sci", emoji: "🏎️", title: "第八單元 摩擦力", blurb: "賽車挑戰，比較不同路面的摩擦力。" },
+    { id: "kits", subject: "kits", emoji: "🧪", title: "科學教具", blurb: "一至六年級科學教具相片及清單。", noScore: true },
+    { id: "times", subject: "p4-math", emoji: "✖️", title: "乘數表", blurb: "練習二至九的乘數表：快速答題、四揀一、填表、一分鐘挑戰。" },
+    { id: "grip", subject: "pe", emoji: "💪", title: "手握力龍虎榜", blurb: "量度左右手握力，查看龍虎榜及自己有沒有進步。" },
+    { id: "jp", subject: "lang", emoji: "🇯🇵", title: "日文小學堂", blurb: "聽廣東話解釋、聽日文示範，然後用麥克風朗讀。共 20 題。" },
+    { id: "fr", subject: "lang", emoji: "🇫🇷", title: "法文小學堂", blurb: "聽廣東話解釋、聽法文示範，然後用麥克風朗讀。共 20 題。" },
+    { id: "ko", subject: "lang", emoji: "🇰🇷", title: "韓文小學堂", blurb: "聽廣東話解釋、聽韓文示範，然後用麥克風朗讀。共 20 題。" }
+  ];
+  let layout = {
+    areas: AREAS.map(a => a.id),
+    folders: {},
+    items: {},
+    labels: { areas: {}, folders: {}, items: {} }
+  };
+  FOLDERS.forEach(f => {
+    layout.folders[f.area] = layout.folders[f.area] || [];
+    layout.folders[f.area].push(f.id);
+  });
+  ITEMS.forEach(it => {
+    layout.items[it.subject] = layout.items[it.subject] || [];
+    layout.items[it.subject].push(it.id);
+  });
 
   const $ = (id) => document.getElementById(id);
   const state = {
@@ -849,18 +1004,198 @@
     URL.revokeObjectURL(a.href);
   }
 
+  function escapeHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function toPlainLines(s) {
+    return String(s || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+  }
+  function titleHtml(s) {
+    return escapeHtml(toPlainLines(s)).replace(/\n/g, "<br>");
+  }
+  function withLabel(kind, obj) {
+    if (!obj) return obj;
+    const patch = ((layout.labels || {})[kind] || {})[obj.id] || {};
+    const out = Object.assign({}, obj);
+    if (patch.title != null && String(patch.title).trim()) out.title = patch.title;
+    if (patch.blurb != null) out.blurb = patch.blurb;
+    return out;
+  }
+  function orderedList(all, order) {
+    const byId = Object.fromEntries(all.map(x => [x.id, x]));
+    const seen = new Set();
+    const out = [];
+    (order || []).forEach(id => {
+      if (byId[id] && !seen.has(id)) { out.push(byId[id]); seen.add(id); }
+    });
+    all.forEach(x => { if (!seen.has(x.id)) out.push(x); });
+    return out;
+  }
+  function orderedAreas() { return orderedList(AREAS, layout.areas).map(a => withLabel("areas", a)); }
+  function orderedFolders(areaId) {
+    const list = FOLDERS.filter(f => f.area === areaId);
+    return orderedList(list, (layout.folders && layout.folders[areaId]) || []).map(f => withLabel("folders", f));
+  }
+  function orderedItems(subjectId) {
+    const list = ITEMS.filter(x => x.subject === subjectId);
+    return orderedList(list, (layout.items && layout.items[subjectId]) || []).map(it => withLabel("items", it));
+  }
+  function areaById(id) { return withLabel("areas", AREAS.find(a => a.id === id)); }
+  function folderById(id) { return withLabel("folders", FOLDERS.find(f => f.id === id)); }
+  function areaHref(a) {
+    if (a.subject) return "#/s/" + a.subject;
+    return "#/a/" + a.id;
+  }
+  function applyLayout(data) {
+    if (!data || typeof data !== "object") return;
+    if (Array.isArray(data.areas)) layout.areas = data.areas.slice();
+    if (data.folders && typeof data.folders === "object") layout.folders = data.folders;
+    if (data.items && typeof data.items === "object") layout.items = data.items;
+    if (data.labels && typeof data.labels === "object") {
+      layout.labels = {
+        areas: Object.assign({}, data.labels.areas || {}),
+        folders: Object.assign({}, data.labels.folders || {}),
+        items: Object.assign({}, data.labels.items || {})
+      };
+    }
+  }
+  async function loadLayout() {
+    for (const u of ["../layout.json", "layout.json"]) {
+      try {
+        const r = await fetch(u + "?t=" + Date.now(), { cache: "no-store" });
+        if (r.ok) { applyLayout(await r.json()); return; }
+      } catch (e) {}
+    }
+  }
+  function charsHtml() {
+    return `<div class="chars"><img src="boy.png" alt="小志"><img src="girl.png" alt="小蓮"></div>`;
+  }
+  function cardsHtml(list, hrefFor) {
+    return list.map(s => `
+      <a class="card" href="${hrefFor(s)}">
+        <div class="emoji">${s.emoji || "🎮"}</div>
+        <h2>${titleHtml(s.title)}</h2>
+        <p>${escapeHtml(s.blurb || "")}</p>
+      </a>`).join("");
+  }
+  function isIn() { return document.body.classList.contains("in"); }
+  function hideDash() {
+    document.body.classList.add("hub-on");
+    document.body.classList.remove("dash-on");
+  }
+  function showDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.add("dash-on");
+    renderChips();
+    render();
+    if (!state.boardLoaded) {
+      state.boardLoaded = true;
+      loadBoard();
+    }
+  }
+  function renderLogin() {
+    hideDash();
+    $("lockBtn").classList.add("hidden");
+    $("shell").innerHTML = `
+      ${charsHtml()}
+      <div class="note">
+        此頁只供教師查看成績。請輸入密碼。
+        <div class="pin-row">
+          <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+        </div>
+        <button class="pin-go" id="pinGo" type="button">進入後台</button>
+        <p class="gate-msg" id="gateMsg"></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="index.html">返回學生輸入頁</a></p>
+      </div>`;
+    const pin = $("pin");
+    if (pin) pin.focus();
+  }
+  function renderHome() {
+    hideDash();
+    const areas = orderedAreas();
+    $("shell").innerHTML = `
+      ${charsHtml()}
+      <p class="note">請選擇分類。準小一入學適合五至六歲。數學、體育、科學、資訊科技入面再按年級揀教材。入去可查看已交／未交。</p>
+      <div class="grid">${cardsHtml(areas, areaHref)}</div>`;
+  }
+  function renderArea(id) {
+    hideDash();
+    const area = areaById(id);
+    if (!area) return renderHome();
+    if (area.subject) return renderSubject(area.subject);
+    const folders = orderedFolders(id);
+    $("shell").innerHTML = `
+      <div class="bar"><a class="btn-back" href="#/">← 返回目錄</a></div>
+      <h3 class="sec">${area.emoji} ${escapeHtml(toPlainLines(area.title))}</h3>
+      ${folders.length
+        ? `<p class="note">請選擇年級或分類。</p><div class="grid">${cardsHtml(folders, f => "#/s/" + f.id)}</div>`
+        : `<p class="note">此部分暫時沒有成績。</p>`}`;
+  }
+  function renderSubject(id) {
+    hideDash();
+    const s = folderById(id);
+    if (!s) {
+      const area = areaById(id);
+      if (area) return renderArea(id);
+      return renderHome();
+    }
+    const items = orderedItems(id);
+    $("shell").innerHTML = `
+      <div class="bar"><a class="btn-back" href="#/">← 返回目錄</a></div>
+      <h3 class="sec">${s.emoji} ${escapeHtml(toPlainLines(s.title))}</h3>
+      ${items.length
+        ? `<p class="note">請選擇遊戲或活動，查看成績。</p><div class="grid">${cardsHtml(items, it => "#/i/" + it.id)}</div>`
+        : `<p class="note">此部分暫時沒有成績。</p>`}`;
+  }
+  function renderItem(id) {
+    const it = withLabel("items", ITEMS.find(x => x.id === id));
+    if (!it) return renderHome();
+    if (it.id === "grip") { showDash(); return; }
+    hideDash();
+    $("shell").innerHTML = `
+      <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
+      <h3 class="sec">${it.emoji} ${escapeHtml(toPlainLines(it.title))}</h3>
+      <p class="note">${it.noScore
+        ? "此項目沒有學生成績紀錄。"
+        : "此遊戲成績頁即將推出。而家請先查看手握力龍虎榜。"}</p>`;
+  }
+  function route() {
+    if (!isIn()) { renderLogin(); return; }
+    const hash = (location.hash || "#/").replace(/^#/, "");
+    const parts = hash.split("/").filter(Boolean);
+    if (parts[0] === "a" && parts[1]) return renderArea(parts[1]);
+    if (parts[0] === "s" && parts[1]) {
+      const sid = parts[1] === "world" ? "lang" : (parts[1] === "p4-pe" ? "pe" : parts[1]);
+      if (!folderById(sid) && areaById(sid)) return renderArea(sid);
+      return renderSubject(sid);
+    }
+    if (parts[0] === "i" && parts[1]) return renderItem(parts[1]);
+    renderHome();
+  }
+  function tryPin() {
+    const pin = $("pin");
+    const msg = $("gateMsg");
+    if (!pin) return;
+    if (pin.value !== TEACHER_PIN) {
+      if (msg) msg.textContent = "密碼不正確";
+      pin.value = "";
+      pin.focus();
+      return;
+    }
+    enterApp();
+  }
   function enterApp() {
     document.body.classList.add("in");
     try { sessionStorage.setItem("grip-admin", "1"); } catch (e) {}
-    renderChips();
-    render();
-    loadBoard();
+    $("lockBtn").classList.remove("hidden");
+    route();
   }
   function lock() {
     document.body.classList.remove("in");
     try { sessionStorage.removeItem("grip-admin"); } catch (e) {}
-    $("pin").value = "";
-    $("gateMsg").textContent = "";
+    hideDash();
+    if (location.hash && location.hash !== "#/") location.hash = "#/";
+    renderLogin();
   }
 
   async function boot() {
@@ -869,19 +1204,15 @@
       const res = await fetch("roster.json?t=" + Date.now(), { cache: "no-store" });
       if (res.ok) ingestRoster(await res.json());
     } catch (e) {}
-    $("pinGo").onclick = () => {
-      if ($("pin").value !== TEACHER_PIN) {
-        $("gateMsg").textContent = "密碼不正確";
-        $("pin").value = "";
-        $("pin").focus();
-        return;
-      }
-      enterApp();
-    };
-    $("pin").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); $("pinGo").click(); }
-    });
     $("lockBtn").onclick = lock;
+    $("dashLock").onclick = lock;
+    $("shell").addEventListener("click", (e) => {
+      if (e.target.id === "pinGo") tryPin();
+    });
+    $("shell").addEventListener("keydown", (e) => {
+      if (e.target.id === "pin" && e.key === "Enter") { e.preventDefault(); tryPin(); }
+    });
+    window.addEventListener("hashchange", () => { if (isIn()) route(); });
     $("reloadBtn").onclick = () => loadBoard();
     $("csvBtn").onclick = exportCsv;
     $("tabs").onclick = (e) => {
@@ -947,10 +1278,11 @@
         render();
       }
     };
+    await loadLayout();
     try {
       if (sessionStorage.getItem("grip-admin") === "1") enterApp();
-    } catch (e) {}
-    $("pin").focus();
+      else renderLogin();
+    } catch (e) { renderLogin(); }
   }
   boot();
 </script>
