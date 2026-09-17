@@ -330,6 +330,7 @@ img.zhang-sir-mark {
       day: 1,
       stage: "",
       photo: "",
+      publicUrl: "",
       recs: {},
       stream: null,
       listening: false
@@ -439,8 +440,8 @@ img.zhang-sir-mark {
       return t;
     }
 
-    function fitCanvas(w, h) {
-      const max = 960;
+    function fitCanvas(w, h, max) {
+      max = max || 640;
       if (w > max || h > max) {
         if (w > h) { h = Math.round(h * max / w); w = max; }
         else { w = Math.round(w * max / h); h = max; }
@@ -448,12 +449,24 @@ img.zhang-sir-mark {
       return { w: w, h: h };
     }
 
-    function drawToJpeg(source, w, h) {
-      const size = fitCanvas(w, h);
+    function drawToJpeg(source, w, h, max, quality) {
+      const size = fitCanvas(w, h, max || 640);
       const c = document.createElement("canvas");
       c.width = size.w; c.height = size.h;
       c.getContext("2d").drawImage(source, 0, 0, size.w, size.h);
-      return c.toDataURL("image/jpeg", 0.72);
+      return c.toDataURL("image/jpeg", quality || 0.62);
+    }
+
+    function makeThumb(dataUrl, max, quality) {
+      return new Promise(function (resolve) {
+        const img = new Image();
+        img.onload = function () {
+          try { resolve(drawToJpeg(img, img.width, img.height, max || 240, quality || 0.5)); }
+          catch (e) { resolve(dataUrl); }
+        };
+        img.onerror = function () { resolve(dataUrl); };
+        img.src = dataUrl;
+      });
     }
 
     function compressBlob(file) {
@@ -656,11 +669,15 @@ img.zhang-sir-mark {
     }
 
     async function uploadPublicPhoto(dataUrl) {
-      const b64 = String(dataUrl || "").split(",")[1] || "";
+      const thumb = await makeThumb(dataUrl, 240, 0.5);
+      const b64 = String(thumb || "").split(",")[1] || "";
       if (!b64) return "";
+      const ctrl = new AbortController();
+      const timer = setTimeout(function () { ctrl.abort(); }, 7000);
       try {
         const res = await fetch("https://api.imgur.com/3/image", {
           method: "POST",
+          signal: ctrl.signal,
           headers: {
             Authorization: "Client-ID 546c25a59c58ad7",
             "Content-Type": "application/json"
@@ -670,10 +687,15 @@ img.zhang-sir-mark {
         const j = await res.json();
         if (j && j.success && j.data && j.data.link) return String(j.data.link);
       } catch (e) {}
+      finally { clearTimeout(timer); }
       return "";
     }
 
     function sendTeacher(extra) {
+      let note = $("note").value.trim();
+      if (state.publicUrl && note.indexOf("https://") < 0) {
+        note = (note ? note + "\n" : "") + "📷" + state.publicUrl;
+      }
       const body = Object.assign({
         token: SCORE_TOKEN,
         kind: "beanlog",
@@ -683,7 +705,7 @@ img.zhang-sir-mark {
         day: state.day,
         level: "第" + state.day + "日",
         result: state.stage,
-        note: $("note").value.trim(),
+        note: note,
         photo: state.photo
       }, extra || {});
       postScore(body);
@@ -861,21 +883,20 @@ img.zhang-sir-mark {
         return;
       }
       $("btnSave").disabled = true;
-      await persistLocal();
-      sendTeacher();
       toast("正在交給老師…");
+      await persistLocal();
       try {
-        const pub = await uploadPublicPhoto(state.photo);
-        sendPublicUrl(pub);
-        if (!pub) toast("已儲存。後台若未見相片，請再儲存一次。", true);
-        else toast("已儲存，並已交給老師。");
+        state.publicUrl = await uploadPublicPhoto(state.photo);
       } catch (e) {
-        toast("已儲存。後台若未見相片，請再儲存一次。", true);
+        state.publicUrl = "";
       }
+      sendTeacher();
+      sendPublicUrl(state.publicUrl);
       renderDays();
       renderGallery();
       $("btnSave").textContent = "儲存並取代舊紀錄";
       $("btnSave").disabled = false;
+      toast(state.publicUrl ? "已儲存，老師後台可以睇到預覽。" : "已儲存。若後台未見預覽，請再儲存一次。");
     };
 
     $("startBtn").onclick = async function () {
