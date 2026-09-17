@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-11r 全螢幕龍虎榜加返回掣 -->
+  <!-- published 2026-09-17 刪除成績掣放喺提交下面 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="手握力龍虎榜" />
@@ -376,6 +376,7 @@ img.zhang-sir-mark {
           </div>
         </div>
         <button class="primary" id="submitBtn" type="submit">提交成績</button>
+        <button class="ghost" id="delBtn" type="button" style="border-color:var(--bad);color:var(--bad)">刪除成績</button>
         <p class="msg" id="formMsg"></p>
         </form>
       </section>
@@ -438,7 +439,7 @@ img.zhang-sir-mark {
 
     <div class="foot">
       <button class="ghost" id="wallBtn" type="button" style="margin:0">全螢幕龍虎榜</button>
-      <button class="ghost" id="delBtn" type="button" style="margin:0">刪除成績</button>
+      <button class="ghost" id="delBtnFoot" type="button" style="margin:0;border-color:var(--bad);color:var(--bad)">刪除成績</button>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
     <a class="ghost admin-entry" id="teacherBtn" href="admin.html#/i/grip">成績後台</a>
@@ -1143,11 +1144,13 @@ img.zhang-sir-mark {
       };
       try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
       lockTeacher();
-      $("delBtn").onclick = () => {
+      const openDel = () => {
         $("pin").value = "";
         $("teacherModal").classList.remove("hidden");
         $("pin").focus();
       };
+      $("delBtn").onclick = openDel;
+      $("delBtnFoot").onclick = openDel;
       $("pinCancel").onclick = () => {
         $("pin").value = "";
         $("teacherModal").classList.add("hidden");
