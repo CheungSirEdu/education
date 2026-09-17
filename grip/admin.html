@@ -1197,17 +1197,27 @@
     const day = String(raw.day || "").trim();
     const fileId = raw.fileId || driveFileId(raw.photo || raw.url || raw.src || "");
     const src = String(raw.src || "");
+    const photo = String(raw.photo || "");
+    const note = String(raw.note || "").trim();
+    const http = [src, photo, note].map(function (s) {
+      const m = String(s || "").match(/https?:\/\/[^\s]+/i);
+      return m ? m[0].replace(/[)\].,;]+$/, "") : "";
+    }).find(function (u) {
+      return u && u.indexOf("drive.google.com") < 0 && u.indexOf("googleusercontent.com") < 0;
+    }) || "";
     return {
       klass, no: no === "NaN" ? "" : no,
       day, stage: String(raw.stage || "").trim(),
-      note: String(raw.note || "").trim(),
-      photo: String(raw.photo || ""),
-      src: src.indexOf("data:") === 0 ? src : "",
+      note,
+      photo,
+      src: src.indexOf("data:") === 0 ? src : (http || ""),
       fileId, ts: Number(raw.ts || 0)
     };
   }
   function beanThumb(r) {
-    if (r && r.src && r.src.indexOf("data:") === 0) return r.src;
+    if (!r) return "";
+    if (r.src && r.src.indexOf("data:") === 0) return r.src;
+    if (r.src && /^https?:\/\//i.test(r.src) && r.src.indexOf("drive.google.com") < 0) return r.src;
     return "";
   }
   function beanHasPhoto(r) { return !!(r && (r.fileId || beanThumb(r))); }
@@ -1296,6 +1306,30 @@
     });
     return out;
   }
+  async function fetchBeanPublicUrls() {
+    const cb = "bean_pub_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("綠豆相片網址") +
+      "&headers=1&t=" + Date.now();
+    try {
+      const data = await scriptJsonp(src, cb);
+      if (!data || data.status === "error" || !data.table) return [];
+      const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+      const idx = (name) => cols.indexOf(name);
+      const iClass = idx("班別"), iNo = idx("學號"), iLevel = idx("關卡"), iResult = idx("結果");
+      const out = [];
+      (data.table.rows || []).forEach(row => {
+        const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+        const day = String(gvizCell(row, iLevel) || "").trim();
+        const url = String(gvizCell(row, iResult) || "").trim();
+        if (!klass || !no || no === "NaN" || !/^https?:\/\//i.test(url)) return;
+        out.push(beanNorm({ klass, no, day, photo: url, src: url }));
+      });
+      return out;
+    } catch (e) { return []; }
+  }
   async function beanJsonp(extra) {
     const cb = "bean_all_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
     const q = new URLSearchParams(Object.assign({
@@ -1338,6 +1372,21 @@
       try { state.beanRecords = await fetchBeanGviz(); }
       catch (e) { state.beanRecords = []; }
     }
+    try {
+      const pubs = await fetchBeanPublicUrls();
+      if (pubs.length) {
+        const byKey = {};
+        state.beanRecords.forEach(r => { byKey[r.klass + "\t" + r.no + "\t" + r.day] = r; });
+        pubs.forEach(p => {
+          const k = p.klass + "\t" + p.no + "\t" + p.day;
+          if (byKey[k]) {
+            if (!beanThumb(byKey[k])) byKey[k].src = p.src;
+          } else {
+            state.beanRecords.push(p);
+          }
+        });
+      }
+    } catch (e3) {}
     const n = state.beanRecords.filter(beanHasPhoto).length;
     const total = beanLive(state.beanRecords).length;
     $("beanStatus").textContent = total

@@ -644,8 +644,37 @@ img.zhang-sir-mark {
       try { await dbSet(recKey(), state.recs); } catch (e) {}
     }
 
+    function postScore(payload) {
+      try {
+        fetch(SCORE_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    async function uploadPublicPhoto(dataUrl) {
+      const b64 = String(dataUrl || "").split(",")[1] || "";
+      if (!b64) return "";
+      try {
+        const res = await fetch("https://api.imgur.com/3/image", {
+          method: "POST",
+          headers: {
+            Authorization: "Client-ID 546c25a59c58ad7",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ image: b64, type: "base64" })
+        });
+        const j = await res.json();
+        if (j && j.success && j.data && j.data.link) return String(j.data.link);
+      } catch (e) {}
+      return "";
+    }
+
     function sendTeacher(extra) {
-      const body = JSON.stringify(Object.assign({
+      const body = Object.assign({
         token: SCORE_TOKEN,
         kind: "beanlog",
         activity: ACTIVITY,
@@ -656,15 +685,23 @@ img.zhang-sir-mark {
         result: state.stage,
         note: $("note").value.trim(),
         photo: state.photo
-      }, extra || {}));
-      try {
-        fetch(SCORE_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: body
-        }).catch(function () {});
-      } catch (e) {}
+      }, extra || {});
+      postScore(body);
+    }
+
+    function sendPublicUrl(url) {
+      if (!url) return;
+      postScore({
+        token: SCORE_TOKEN,
+        activity: "綠豆相片網址",
+        class: state.class,
+        no: state.no,
+        level: "第" + state.day + "日",
+        result: url,
+        stars: state.stage || "",
+        hero: "",
+        seconds: ""
+      });
     }
 
     async function deleteToday() {
@@ -826,11 +863,19 @@ img.zhang-sir-mark {
       $("btnSave").disabled = true;
       await persistLocal();
       sendTeacher();
+      toast("正在交給老師…");
+      try {
+        const pub = await uploadPublicPhoto(state.photo);
+        sendPublicUrl(pub);
+        if (!pub) toast("已儲存。後台若未見相片，請再儲存一次。", true);
+        else toast("已儲存，並已交給老師。");
+      } catch (e) {
+        toast("已儲存。後台若未見相片，請再儲存一次。", true);
+      }
       renderDays();
       renderGallery();
       $("btnSave").textContent = "儲存並取代舊紀錄";
       $("btnSave").disabled = false;
-      toast("已儲存，並已交給老師。");
     };
 
     $("startBtn").onclick = async function () {
