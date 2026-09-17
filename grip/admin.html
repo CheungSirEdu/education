@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#7f1010" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="手握力後台" />
+  <title>手握力老師後台　佛教志蓮小學</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #b71c1c;
+      --red-dark: #7f1010;
+      --navy: #1e3a8a;
+      --gold: #e6b325;
+      --gold-2: #f4d35e;
+      --cream: #fff8ee;
+      --paper: #fffdf8;
+      --ink: #1a1a1a;
+      --muted: #5c5c5c;
+      --ok: #15803d;
+      --bad: #b91c1c;
+      --line: #ead9c6;
+      --soft: #f3ece3;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; }
+    html, body {
+      margin: 0; min-height: 100%; min-height: 100dvh;
+      font-family: "Noto Sans TC", "PingFang HK", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: #efe4d6;
+    }
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(900px 420px at 10% -10%, rgba(183,28,28,.16), transparent 60%),
+        radial-gradient(700px 380px at 100% 0%, rgba(230,179,37,.18), transparent 55%);
+    }
+    button, input, select { font: inherit; }
+    button {
+      appearance: none; border: 0; cursor: pointer; font-weight: 900;
+      border-radius: 14px;
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .hidden { display: none !important; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    img.zhang-sir-mark {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      width: 48px; height: 48px; z-index: 1000;
+      pointer-events: none; user-select: none;
+    }
+
+    /* login */
+    #gate {
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(24px + var(--safe-t)) 16px calc(24px + var(--safe-b));
+    }
+    .gate-card {
+      width: min(460px, 100%);
+      background: var(--paper);
+      border: 5px solid var(--red);
+      border-radius: 28px;
+      padding: 22px 20px 24px;
+      box-shadow: 0 10px 0 var(--red-dark);
+      text-align: center;
+    }
+    .gate-card img.hero {
+      width: min(100%, 280px); height: auto;
+      border-radius: 18px; border: 3px solid #fff;
+      box-shadow: 0 4px 0 rgba(127,16,16,.16);
+      background: #e8f3ee;
+    }
+    .gate-card .school { margin: 14px 0 0; color: var(--red); font-weight: 800; font-size: 14px; }
+    .gate-card h1 {
+      margin: 4px 0 8px; font-size: clamp(26px, 7vw, 34px);
+      letter-spacing: .12em; color: var(--red-dark);
+    }
+    .gate-card .hint { margin: 0 0 16px; color: var(--muted); font-weight: 700; line-height: 1.55; }
+    label.field { display: block; text-align: left; font-size: 13px; font-weight: 800; color: var(--navy); }
+    label.field input {
+      width: 100%; margin-top: 6px; text-align: center;
+      min-height: 52px; font-size: 22px; font-weight: 900; letter-spacing: .24em;
+      border: 3px solid var(--line); border-radius: 14px; background: #fff;
+    }
+    label.field input:focus { outline: 0; border-color: var(--navy); background: #eef3ff; }
+    .primary {
+      width: 100%; min-height: 52px; margin-top: 14px;
+      background: var(--red); color: #fff; font-size: 18px;
+      box-shadow: 0 4px 0 var(--red-dark);
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--red-dark); }
+    .ghost {
+      width: 100%; min-height: 44px; margin-top: 8px;
+      background: #fff; color: var(--navy); border: 3px solid var(--navy); font-size: 15px;
+    }
+    .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
+
+    /* app */
+    #app { position: relative; z-index: 1; display: none; }
+    body.in #gate { display: none; }
+    body.in #app { display: block; }
+
+    .top {
+      background: linear-gradient(180deg, var(--red), var(--red-dark));
+      color: #fff;
+      padding: calc(12px + var(--safe-t)) 16px 16px;
+      box-shadow: 0 8px 0 rgba(127,16,16,.35);
+    }
+    .top-inner { max-width: 1120px; margin: 0 auto; }
+    .top .kicker { margin: 0; font-size: 13px; font-weight: 800; color: var(--gold-2); }
+    .top h1 { margin: 2px 0 0; font-size: clamp(22px, 5vw, 30px); letter-spacing: .1em; }
+    .top .sub { margin: 8px 0 0; font-weight: 800; opacity: .92; }
+    .top-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .top-actions a, .top-actions button {
+      width: auto; min-height: 40px; padding: 8px 14px; margin: 0;
+      background: rgba(255,255,255,.14); color: #fff; border: 2px solid rgba(255,255,255,.4);
+      text-decoration: none; display: inline-flex; align-items: center; font-size: 14px;
+    }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 16px 14px calc(28px + var(--safe-b)); }
+
+    .stats {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+      margin: -28px 0 14px;
+    }
+    .stat {
+      background: var(--paper); border: 3px solid #fff; border-radius: 18px;
+      padding: 12px 12px 14px; box-shadow: 0 8px 24px rgba(127,16,16,.12);
+      min-height: 92px;
+    }
+    .stat .lab { font-size: 12px; font-weight: 800; color: var(--muted); }
+    .stat .big { font-size: clamp(28px, 6vw, 40px); font-weight: 900; color: var(--red-dark); line-height: 1.1; margin-top: 4px; }
+    .stat .tiny { font-size: 12px; font-weight: 700; color: var(--navy); margin-top: 2px; }
+    .stat.ok .big { color: var(--ok); }
+    .stat.warn .big { color: var(--bad); }
+
+    .toolbar, .panel {
+      background: var(--paper);
+      border: 3px solid var(--line);
+      border-radius: 22px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tabs button, .chip {
+      width: auto; min-height: 40px; padding: 6px 12px; margin: 0;
+      background: #fff; color: var(--navy); border: 2px solid var(--line); font-size: 14px;
+    }
+    .tabs button.on, .chip.on {
+      background: var(--red); color: #fff; border-color: var(--red);
+    }
+    .dates { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .search {
+      margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 8px;
+    }
+    .search input {
+      min-height: 44px; border: 3px solid var(--line); border-radius: 14px;
+      padding: 8px 12px; font-weight: 800; width: 100%;
+    }
+    .search input:focus { outline: 0; border-color: var(--navy); }
+    .toolbtn {
+      width: auto; min-height: 44px; padding: 8px 12px; margin: 0;
+      background: #fff; color: var(--navy); border: 3px solid var(--navy); font-size: 14px;
+    }
+
+    .classes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .classes button { min-height: 36px; font-size: 13px; }
+
+    .h2 {
+      margin: 0 0 10px; font-size: 18px; color: var(--red-dark); letter-spacing: .06em;
+    }
+    .muted { color: var(--muted); font-weight: 700; }
+
+    .meters { display: grid; gap: 8px; }
+    .meter {
+      display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center;
+      background: #fff; border: 2px solid var(--line); border-radius: 14px;
+      padding: 8px 10px; cursor: pointer; text-align: left; width: 100%;
+    }
+    .meter:hover { border-color: var(--navy); }
+    .meter .cls { font-weight: 900; color: var(--navy); font-size: 16px; }
+    .bar { height: 12px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); }
+    .meter.done .bar > span { background: var(--ok); }
+    .meter .frac { font-weight: 900; color: var(--ink); font-size: 14px; white-space: nowrap; }
+
+    .split { display: grid; gap: 12px; }
+    @media (min-width: 860px) {
+      .split.today { grid-template-columns: 1.4fr .8fr; align-items: start; }
+    }
+
+    .list { display: grid; gap: 8px; }
+    .row {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px;
+      background: #fff; border: 2px solid var(--line); border-radius: 16px;
+      padding: 10px 12px; align-items: center;
+    }
+    .row .name { font-weight: 900; font-size: 18px; color: var(--red-dark); }
+    .row .who { font-weight: 800; font-size: 13px; color: var(--muted); }
+    .row .kg { font-weight: 900; font-size: 22px; color: var(--navy); text-align: right; }
+    .row .lr { font-size: 12px; font-weight: 700; color: var(--muted); text-align: right; }
+    .delta { font-weight: 900; font-size: 13px; }
+    .delta.up { color: var(--ok); }
+    .delta.down { color: var(--bad); }
+    .delta.same { color: var(--muted); }
+    .row.miss { opacity: .95; background: #fff6f6; border-color: #f0c4c4; }
+    .row.miss .kg { color: var(--muted); font-size: 15px; }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 6px; }
+    .danger {
+      width: auto; min-height: 34px; padding: 4px 10px; margin: 0;
+      background: #fff; color: var(--bad); border: 2px solid var(--bad); font-size: 12px;
+    }
+    .ghost-mini {
+      width: auto; min-height: 34px; padding: 4px 10px; margin: 0;
+      background: #fff; color: var(--navy); border: 2px solid var(--navy); font-size: 12px;
+    }
+
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      background: #fff; border: 2px solid var(--line); border-radius: 999px;
+      padding: 8px 12px; font-weight: 800; font-size: 14px;
+    }
+    .empty { text-align: center; font-weight: 800; color: var(--muted); padding: 28px 8px; }
+
+    .timeline { display: grid; gap: 8px; }
+    .titem {
+      display: grid; grid-template-columns: 16px 1fr auto; gap: 10px; align-items: start;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); margin-top: 8px; }
+    .titem .when { font-weight: 800; color: var(--navy); }
+    .pick {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    }
+    select {
+      min-height: 44px; border: 3px solid var(--line); border-radius: 14px;
+      padding: 8px 10px; font-weight: 800; background: #fff; width: 100%;
+    }
+
+    .toast {
+      position: fixed; left: 50%; bottom: calc(20px + var(--safe-b));
+      transform: translateX(-50%); z-index: 40;
+      background: var(--navy); color: #fff; font-weight: 800;
+      padding: 10px 16px; border-radius: 999px; max-width: 90%;
+    }
+    .status { font-size: 13px; font-weight: 800; color: var(--muted); margin: 0 0 8px; }
+
+    @media (max-width: 700px) {
+      .stats { grid-template-columns: 1fr 1fr; margin-top: 12px; }
+      .search { grid-template-columns: 1fr; }
+      img.zhang-sir-mark { width: 44px; height: 44px; }
+    }
+  </style>
+</head>
+<body>
+<img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="48" height="48">
+<script src="zhang-sir.js"></script>
+
+<section id="gate">
+  <div class="gate-card">
+    <img class="hero" src="heroes.jpg" alt="小志和小蓮一起量度手握力" />
+    <p class="school">佛教志蓮小學　體育</p>
+    <h1>老師後台</h1>
+    <p class="hint">手握力龍虎榜　全班成績、未量名單、進步比較。學生看不到這一頁。</p>
+    <label class="field">老師密碼
+      <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+    </label>
+    <button class="primary" id="pinGo" type="button">進入後台</button>
+    <a class="ghost" href="index.html" style="display:block;line-height:40px;text-decoration:none">返回學生輸入頁</a>
+    <p class="gate-msg" id="gateMsg"></p>
+  </div>
+</section>
+
+<div id="app">
+  <header class="top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　體育 · 老師後台</p>
+      <h1>手握力成績</h1>
+      <p class="sub" id="dateLabel">日期載入中</p>
+      <div class="top-actions">
+        <a href="index.html">學生輸入頁</a>
+        <button type="button" id="reloadBtn">重新整理</button>
+        <button type="button" id="csvBtn">匯出 CSV</button>
+        <button type="button" id="lockBtn">離開後台</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+
+    <div class="toolbar">
+      <div class="tabs" id="tabs">
+        <button type="button" data-tab="today" class="on">今日課堂</button>
+        <button type="button" data-tab="class">全班成績</button>
+        <button type="button" data-tab="person">個人歷程</button>
+      </div>
+      <div class="classes" id="classChips"></div>
+      <div class="dates" id="dateChips"></div>
+      <div class="search">
+        <input id="q" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn" id="sortBtn" type="button">按學號</button>
+      </div>
+      <p class="status" id="loadStatus">正在讀取成績…</p>
+    </div>
+
+    <section class="panel" id="main"></section>
+  </div>
+</div>
+
+<script>
+  const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
+  const SCORE_TOKEN = "chilin-edu-2026";
+  const ACTIVITY = "手握力龍虎榜";
+  const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
+  const TEACHER_PIN = "2246";
+  const BANDS = { low: [1, 2, 3], high: [4, 5, 6] };
+
+  const $ = (id) => document.getElementById(id);
+  const state = {
+    today: todayYmd(),
+    viewDate: todayYmd(),
+    tab: "today",
+    filter: "all",
+    sort: "no",
+    q: "",
+    roster: {},
+    records: [],
+    personClass: "",
+    personNo: ""
+  };
+
+  function todayYmd() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Hong_Kong", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date());
+    const g = (t) => parts.find(p => p.type === t).value;
+    return g("year") + "-" + g("month") + "-" + g("day");
+  }
+  function prettyDate(ymd) {
+    if (!ymd) return "";
+    const [y, m, d] = ymd.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d, 4, 0, 0));
+    const wk = new Intl.DateTimeFormat("zh-HK", { timeZone: "Asia/Hong_Kong", weekday: "short" }).format(dt);
+    return y + "年" + m + "月" + d + "日（" + wk + "）";
+  }
+  function kg(n) {
+    const x = Number(n);
+    if (!isFinite(x)) return "—";
+    return (Math.round(x * 10) / 10).toFixed(1);
+  }
+  function avgKg(left, right) { return Math.round(((Number(left) + Number(right)) / 2) * 10) / 10; }
+  function gradeOf(klass) {
+    const m = String(klass || "").match(/^(\d)/);
+    return m ? Number(m[1]) : 0;
+  }
+  function bandOf(klass) {
+    const g = gradeOf(klass);
+    if (g >= 1 && g <= 3) return "low";
+    if (g >= 4 && g <= 6) return "high";
+    return "";
+  }
+  function esc(s) {
+    return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]));
+  }
+  function parseKgInput(s) {
+    const n = parseFloat(String(s || "").replace(",", ".").replace(/[^\d.]/g, ""));
+    if (!isFinite(n) || n < 1 || n > 100) return null;
+    return Math.round(n * 10) / 10;
+  }
+  function toast(msg) {
+    document.querySelectorAll(".toast").forEach(n => n.remove());
+    const n = document.createElement("div");
+    n.className = "toast";
+    n.textContent = msg;
+    document.body.append(n);
+    setTimeout(() => n.remove(), 2600);
+  }
+  function keyOf(klass, no) { return String(klass) + "\t" + String(no); }
+
+  function ingestRoster(data) {
+    const map = {};
+    function add(klass, no, name) {
+      const c = String(klass || "").trim().toUpperCase().replace(/\s+/g, "");
+      const n = String(parseInt(String(no || "").replace(/[^\d]/g, ""), 10));
+      const nm = String(name || "").trim();
+      if (!c || !n || n === "NaN" || !nm) return;
+      if (!map[c]) map[c] = {};
+      map[c][n] = nm;
+    }
+    (data.students || []).forEach(r => add(r.class, r.no, r.name));
+    state.roster = map;
+  }
+  function classList() {
+    const set = {};
+    Object.keys(state.roster).forEach(c => { set[c] = true; });
+    liveScores(state.records).forEach(r => { if (r.klass) set[r.klass] = true; });
+    return Object.keys(set).sort((a, b) => gradeOf(a) - gradeOf(b) || a.localeCompare(b, "zh-Hant"));
+  }
+  function lookupName(klass, no) {
+    const map = state.roster[String(klass || "").toUpperCase()];
+    const n = String(parseInt(no, 10));
+    return (map && map[n]) ? map[n] : "";
+  }
+  function rosterStudents(filter) {
+    const out = [];
+    classList().forEach(klass => {
+      if (!matchFilter(klass, filter)) return;
+      Object.keys(state.roster[klass]).sort((a, b) => Number(a) - Number(b)).forEach(no => {
+        out.push({ klass, no, name: state.roster[klass][no] });
+      });
+    });
+    return out;
+  }
+  function matchFilter(klass, filter) {
+    const f = filter || state.filter;
+    if (f === "all") return true;
+    if (f === "low") return bandOf(klass) === "low";
+    if (f === "high") return bandOf(klass) === "high";
+    return klass === f;
+  }
+
+  function scriptJsonp(src, cb) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      const timer = setTimeout(() => { cleanup(); reject(new Error("timeout")); }, 18000);
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (s.parentNode) s.parentNode.removeChild(s);
+      }
+      window[cb] = function (data) { cleanup(); resolve(data); };
+      s.onerror = function () { cleanup(); reject(new Error("network")); };
+      s.src = src;
+      document.head.appendChild(s);
+    });
+  }
+  function gvizCell(row, i) {
+    const c = row && row.c && row.c[i];
+    if (!c) return "";
+    if (c.v === null || c.v === undefined) return c.f || "";
+    return c.v;
+  }
+  function ymdFromGviz(v, formatted) {
+    const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)/);
+    if (m) {
+      return m[1] + "-" + String(Number(m[2]) + 1).padStart(2, "0") + "-" + String(Number(m[3])).padStart(2, "0");
+    }
+    const s = String(formatted || v || "");
+    const hk = s.match(/(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+    if (hk) return hk[1] + "-" + String(hk[2]).padStart(2, "0") + "-" + String(hk[3]).padStart(2, "0");
+    const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+    return iso ? iso[1] + "-" + iso[2] + "-" + iso[3] : "";
+  }
+  function parsePackedKg(result, stars, hero, seconds) {
+    const text = [result, stars, hero, seconds].map(x => String(x || "")).join(" ");
+    const pair = text.match(/左\s*([\d.]+)\s*右\s*([\d.]+)/) ||
+      text.match(/L\s*([\d.]+)\s*R\s*([\d.]+)/i) ||
+      String(result || "").match(/^([\d.]+)\s*[\/,]\s*([\d.]+)$/);
+    let left = pair ? parseKgInput(pair[1]) : parseKgInput(hero);
+    let right = pair ? parseKgInput(pair[2]) : parseKgInput(seconds);
+    if (left === null || right === null) return null;
+    return { left, right, avg: avgKg(left, right) };
+  }
+  function recordsFromGviz(table) {
+    const cols = (table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+    const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星");
+    const iHero = idx("角色"), iSec = idx("用時秒");
+    const iDate = idx("日期"), iLeft = idx("左手kg"), iRight = idx("右手kg");
+    const out = [];
+    (table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      if (!klass || !no || no === "NaN") return;
+      const result = iResult >= 0 ? gvizCell(row, iResult) : "";
+      const stars = iStars >= 0 ? gvizCell(row, iStars) : "";
+      const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const date = (iDate >= 0 && ymdFromGviz("", gvizCell(row, iDate))) ||
+        ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) ||
+        ymdFromGviz("", level) || state.today;
+      const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+      const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+      if (/DELETE|刪除|\bDEL\b/i.test(String(result) + " " + String(stars))) {
+        out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+        return;
+      }
+      let packed = null;
+      if (iLeft >= 0 && iRight >= 0) {
+        const left = parseKgInput(gvizCell(row, iLeft));
+        const right = parseKgInput(gvizCell(row, iRight));
+        if (left !== null && right !== null) packed = { left, right, avg: avgKg(left, right) };
+      }
+      if (!packed) packed = parsePackedKg(result, stars, gvizCell(row, iHero), gvizCell(row, iSec));
+      if (!packed) return;
+      out.push({ klass, no, date, ts, left: packed.left, right: packed.right, avg: packed.avg });
+    });
+    return out;
+  }
+  function liveScores(rows) {
+    const allCut = {};
+    (rows || []).forEach(r => {
+      if (r.deleted && r.all) {
+        const k = keyOf(r.klass, r.no);
+        if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+      }
+    });
+    const byDay = {};
+    (rows || []).forEach(r => {
+      const k = keyOf(r.klass, r.no);
+      if (allCut[k] && r.ts <= allCut[k]) return;
+      if (r.all) return;
+      const dk = k + "\t" + r.date;
+      const cur = byDay[dk];
+      if (!cur || r.ts >= cur.ts) byDay[dk] = r;
+    });
+    return Object.keys(byDay).map(k => byDay[k]).filter(r => !r.deleted);
+  }
+  function previousOf(rows, klass, no, beforeDate) {
+    let found = null;
+    liveScores(rows).forEach(r => {
+      if (r.klass !== klass || r.no !== no || r.date >= beforeDate) return;
+      if (!found || r.date > found.date || (r.date === found.date && r.ts > found.ts)) found = r;
+    });
+    return found;
+  }
+  function historyOf(rows, klass, no) {
+    return liveScores(rows)
+      .filter(r => r.klass === klass && r.no === no)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
+  }
+  function onDate(rows, ymd) {
+    return liveScores(rows).filter(r => r.date === ymd);
+  }
+  function latestByStudent(rows, filter) {
+    const map = {};
+    liveScores(rows).forEach(r => {
+      if (!matchFilter(r.klass, filter)) return;
+      const k = keyOf(r.klass, r.no);
+      const cur = map[k];
+      if (!cur || r.date > cur.date || (r.date === cur.date && r.ts >= cur.ts)) map[k] = r;
+    });
+    return Object.keys(map).map(k => map[k]);
+  }
+  function datesInRecords() {
+    const set = {};
+    liveScores(state.records).forEach(r => { if (r.date) set[r.date] = true; });
+    set[state.today] = true;
+    return Object.keys(set).sort().reverse();
+  }
+
+  async function fetchRecords() {
+    const cb = "grip_admin_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(ACTIVITY) +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    return recordsFromGviz(data.table);
+  }
+
+  function passQ(klass, no, name) {
+    const q = state.q.trim().toLowerCase();
+    if (!q) return true;
+    return (klass + " " + no + "號 " + (name || "")).toLowerCase().indexOf(q) >= 0;
+  }
+  function deltaHtml(cur, prev) {
+    if (!prev) return `<div class="delta same">第一次</div>`;
+    const diff = Math.round((cur.avg - prev.avg) * 10) / 10;
+    if (diff > 0) return `<div class="delta up">▲ ${kg(diff)} kg</div>`;
+    if (diff < 0) return `<div class="delta down">▼ ${kg(Math.abs(diff))} kg</div>`;
+    return `<div class="delta same">＝ 相同</div>`;
+  }
+  function personBtn(klass, no) {
+    return `<button class="ghost-mini" type="button" data-person="${esc(klass)}:${esc(no)}">睇歷程</button>`;
+  }
+  function delBtns(klass, no) {
+    return `<div class="actions">
+      ${personBtn(klass, no)}
+      <button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪今日</button>
+      <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪全部</button>
+    </div>`;
+  }
+  function scoreRow(r, extra) {
+    const name = lookupName(r.klass, r.no) || "名單以外";
+    const prev = extra && extra.prev;
+    return `<article class="row">
+      <div>
+        <div class="name">${esc(name)}</div>
+        <div class="who">${esc(r.klass)}　${esc(r.no)}號　${esc(prettyDate(r.date))}</div>
+        ${delBtns(r.klass, r.no)}
+      </div>
+      <div>
+        <div class="kg num">${kg(r.avg)} <span style="font-size:13px">kg</span></div>
+        <div class="lr">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+        ${deltaHtml(r, prev)}
+      </div>
+    </article>`;
+  }
+  function missRow(s) {
+    return `<article class="row miss">
+      <div>
+        <div class="name">${esc(s.name)}</div>
+        <div class="who">${esc(s.klass)}　${esc(s.no)}號</div>
+      </div>
+      <div class="kg">未量</div>
+    </article>`;
+  }
+
+  function filteredToday() {
+    return onDate(state.records, state.viewDate).filter(r => matchFilter(r.klass) && passQ(r.klass, r.no, lookupName(r.klass, r.no)));
+  }
+  function sortRows(rows) {
+    const copy = rows.slice();
+    if (state.sort === "kg") copy.sort((a, b) => b.avg - a.avg || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    else copy.sort((a, b) => a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no));
+    return copy;
+  }
+
+  function renderStats() {
+    const day = onDate(state.records, state.viewDate).filter(r => matchFilter(r.klass));
+    const roster = rosterStudents();
+    const doneKeys = {};
+    day.forEach(r => { doneKeys[keyOf(r.klass, r.no)] = true; });
+    const missing = roster.filter(s => !doneKeys[keyOf(s.klass, s.no)]);
+    let best = null;
+    day.forEach(r => { if (!best || r.avg > best.avg) best = r; });
+    let up = 0;
+    day.forEach(r => {
+      const prev = previousOf(state.records, r.klass, r.no, r.date);
+      if (prev && r.avg > prev.avg) up += 1;
+    });
+    const scope = state.filter === "all" ? "所選範圍：全校" :
+      state.filter === "low" ? "所選範圍：低年班" :
+      state.filter === "high" ? "所選範圍：高年班" : "所選範圍：" + state.filter;
+    $("stats").innerHTML = `
+      <div class="stat ok"><div class="lab">已量</div><div class="big num">${day.length}</div><div class="tiny">${scope}</div></div>
+      <div class="stat warn"><div class="lab">未量</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">當日最高</div><div class="big num">${best ? kg(best.avg) : "—"}</div><div class="tiny">${best ? esc(lookupName(best.klass, best.no) || (best.klass + " " + best.no + "號")) + "　" + kg(best.avg) + " kg" : "尚未有成績"}</div></div>
+      <div class="stat"><div class="lab">比上次進步</div><div class="big num">${up}</div><div class="tiny">${prettyDate(state.viewDate)}</div></div>`;
+  }
+
+  function renderChips() {
+    const items = [
+      ["all", "全校"], ["low", "低年班"], ["high", "高年班"]
+    ].concat(classList().map(c => [c, c]));
+    $("classChips").innerHTML = items.map(([id, lab]) =>
+      `<button class="chip${state.filter === id ? " on" : ""}" type="button" data-filter="${id}">${lab}</button>`
+    ).join("");
+    const dates = datesInRecords().slice(0, 8);
+    $("dateChips").innerHTML = dates.map(d => {
+      const lab = d === state.today ? "今日" : (Number(d.slice(5, 7)) + "月" + Number(d.slice(8, 10)) + "日");
+      return `<button class="chip${state.viewDate === d ? " on" : ""}" type="button" data-date="${d}">${lab}</button>`;
+    }).join("");
+  }
+
+  function classMeters() {
+    const day = onDate(state.records, state.viewDate);
+    const done = {};
+    day.forEach(r => { done[keyOf(r.klass, r.no)] = true; });
+    const classes = classList().filter(c => matchFilter(c));
+    if (!classes.length) return `<p class="empty">名單未載入。</p>`;
+    return `<div class="meters">${classes.map(klass => {
+      const all = Object.keys(state.roster[klass] || {}).length;
+      const n = Object.keys(state.roster[klass] || {}).filter(no => done[keyOf(klass, no)]).length;
+      const pct = all ? Math.round(n / all * 100) : 0;
+      return `<button class="meter${n === all && all ? " done" : ""}" type="button" data-filter="${esc(klass)}">
+        <div class="cls">${esc(klass)}</div>
+        <div class="bar"><span style="width:${pct}%"></span></div>
+        <div class="frac num">${n}/${all}</div>
+      </button>`;
+    }).join("")}</div>`;
+  }
+
+  function renderToday() {
+    const isClass = classList().indexOf(state.filter) >= 0;
+    if (!isClass && !state.q) {
+      return `<h2 class="h2">${prettyDate(state.viewDate)}　各班進度</h2>
+        <p class="muted" style="margin-top:-4px;margin-bottom:12px">撳其中一班，就見到該班已量和未量名單。</p>
+        ${classMeters()}`;
+    }
+    const done = sortRows(filteredToday());
+    const doneKeys = {};
+    onDate(state.records, state.viewDate).forEach(r => { doneKeys[keyOf(r.klass, r.no)] = true; });
+    const missing = rosterStudents().filter(s => !doneKeys[keyOf(s.klass, s.no)] && passQ(s.klass, s.no, s.name));
+    if (state.sort === "no") missing.sort((a, b) => a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    const doneHtml = `<div>
+        <h2 class="h2">已量　${done.length}</h2>
+        <div class="list">${done.length ? done.map(r => scoreRow(r, { prev: previousOf(state.records, r.klass, r.no, r.date) })).join("") : `<p class="empty">這一天還沒有成績。星期五量度後會出現在這裏。</p>`}</div>
+      </div>`;
+    const missHtml = `<div>
+        <h2 class="h2">未量　${missing.length}</h2>
+        ${missing.length ? `<div class="pills">${missing.slice(0, 80).map(s =>
+          `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("")}</div>` : `<p class="empty">這班已經全部量過。</p>`}
+      </div>`;
+    if (!done.length) return missHtml;
+    return `<div class="split today">${doneHtml}${missHtml}</div>`;
+  }
+
+  function renderClass() {
+    const roster = rosterStudents().filter(s => passQ(s.klass, s.no, s.name));
+    const latest = {};
+    latestByStudent(state.records).forEach(r => { latest[keyOf(r.klass, r.no)] = r; });
+    const rows = roster.map(s => {
+      const r = latest[keyOf(s.klass, s.no)];
+      return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
+    });
+    liveScores(state.records).forEach(r => {
+      if (!matchFilter(r.klass) || !passQ(r.klass, r.no, lookupName(r.klass, r.no))) return;
+      if (!latest[keyOf(r.klass, r.no)] && !roster.some(s => s.klass === r.klass && s.no === r.no)) {
+        rows.push(Object.assign({ name: lookupName(r.klass, r.no) || "名單以外" }, r));
+      }
+    });
+    if (state.sort === "kg") {
+      rows.sort((a, b) => (b.avg || 0) - (a.avg || 0) || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    } else {
+      rows.sort((a, b) => a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no));
+    }
+    const html = rows.map(r => {
+      if (r.missing) return missRow(r);
+      return scoreRow(r, { prev: previousOf(state.records, r.klass, r.no, r.date) });
+    }).join("");
+    return `<h2 class="h2">全班最新成績　${rows.length} 人</h2>
+      <div class="list">${html || `<p class="empty">未有名單或成績。</p>`}</div>`;
+  }
+
+  function renderPerson() {
+    const classes = classList();
+    if (!state.personClass && classes.length) state.personClass = classes[0];
+    const nos = Object.keys(state.roster[state.personClass] || {}).sort((a, b) => Number(a) - Number(b));
+    if (!state.personNo && nos.length) state.personNo = nos[0];
+    const hist = historyOf(state.records, state.personClass, state.personNo);
+    const name = lookupName(state.personClass, state.personNo);
+    return `<div class="pick">
+        <label class="field">班別
+          <select id="pClass">${classes.map(c => `<option value="${esc(c)}"${c === state.personClass ? " selected" : ""}>${esc(c)}</option>`).join("")}</select>
+        </label>
+        <label class="field">學生
+          <select id="pNo">${nos.map(n => `<option value="${esc(n)}"${n === state.personNo ? " selected" : ""}>${esc(n)}號　${esc(state.roster[state.personClass][n])}</option>`).join("")}</select>
+        </label>
+      </div>
+      <h2 class="h2">${esc(name || "")}　${esc(state.personClass)} ${esc(state.personNo)}號</h2>
+      ${hist.length ? `<div class="timeline">${hist.map((r, i) => {
+        const prev = hist[i + 1];
+        return `<div class="titem">
+          <div class="dot"></div>
+          <div>
+            <div class="when">${esc(prettyDate(r.date))}</div>
+            <div class="who">左 ${kg(r.left)}　右 ${kg(r.right)}</div>
+            ${delBtns(r.klass, r.no)}
+          </div>
+          <div>
+            <div class="kg num">${kg(r.avg)} kg</div>
+            ${deltaHtml(r, prev)}
+          </div>
+        </div>`;
+      }).join("")}</div>` : `<p class="empty">這位同學還沒有手握力紀錄。</p>`}`;
+  }
+
+  function render() {
+    renderStats();
+    renderChips();
+    $("dateLabel").textContent = "查看日期：" + prettyDate(state.viewDate);
+    $("sortBtn").textContent = state.sort === "kg" ? "按成績" : "按學號";
+    document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-tab") === state.tab));
+    const main = $("main");
+    if (state.tab === "class") main.innerHTML = renderClass();
+    else if (state.tab === "person") main.innerHTML = renderPerson();
+    else main.innerHTML = renderToday();
+  }
+
+  async function loadBoard(quiet) {
+    if (!quiet) $("loadStatus").textContent = "正在讀取成績…";
+    try {
+      state.records = await fetchRecords();
+      $("loadStatus").textContent = "已更新　" + new Date().toLocaleTimeString("zh-HK", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) + "　共 " + liveScores(state.records).length + " 筆有效成績";
+      render();
+    } catch (e) {
+      $("loadStatus").textContent = "未能讀取成績。請檢查網絡後再按重新整理。";
+    }
+  }
+
+  function saveDelete(klass, no, all) {
+    const payload = JSON.stringify({
+      token: SCORE_TOKEN,
+      activity: ACTIVITY,
+      kind: "grip",
+      op: "delete",
+      class: klass,
+      no: no,
+      level: all ? "ALL" : state.viewDate,
+      result: "DELETE",
+      stars: "DEL",
+      hero: "",
+      seconds: ""
+    });
+    return fetch(SCORE_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: payload
+    }).catch(function () {});
+  }
+
+  async function teacherDelete(klass, no, all) {
+    const name = lookupName(klass, no);
+    const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+    const ok = confirm(all
+      ? "確定刪除 " + who + " 的全部手握力成績？"
+      : "確定刪除 " + who + " 在 " + prettyDate(state.viewDate) + " 的成績？");
+    if (!ok) return;
+    state.records = (state.records || []).concat([{
+      klass, no, date: all ? "ALL" : state.viewDate, ts: Date.now(), deleted: true, all: !!all
+    }]);
+    render();
+    toast("已刪除");
+    await saveDelete(klass, no, all);
+    setTimeout(() => loadBoard(true), 2500);
+  }
+
+  function exportCsv() {
+    const rows = [["班別", "學號", "姓名", "日期", "左手kg", "右手kg", "平均kg"]];
+    const data = state.tab === "class"
+      ? latestByStudent(state.records).sort((a, b) => a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no))
+      : sortRows(filteredToday());
+    data.forEach(r => {
+      rows.push([r.klass, r.no, lookupName(r.klass, r.no), r.date, kg(r.left), kg(r.right), kg(r.avg)]);
+    });
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "手握力成績-" + state.viewDate + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function enterApp() {
+    document.body.classList.add("in");
+    try { sessionStorage.setItem("grip-admin", "1"); } catch (e) {}
+    renderChips();
+    render();
+    loadBoard();
+  }
+  function lock() {
+    document.body.classList.remove("in");
+    try { sessionStorage.removeItem("grip-admin"); } catch (e) {}
+    $("pin").value = "";
+    $("gateMsg").textContent = "";
+  }
+
+  async function boot() {
+    $("dateLabel").textContent = "今日：" + prettyDate(state.today);
+    try {
+      const res = await fetch("roster.json?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) ingestRoster(await res.json());
+    } catch (e) {}
+    $("pinGo").onclick = () => {
+      if ($("pin").value !== TEACHER_PIN) {
+        $("gateMsg").textContent = "密碼不正確";
+        $("pin").value = "";
+        $("pin").focus();
+        return;
+      }
+      enterApp();
+    };
+    $("pin").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); $("pinGo").click(); }
+    });
+    $("lockBtn").onclick = lock;
+    $("reloadBtn").onclick = () => loadBoard();
+    $("csvBtn").onclick = exportCsv;
+    $("tabs").onclick = (e) => {
+      const b = e.target.closest("button[data-tab]");
+      if (!b) return;
+      state.tab = b.getAttribute("data-tab");
+      render();
+    };
+    $("classChips").onclick = (e) => {
+      const b = e.target.closest("button[data-filter]");
+      if (!b) return;
+      state.filter = b.getAttribute("data-filter");
+      if (classList().indexOf(state.filter) >= 0) {
+        state.personClass = state.filter;
+        if (state.tab === "today") state.tab = "today";
+      }
+      render();
+    };
+    $("q").addEventListener("input", () => {
+      state.q = $("q").value;
+      if (state.q && state.filter === "all" && state.tab === "today") {}
+      render();
+    });
+    $("sortBtn").onclick = () => {
+      state.sort = state.sort === "kg" ? "no" : "kg";
+      render();
+    };
+    $("dateChips").onclick = (e) => {
+      const b = e.target.closest("button[data-date]");
+      if (!b) return;
+      state.viewDate = b.getAttribute("data-date");
+      render();
+    };
+    $("main").onclick = (e) => {
+      const meter = e.target.closest("button[data-filter]");
+      if (meter && meter.closest(".meters")) {
+        state.filter = meter.getAttribute("data-filter");
+        render();
+        return;
+      }
+      const p = e.target.closest("button[data-person]");
+      if (p) {
+        const parts = p.getAttribute("data-person").split(":");
+        state.personClass = parts[0];
+        state.personNo = parts[1];
+        state.tab = "person";
+        state.filter = parts[0];
+        render();
+        return;
+      }
+      const b = e.target.closest("button[data-del]");
+      if (b) teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
+    };
+    $("main").onchange = (e) => {
+      if (e.target.id === "pClass") {
+        state.personClass = e.target.value;
+        const nos = Object.keys(state.roster[state.personClass] || {});
+        state.personNo = nos.sort((a, b) => Number(a) - Number(b))[0] || "";
+        render();
+      }
+      if (e.target.id === "pNo") {
+        state.personNo = e.target.value;
+        render();
+      }
+    };
+    try {
+      if (sessionStorage.getItem("grip-admin") === "1") enterApp();
+    } catch (e) {}
+    $("pin").focus();
+  }
+  boot();
+</script>
+</body>
+</html>

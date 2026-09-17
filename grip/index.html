@@ -423,34 +423,12 @@ img.zhang-sir-mark {
     </div>
     </div>
 
-    <section class="card teacher-card hidden" id="teacherPanel">
-      <h2>老師管理成績</h2>
-      <p class="hint">若學生輸入錯誤，可在此刪除。刪除後龍虎榜會更新，學生可以再次提交。離開前請按「離開老師管理」，以免學生見到刪除掣。</p>
-      <div class="teacher-list" id="teacherList"></div>
-      <p class="empty hidden" id="teacherEmpty">目前沒有有效成績。</p>
-      <button class="ghost" id="teacherReload" type="button">重新整理名單</button>
-      <button class="ghost" id="teacherLock" type="button">離開老師管理</button>
-      <a class="tiny" id="sheetLink" href="https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit" target="_blank" rel="noopener">開啟試算表</a>
-    </section>
-
     <div class="foot">
       <button class="ghost" id="wallBtn" type="button" style="margin:0">全螢幕龍虎榜</button>
-      <button class="ghost" id="teacherBtn" type="button" style="margin:0">老師管理／刪除成績</button>
+      <a class="ghost" id="teacherBtn" href="admin.html" style="margin:0;display:flex;align-items:center;justify-content:center;text-decoration:none">老師後台</a>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
     <button class="ghost" id="wallBack" type="button">返回輸入頁</button>
-  </div>
-
-  <div class="modal hidden" id="teacherModal">
-    <div class="box">
-      <h2 style="text-align:center;margin-top:0;color:var(--red)">老師管理成績</h2>
-      <p class="hint">請輸入密碼，然後可以刪除輸入錯誤的成績。</p>
-      <label class="field">密碼
-        <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
-      </label>
-      <button class="primary" id="pinGo" type="button" style="margin-top:12px">進入</button>
-      <button class="ghost" id="pinCancel" type="button">取消</button>
-    </div>
   </div>
 
   <script>
@@ -875,11 +853,7 @@ img.zhang-sir-mark {
     function teacherOn() { return state.teacher === true && !WALL; }
 
     function delBtns(klass, no) {
-      if (!teacherOn()) return "";
-      return `<div class="tbtns">
-        <button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪除今日</button>
-        <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪除全部</button>
-      </div>`;
+      return "";
     }
 
     function seatHtml(r, cls, medal) {
@@ -939,7 +913,6 @@ img.zhang-sir-mark {
         const rows = await fetchRecords();
         state.records = rows;
         const data = renderBoards(rows);
-        if (teacherOn() && !$("teacherPanel").classList.contains("hidden")) renderTeacherList();
         return data;
       } catch (e) {
         ["emptyLow", "emptyHigh"].forEach(id => {
@@ -1134,50 +1107,6 @@ img.zhang-sir-mark {
       };
       $("wallBack").onclick = () => {
         location.href = PUBLIC_URL;
-      };
-      try { sessionStorage.removeItem("grip-teacher"); } catch (e) {}
-      lockTeacher();
-      $("teacherBtn").onclick = () => {
-        $("pin").value = "";
-        $("teacherModal").classList.remove("hidden");
-        $("pin").focus();
-      };
-      $("pinCancel").onclick = () => {
-        $("pin").value = "";
-        $("teacherModal").classList.add("hidden");
-      };
-      const tryPin = () => {
-        if ($("pin").value !== TEACHER_PIN) {
-          toast("密碼不正確");
-          $("pin").value = "";
-          $("pin").focus();
-          return;
-        }
-        state.teacher = true;
-        $("pin").value = "";
-        $("teacherModal").classList.add("hidden");
-        openTeacher();
-      };
-      $("pinGo").onclick = tryPin;
-      $("pin").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); tryPin(); }
-      });
-      const onDel = (e) => {
-        const b = e.target.closest("button[data-del]");
-        if (!b) return;
-        teacherDelete(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-del") === "all");
-      };
-      $("teacherList").onclick = onDel;
-      $("boards").onclick = onDel;
-      $("teacherReload").onclick = async () => {
-        if (!teacherOn()) return;
-        await loadBoard();
-        renderTeacherList();
-        toast("已重新整理");
-      };
-      $("teacherLock").onclick = () => {
-        lockTeacher();
-        toast("已離開老師管理");
       };
       if (WALL) {
         document.body.classList.add("wall");
