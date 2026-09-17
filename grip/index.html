@@ -231,7 +231,11 @@
     .empty { text-align: center; font-weight: 800; color: var(--muted); padding: 18px 8px; }
 
     .foot {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;
+      display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 4px;
+    }
+    .admin-entry {
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; margin-top: 14px;
     }
     .tiny {
       display: block; text-align: center; margin-top: 10px;
@@ -248,7 +252,7 @@
     body.wall .card { border-width: 6px; }
     body.wall .seat .kgv { font-size: 32px; }
     body.wall .row .best { font-size: 26px; }
-    body.wall .form-card, body.wall .result-card, body.wall .foot, body.wall .tiny, body.wall .teacher-card { display: none !important; }
+    body.wall .form-card, body.wall .result-card, body.wall .foot, body.wall .tiny, body.wall .teacher-card, body.wall .admin-entry { display: none !important; }
     body.wall .device { display: none !important; }
     body.wall .desk { display: block; }
     body.wall .boards {
@@ -292,7 +296,7 @@
     .result-card { order: 3; }
 
     @media (max-width: 430px) {
-      .ids, .hands, .foot { grid-template-columns: 1fr 1fr; }
+      .ids, .hands { grid-template-columns: 1fr 1fr; }
       .compare { grid-template-columns: 1fr; }
       .delta { flex-direction: row; gap: 8px; padding: 4px 0; }
       header.top h1 { letter-spacing: .06em; }
@@ -425,9 +429,9 @@ img.zhang-sir-mark {
 
     <div class="foot">
       <button class="ghost" id="wallBtn" type="button" style="margin:0">全螢幕龍虎榜</button>
-      <a class="ghost" id="teacherBtn" href="admin.html" style="margin:0;display:flex;align-items:center;justify-content:center;text-decoration:none">老師後台</a>
     </div>
     <p class="tiny" id="qrLine">網址：https://cheungsiredu.github.io/education/grip/</p>
+    <a class="ghost admin-entry" id="teacherBtn" href="admin.html">成績後台</a>
     <button class="ghost" id="wallBack" type="button">返回輸入頁</button>
   </div>
 
@@ -436,7 +440,6 @@ img.zhang-sir-mark {
     const SCORE_TOKEN = "chilin-edu-2026";
     const ACTIVITY = "手握力龍虎榜";
     const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
-    const TEACHER_PIN = "2246";
     const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit";
     const PUBLIC_URL = "https://cheungsiredu.github.io/education/grip/";
     const CLASS_CHIPS_DEFAULT = ["1A","1B","1C","2A","2B","2C","3A","3B","3C","4A","4B","4C","5A","5B","5C","5D","6A","6B","6C","6D"];
