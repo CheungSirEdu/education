@@ -647,11 +647,14 @@ img.zhang-sir-mark {
     }
 
     async function persistLocal() {
+      let thumb = "";
+      try { thumb = await makeThumb(state.photo, 240, 0.5); } catch (e) {}
       state.recs[state.day] = {
         day: state.day,
         stage: state.stage,
         note: $("note").value.trim(),
         photo: state.photo,
+        thumb: thumb,
         at: Date.now()
       };
       try { await dbSet(recKey(), state.recs); } catch (e) {}

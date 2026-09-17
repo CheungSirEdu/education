@@ -1234,8 +1234,76 @@
     if (m) return "https://i.imgur.com/" + m[1] + "l.jpg";
     return u;
   }
-  function beanHasPhoto(r) { return !!(r && beanThumb(r)); }
+  function beanHasPhoto(r) { return !!(r && (beanThumb(r) || r.thumb || r.photo)); }
   function fillBeanImages() {}
+  function loadLocalBeanPhotos() {
+    return new Promise(function (resolve) {
+      const out = [];
+      let req;
+      try { req = indexedDB.open("beanlog-v1", 1); }
+      catch (e) { return resolve(out); }
+      req.onerror = function () { resolve(out); };
+      req.onupgradeneeded = function (ev) {
+        try { ev.target.result.createObjectStore("recs"); } catch (e2) {}
+      };
+      req.onsuccess = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("recs")) return resolve(out);
+        const tx = db.transaction("recs", "readonly");
+        const store = tx.objectStore("recs");
+        const cur = store.openCursor();
+        cur.onerror = function () { resolve(out); };
+        cur.onsuccess = function (ev) {
+          const c = ev.target.result;
+          if (!c) return resolve(out);
+          const parts = String(c.key || "").split("|");
+          const klass = String(parts[0] || "").toUpperCase();
+          const no = String(parseInt(parts[1], 10));
+          const recs = c.value || {};
+          Object.keys(recs).forEach(function (d) {
+            const rec = recs[d];
+            if (!rec || (!rec.photo && !rec.thumb)) return;
+            out.push(beanNorm({
+              klass: klass,
+              no: no === "NaN" ? "" : no,
+              day: rec.day ? ("第" + rec.day + "日") : ("第" + d + "日"),
+              stage: rec.stage || "",
+              note: rec.note || "",
+              src: rec.thumb || rec.photo,
+              photo: rec.photo || rec.thumb,
+              ts: rec.at || 0
+            }));
+          });
+          c.continue();
+        };
+      };
+    });
+  }
+  function makePreviewSrc(src) {
+    return new Promise(function (resolve) {
+      if (!src) return resolve("");
+      if (/^https?:\/\//i.test(src)) return resolve(beanPreviewUrl(src));
+      if (src.indexOf("data:image") !== 0) return resolve("");
+      if (src.length < 12000) return resolve(src);
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const max = 240;
+          let w = img.width, h = img.height;
+          if (w > max || h > max) {
+            if (w > h) { h = Math.round(h * max / w); w = max; }
+            else { w = Math.round(w * max / h); h = max; }
+          }
+          const c = document.createElement("canvas");
+          c.width = w; c.height = h;
+          c.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL("image/jpeg", 0.5));
+        } catch (e) { resolve(""); }
+      };
+      img.onerror = function () { resolve(""); };
+      img.src = src;
+    });
+  }
   function beanName(r) { return lookupName(r.klass, r.no) || "名單以外"; }
   function beanPassQ(r) {
     const q = state.beanQ.trim().toLowerCase();
@@ -1326,21 +1394,22 @@
     } catch (e) {
       state.beanRecords = [];
     }
-    try {
-      const pubs = await fetchBeanPublicUrls();
-      if (pubs.length) {
-        const byKey = {};
-        state.beanRecords.forEach(r => { byKey[r.klass + "\t" + r.no + "\t" + r.day] = r; });
-        pubs.forEach(p => {
-          const k = p.klass + "\t" + p.no + "\t" + p.day;
-          if (byKey[k]) {
-            if (!beanThumb(byKey[k])) byKey[k].src = p.src;
-          } else {
-            state.beanRecords.push(p);
-          }
-        });
-      }
-    } catch (e3) {}
+    function mergeBean(list) {
+      const byKey = {};
+      state.beanRecords.forEach(r => { byKey[r.klass + "\t" + r.no + "\t" + r.day] = r; });
+      (list || []).forEach(p => {
+        const k = p.klass + "\t" + p.no + "\t" + p.day;
+        if (byKey[k]) {
+          if (!byKey[k].src && p.src) byKey[k].src = p.src;
+          if (!byKey[k].photo && p.photo) byKey[k].photo = p.photo;
+        } else {
+          state.beanRecords.push(p);
+          byKey[k] = p;
+        }
+      });
+    }
+    try { mergeBean(await fetchBeanPublicUrls()); } catch (e3) {}
+    try { mergeBean(await loadLocalBeanPhotos()); } catch (e4) {}
     const n = state.beanRecords.filter(beanHasPhoto).length;
     const total = beanLive(state.beanRecords).length;
     $("beanStatus").textContent = total
@@ -1381,7 +1450,9 @@
       <div class="stat"><div class="lab">日子</div><div class="big num">${state.beanDay === "all" ? "全部" : state.beanDay.replace("第","").replace("日","")}</div><div class="tiny">${state.beanFilter === "all" ? "全校" : state.beanFilter}</div></div>`;
   }
   function openBeanLight(r) {
-    const src = beanFullUrl(r.src || beanThumb(r));
+    const src = r.photo && String(r.photo).indexOf("data:image") === 0
+      ? r.photo
+      : beanFullUrl(r.src || beanThumb(r));
     const name = beanName(r);
     const note = String(r.note || "").replace(/📷https?:\/\/\S+/g, "").trim();
     $("beanLight").innerHTML = `
@@ -1418,11 +1489,29 @@
     $("beanMain").innerHTML = `<h2 class="h2">全部相片　${photos.length}</h2>
       <div class="photo-wall">${photos.map((r, i) => `
         <button class="photo-card" type="button" data-bean="${i}">
-          <img src="${esc(beanThumb(r))}" alt="" loading="lazy" decoding="async" style="${beanThumb(r) ? "" : "min-height:140px;background:#e8f5e9"}">
+          <span class="photo-ph" style="display:block;min-height:140px;background:#e8f5e9"></span>
           <div class="cap"><div class="who">${esc(beanName(r))}</div>
-          <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${beanThumb(r) ? "" : "　未有預覽，請學生再儲存一次"}</div></div>
+          <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
         </button>`).join("")}</div>`;
     $("beanMain")._photos = photos;
+    const cards = $("beanMain").querySelectorAll("button[data-bean]");
+    photos.forEach(function (r, i) {
+      const card = cards[i];
+      if (!card) return;
+      makePreviewSrc(r.thumb || r.src || r.photo).then(function (src) {
+        if (!src) return;
+        const img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        img.src = src;
+        img.style.width = "100%";
+        img.style.aspectRatio = "1";
+        img.style.objectFit = "cover";
+        img.style.display = "block";
+        const ph = card.querySelector(".photo-ph");
+        if (ph) ph.replaceWith(img);
+      });
+    });
   };
   function renderLogin() {
     hideDash();
