@@ -390,18 +390,23 @@
     }
     .pin-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--hub-dark); }
     .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
-    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times, body.dash-on #plant { display: none !important; }
+    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times, body.dash-on #plant, body.dash-on #lang { display: none !important; }
     body.dash-on #dash { display: block; }
     #dash { display: none; }
-    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times, body.bean-on #plant { display: none !important; }
+    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times, body.bean-on #plant, body.bean-on #lang { display: none !important; }
     body.bean-on #bean { display: block; }
     #bean { display: none; }
-    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean, body.times-on #plant { display: none !important; }
+    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean, body.times-on #plant, body.times-on #lang { display: none !important; }
     body.times-on #times { display: block; }
     #times { display: none; }
-    body.plant-on header.hub, body.plant-on #shell, body.plant-on #hubFoot, body.plant-on #dash, body.plant-on #bean, body.plant-on #times { display: none !important; }
+    body.plant-on header.hub, body.plant-on #shell, body.plant-on #hubFoot, body.plant-on #dash, body.plant-on #bean, body.plant-on #times, body.plant-on #lang { display: none !important; }
     body.plant-on #plant { display: block; }
     #plant { display: none; }
+    body.lang-on header.hub, body.lang-on #shell, body.lang-on #hubFoot, body.lang-on #dash, body.lang-on #bean, body.lang-on #times, body.lang-on #plant { display: none !important; }
+    body.lang-on #lang { display: block; }
+    #lang { display: none; }
+    .lang-top { background: linear-gradient(180deg, #6a1b9a, #4a148c); }
+    .lang-top .kicker { color: #f4d35e; }
     .times-top { background: linear-gradient(180deg, #0f4c5c, #0a343d); }
     .times-top .kicker { color: #e8c15a; }
     .plant-top { background: linear-gradient(180deg, #2e7d32, #1b5e20); }
@@ -622,6 +627,45 @@
     <section class="panel" id="plantMain"></section>
   </div>
 </div>
+
+<div id="lang">
+  <header class="top lang-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　外語 · 成績後台</p>
+      <h1 id="langTitle">外語小學堂</h1>
+      <p class="sub">有提交一次就算已交，唔使日日做。</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a id="langPlay" href="../languages/">學生輸入頁</a>
+        <button type="button" id="langReload">重新整理</button>
+        <button type="button" id="langCsv">匯出 Excel</button>
+        <button type="button" id="langEdit">編輯</button>
+        <button type="button" id="langLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="langStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="langKindTabs">
+        <button type="button" data-lang="jp" class="on">🇯🇵 日文</button>
+        <button type="button" data-lang="fr">🇫🇷 法文</button>
+        <button type="button" data-lang="ko">🇰🇷 韓文</button>
+      </div>
+      <div class="tabs" id="langTabs">
+        <button type="button" data-ltab="class" class="on">全班成績</button>
+        <button type="button" data-ltab="all">全部紀錄</button>
+      </div>
+      <div class="classes" id="langClassChips"></div>
+      <div class="search">
+        <input id="langQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="langCsvBar" type="button">匯出 Excel</button>
+      </div>
+      <p class="status" id="langStatus">正在讀取成績…</p>
+    </div>
+    <section class="panel" id="langMain"></section>
+  </div>
+</div>
 <div id="beanLight" class="hidden"></div>
 
 <script>
@@ -710,6 +754,12 @@
     plantTab: "class",
     plantFilter: "all",
     plantQ: "",
+    langRecords: [],
+    langLoaded: "",
+    langKey: "jp",
+    langTab: "class",
+    langFilter: "all",
+    langQ: "",
     editing: false
   };
 
@@ -1309,6 +1359,7 @@
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
@@ -1317,6 +1368,7 @@
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1330,6 +1382,7 @@
     document.body.classList.remove("dash-on");
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
@@ -1342,6 +1395,7 @@
     document.body.classList.remove("dash-on");
     document.body.classList.remove("bean-on");
     document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
     document.body.classList.add("times-on");
     renderTimes();
     if (!state.timesLoaded) {
@@ -1354,12 +1408,215 @@
     document.body.classList.remove("dash-on");
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
+    document.body.classList.remove("lang-on");
     document.body.classList.add("plant-on");
     renderPlant();
     if (!state.plantLoaded) {
       state.plantLoaded = true;
       loadPlant();
     }
+  }
+  const LANG_GAMES = {
+    jp: { id: "jp", activity: "日文小學堂", title: "日文小學堂", emoji: "🇯🇵", play: "../languages/jp.html" },
+    fr: { id: "fr", activity: "法文小學堂", title: "法文小學堂", emoji: "🇫🇷", play: "../languages/fr.html" },
+    ko: { id: "ko", activity: "韓文小學堂", title: "韓文小學堂", emoji: "🇰🇷", play: "../languages/ko.html" }
+  };
+  function langGame() { return LANG_GAMES[state.langKey] || LANG_GAMES.jp; }
+  function showLangDash(key) {
+    if (key && LANG_GAMES[key]) state.langKey = key;
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
+    document.body.classList.add("lang-on");
+    $("langTitle").textContent = langGame().emoji + " " + langGame().title;
+    $("langPlay").href = langGame().play;
+    renderLang();
+    if (state.langLoaded !== state.langKey) {
+      state.langLoaded = state.langKey;
+      loadLang();
+    }
+  }
+  function langMatch(r) {
+    const f = state.langFilter;
+    if (f === "low" && bandOf(r.klass) !== "low") return false;
+    if (f === "high" && bandOf(r.klass) !== "high") return false;
+    if (f !== "all" && f !== "low" && f !== "high" && r.klass !== f) return false;
+    const q = state.langQ.trim().toLowerCase();
+    if (q) {
+      const name = lookupName(r.klass, r.no) || "";
+      if ((r.klass + " " + r.no + "號 " + name).toLowerCase().indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  function langLive(rows) {
+    const allCut = {};
+    (rows || []).forEach(r => {
+      if (r.deleted && r.all) {
+        const k = r.klass + "\t" + r.no;
+        if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+      }
+    });
+    const byKey = {};
+    (rows || []).forEach(r => {
+      const k = r.klass + "\t" + r.no;
+      if (allCut[k] && r.ts <= allCut[k]) return;
+      if (r.all) return;
+      const mk = k + "\t" + r.date;
+      const cur = byKey[mk];
+      if (!cur || r.ts >= cur.ts) byKey[mk] = r;
+    });
+    return Object.keys(byKey).map(k => byKey[k]).filter(r => !r.deleted);
+  }
+  function parseLangResult(result, stars) {
+    const text = String(result || "");
+    if (/DELETE|刪除|\bDEL\b/i.test(text + " " + String(stars || ""))) return { deleted: true };
+    const sc = text.match(/(\d+)\s*分/);
+    const pair = text.match(/(\d+)\s*\/\s*(\d+)/);
+    const score = sc ? Number(sc[1]) : (Number(stars) || 0);
+    const pass = pair ? Number(pair[1]) : (Number(stars) || 0);
+    const total = pair ? Number(pair[2]) : 20;
+    return { score, pass, total, deleted: false };
+  }
+  async function fetchLangGviz(activity) {
+    const cb = "lang_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(activity) +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+    const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星");
+    if (iResult < 0 && iLevel < 0) return [];
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      if (!klass || !no || no === "NaN") return;
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const date = ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) || state.today;
+      const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+      const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+      const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+      const result = iResult >= 0 ? String(gvizCell(row, iResult) || "") : "";
+      const stars = iStars >= 0 ? String(gvizCell(row, iStars) || "") : "";
+      const parsed = parseLangResult(result, stars);
+      if (parsed.deleted) {
+        out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+        return;
+      }
+      out.push({ klass, no, date, ts, result, score: parsed.score, pass: parsed.pass, total: parsed.total });
+    });
+    return out;
+  }
+  async function loadLang() {
+    $("langStatus").textContent = "正在讀取成績…";
+    try {
+      state.langRecords = await fetchLangGviz(langGame().activity);
+      const n = langLive(state.langRecords).length;
+      $("langStatus").textContent = n ? ("已更新　共 " + n + " 筆成績") : "暫時未有成績。學生提交後會出現在這裏。";
+    } catch (e) {
+      state.langRecords = [];
+      $("langStatus").textContent = "未能讀取成績。請檢查網絡後再整理。";
+    }
+    renderLang();
+  }
+  function renderLang() {
+    if (!$("langMain")) return;
+    const g = langGame();
+    $("langTitle").textContent = g.emoji + " " + g.title;
+    $("langPlay").href = g.play;
+    document.querySelectorAll("#langKindTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-lang") === state.langKey));
+    document.querySelectorAll("#langTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-ltab") === state.langTab));
+    const live = langLive(state.langRecords).filter(langMatch);
+    const classes = classList();
+    const roster = state.langFilter === "all" ? rosterStudents("all")
+      : state.langFilter === "low" ? rosterStudents("low")
+      : state.langFilter === "high" ? rosterStudents("high")
+      : rosterStudents(state.langFilter);
+    const done = {};
+    live.forEach(r => { done[r.klass + "\t" + r.no] = true; });
+    const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
+    let avg = 0;
+    if (live.length) avg = Math.round(live.reduce((s, r) => s + (Number(r.score) || 0), 0) / live.length);
+    $("langStats").innerHTML = `
+      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">有提交一次即可</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">平均分</div><div class="big num">${live.length ? avg : "—"}</div><div class="tiny">${g.title}</div></div>
+      <div class="stat"><div class="lab">紀錄</div><div class="big num">${live.length}</div><div class="tiny">唔使日日交</div></div>`;
+    const chips = [["all", "全部班別"], ["low", "低年班"], ["high", "高年班"]].concat(classes.map(c => [c, c]));
+    $("langClassChips").innerHTML = chips.map(([id, lab]) =>
+      `<button class="chip${state.langFilter === id ? " on" : ""}" type="button" data-lclass="${id}">${lab}</button>`
+    ).join("");
+    if (state.langTab !== "all") {
+      const latest = {};
+      live.forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        const cur = latest[k];
+        if (!cur || r.score > cur.score || (r.score === cur.score && r.ts > cur.ts)) latest[k] = r;
+      });
+      const list = roster.map(s => {
+        const r = latest[s.klass + "\t" + s.no];
+        return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
+      });
+      $("langMain").innerHTML = editBanner() + `<h2 class="h2">${g.title}　已交 ${Object.keys(done).length}　未交 ${missing.length}</h2>
+        <div class="list">${list.map(r => r.missing ? missRow(r) : langRow(r)).join("") || `<p class="empty">未有名單。</p>`}</div>`;
+      return;
+    }
+    const rows = live.slice().sort((a, b) => b.ts - a.ts || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    $("langMain").innerHTML = editBanner() + `<h2 class="h2">全部紀錄　${rows.length}</h2>
+      <div class="list">${rows.length ? rows.map(langRow).join("") : `<p class="empty">尚未有成績。</p>`}</div>`;
+  }
+  function langRow(r) {
+    const name = r.name || lookupName(r.klass, r.no) || "名單以外";
+    const pct = Number(r.score) || 0;
+    return `<article class="row">
+      <div>
+        <div class="name">${esc(name)}</div>
+        <div class="who">${esc(r.klass)}　${esc(r.no)}號　合格 ${esc(r.pass || 0)}/${esc(r.total || 20)}</div>
+        <div class="who">${esc(prettyDate(r.date))}</div>
+        ${state.editing ? `<div class="actions">
+          <button class="danger" type="button" data-ldel="one" data-class="${esc(r.klass)}" data-no="${esc(r.no)}" data-date="${esc(r.date)}">刪這次</button>
+          <button class="danger" type="button" data-ldel="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+        </div>` : ""}
+      </div>
+      <div>
+        <div class="kg num">${pct} 分</div>
+        <div class="delta ${pct >= 60 ? "up" : "down"}">${esc(r.result || "")}</div>
+      </div>
+    </article>`;
+  }
+  async function deleteLang(klass, no, all, date) {
+    const name = lookupName(klass, no);
+    const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+    if (!confirm(all ? "確定刪除 " + who + " 的全部" + langGame().title + "成績？" : "確定刪除 " + who + " 這次成績？")) return;
+    state.langRecords = (state.langRecords || []).concat([{
+      klass, no, date: all ? "ALL" : (date || state.today), ts: Date.now(), deleted: true, all: !!all
+    }]);
+    renderLang();
+    toast("已刪除");
+    await postScore({
+      token: SCORE_TOKEN,
+      activity: langGame().activity,
+      class: klass,
+      no: no,
+      level: all ? "ALL" : (date || state.today),
+      result: "DELETE",
+      stars: "DEL"
+    });
+    setTimeout(() => loadLang(), 2500);
+  }
+  function exportLangExcel() {
+    const headers = ["語言", "班別", "學號", "姓名", "日期", "平均分", "合格題數", "總題", "結果"];
+    const title = langGame().title;
+    const rows = langLive(state.langRecords).filter(langMatch).map(r =>
+      [title, r.klass, r.no, lookupName(r.klass, r.no), r.date, r.score, r.pass, r.total, r.result]
+    );
+    downloadExcel(title + "成績-" + state.today, headers, rows);
   }
   const PLANT_ACTIVITY = "動手種植物";
   const PLANT_CLASSES = ["2A", "2B", "2C"];
@@ -2129,14 +2386,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit", "langEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -2149,6 +2406,7 @@
     if (document.body.classList.contains("bean-on")) renderBean();
     if (document.body.classList.contains("times-on")) renderTimes();
     if (document.body.classList.contains("plant-on")) renderPlant();
+    if (document.body.classList.contains("lang-on")) renderLang();
     if (document.body.classList.contains("hub-on") && isIn()) route();
     toast(state.editing ? "已開啟編輯，可刪除不適合的成績或相片。" : "已離開編輯。");
   }
@@ -2283,6 +2541,7 @@
     if (it.id === "beanlog") { showBeanDash(); return; }
     if (it.id === "times") { showTimesDash(); return; }
     if (it.id === "mungbean") { showPlantDash(); return; }
+    if (it.id === "jp" || it.id === "fr" || it.id === "ko") { showLangDash(it.id); return; }
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
@@ -2420,6 +2679,41 @@
       const b = e.target.closest("button[data-pdel]");
       if (!b) return;
       deletePlant(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-pdel") === "all", b.getAttribute("data-date"));
+    };
+    $("langEdit").onclick = toggleEdit;
+    $("langLock").onclick = lock;
+    $("langReload").onclick = () => loadLang();
+    $("langCsv").onclick = exportLangExcel;
+    $("langCsvBar").onclick = exportLangExcel;
+    $("langKindTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-lang]");
+      if (!b) return;
+      const key = b.getAttribute("data-lang");
+      if (key === state.langKey) return;
+      state.langKey = key;
+      state.langLoaded = "";
+      showLangDash(key);
+    };
+    $("langTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-ltab]");
+      if (!b) return;
+      state.langTab = b.getAttribute("data-ltab");
+      renderLang();
+    };
+    $("langClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-lclass]");
+      if (!b) return;
+      state.langFilter = b.getAttribute("data-lclass");
+      renderLang();
+    };
+    $("langQ").addEventListener("input", () => {
+      state.langQ = $("langQ").value;
+      renderLang();
+    });
+    $("langMain").onclick = (e) => {
+      const b = e.target.closest("button[data-ldel]");
+      if (!b) return;
+      deleteLang(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-ldel") === "all", b.getAttribute("data-date"));
     };
     $("timesTabs").onclick = (e) => {
       const b = e.target.closest("button[data-ttab]");
