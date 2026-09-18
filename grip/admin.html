@@ -163,9 +163,10 @@
     }
     .dates { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
     .search {
-      margin-top: 10px; display: grid; grid-template-columns: 1fr auto; gap: 8px;
+      margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     }
     .search input {
+      flex: 1 1 220px;
       min-height: 44px; border: 3px solid var(--line); border-radius: 14px;
       padding: 8px 12px; font-weight: 800; width: 100%;
     }
@@ -173,6 +174,9 @@
     .toolbtn {
       width: auto; min-height: 44px; padding: 8px 12px; margin: 0;
       background: #fff; color: var(--navy); border: 3px solid var(--navy); font-size: 14px;
+    }
+    .excel-btn {
+      background: #15803d; color: #fff; border-color: #166534;
     }
 
     .classes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
@@ -502,6 +506,7 @@
       <div class="search">
         <input id="q" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
         <button class="toolbtn" id="sortBtn" type="button">按學號</button>
+        <button class="toolbtn excel-btn" id="csvBar" type="button">匯出 Excel</button>
       </div>
       <p class="status" id="loadStatus">正在讀取成績…</p>
     </div>
@@ -537,6 +542,7 @@
       <div class="dates" id="beanDayChips"></div>
       <div class="search">
         <input id="beanQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="beanCsvBar" type="button">匯出 Excel</button>
       </div>
       <p class="status" id="beanStatus">正在讀取相片…</p>
     </div>
@@ -571,6 +577,7 @@
       <div class="classes" id="timesClassChips"></div>
       <div class="search">
         <input id="timesQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="timesCsvBar" type="button">匯出 Excel</button>
       </div>
       <p class="status" id="timesStatus">正在讀取成績…</p>
     </div>
@@ -2101,6 +2108,7 @@
     $("beanLock").onclick = lock;
     $("beanReload").onclick = () => loadBean();
     $("beanCsv").onclick = exportBeanExcel;
+    $("beanCsvBar").onclick = exportBeanExcel;
     $("beanTabs").onclick = (e) => {
       const b = e.target.closest("button[data-btab]");
       if (!b) return;
@@ -2149,6 +2157,7 @@
     $("timesLock").onclick = lock;
     $("timesReload").onclick = () => loadTimes();
     $("timesCsv").onclick = exportTimesCsv;
+    $("timesCsvBar").onclick = exportTimesCsv;
     $("timesTabs").onclick = (e) => {
       const b = e.target.closest("button[data-ttab]");
       if (!b) return;
@@ -2179,6 +2188,7 @@
     window.addEventListener("hashchange", () => { if (isIn()) route(); });
     $("reloadBtn").onclick = () => loadBoard();
     $("csvBtn").onclick = exportCsv;
+    $("csvBar").onclick = exportCsv;
     $("tabs").onclick = (e) => {
       const b = e.target.closest("button[data-tab]");
       if (!b) return;
