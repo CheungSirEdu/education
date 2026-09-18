@@ -1362,9 +1362,9 @@
     }
   }
   const PLANT_ACTIVITY = "動手種植物";
-  const PLANT_CLASSES = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+  const PLANT_CLASSES = ["2A", "2B", "2C"];
   function plantClassOk(klass) {
-    return PLANT_CLASSES.indexOf(String(klass || "").toUpperCase()) >= 0;
+    return /^2/.test(String(klass || "").toUpperCase());
   }
   function plantRoster() {
     if (state.plantFilter === "all") {

@@ -356,20 +356,9 @@ img.zhang-sir-mark {
         <label>班別
           <select id="klass" autocomplete="off">
             <option value="">請選擇</option>
-            <optgroup label="一年班">
-              <option value="1A">1A</option>
-              <option value="1B">1B</option>
-            </optgroup>
-            <optgroup label="二年班">
-              <option value="2A">2A</option>
-              <option value="2B">2B</option>
-              <option value="2C">2C</option>
-            </optgroup>
-            <optgroup label="四年班">
-              <option value="4A">4A</option>
-              <option value="4B">4B</option>
-              <option value="4C">4C</option>
-            </optgroup>
+            <option value="2A">2A</option>
+            <option value="2B">2B</option>
+            <option value="2C">2C</option>
           </select>
         </label>
         <label>學號<input id="stuno" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="例如 12"></label>
@@ -468,7 +457,7 @@ img.zhang-sir-mark {
       startedAt: 0
     };
 
-    const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+    const CLASS_OPTIONS = ["2A", "2B", "2C"];
 
     function normalizeClass(v) {
       const s = String(v || "").trim().toUpperCase().replace(/^二/, "2");
