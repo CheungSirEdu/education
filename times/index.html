@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="乘數表">
-<title>乘數表小遊戲 · 四年級</title>
+<title>乘數表小遊戲 · 二至四年級</title>
 <link rel="stylesheet" href="school-ui.css">
 <style>
   /* 呢個遊戲獨有：金色底線 + × 裝飾。之後其他測驗請換顏色／圖案，唔好原樣複製。 */
@@ -103,14 +103,14 @@
   <header class="bar theme-times">
     <div class="bar-motif" aria-hidden="true">× × ×</div>
     <h1>乘數表小遊戲</h1>
-    <p>四年級數學　二至九的乘數表</p>
+    <p>二至四年級數學　二至九的乘數表</p>
   </header>
 
   <section id="home" class="card">
     <div class="desk">
       <div>
         <div class="who">
-          <input id="klass" placeholder="班別，例如 4A" maxlength="8" autocomplete="off" aria-label="班別" value="">
+          <input id="klass" placeholder="班別，例如 2A、3B、4C" maxlength="8" autocomplete="off" aria-label="班別" value="">
           <input id="stuno" placeholder="學號，例如 12" maxlength="3" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="學號">
         </div>
         <div class="modes">
@@ -283,7 +283,7 @@ function who() {
 function needName() {
   const w = who();
   if (!w.klass) {
-    alert("請先填寫班別，例如 4A。");
+    alert("請先填寫班別，例如 2A、3B 或 4C。");
     $("klass").focus();
     return false;
   }

@@ -548,7 +548,7 @@
     <div class="top-inner">
       <p class="kicker">佛教志蓮小學　數學 · 成績後台</p>
       <h1>乘數表</h1>
-      <p class="sub" id="timesDateLabel">四年班練習成績</p>
+      <p class="sub" id="timesDateLabel">二至四年班練習成績</p>
       <div class="top-actions">
         <a href="#/">返回目錄</a>
         <a href="../times/">學生輸入頁</a>
@@ -1287,9 +1287,9 @@
     }
   }
   const TIMES_ACTIVITY = "乘數表小遊戲";
-  const TIMES_CLASSES = ["4A", "4B", "4C"];
+  const TIMES_CLASSES = ["2A", "2B", "2C", "3A", "3B", "3C", "4A", "4B", "4C"];
   function timesClassOk(klass) {
-    return TIMES_CLASSES.indexOf(String(klass || "").toUpperCase()) >= 0;
+    return /^[234]/.test(String(klass || "").toUpperCase());
   }
   function timesRoster() {
     if (state.timesFilter === "all") {
