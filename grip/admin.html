@@ -386,12 +386,17 @@
     }
     .pin-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--hub-dark); }
     .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
-    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot { display: none !important; }
+    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times { display: none !important; }
     body.dash-on #dash { display: block; }
     #dash { display: none; }
-    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash { display: none !important; }
+    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times { display: none !important; }
     body.bean-on #bean { display: block; }
     #bean { display: none; }
+    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean { display: none !important; }
+    body.times-on #times { display: block; }
+    #times { display: none; }
+    .times-top { background: linear-gradient(180deg, #0f4c5c, #0a343d); }
+    .times-top .kicker { color: #e8c15a; }
     .bean-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
     .bean-top .kicker { color: #f4d35e; }
     .photo-wall {
@@ -537,6 +542,40 @@
     <section class="panel" id="beanMain"></section>
   </div>
 </div>
+
+<div id="times">
+  <header class="top times-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　數學 · 成績後台</p>
+      <h1>乘數表</h1>
+      <p class="sub" id="timesDateLabel">四年班練習成績</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a href="../times/">學生輸入頁</a>
+        <button type="button" id="timesReload">重新整理</button>
+        <button type="button" id="timesCsv">匯出 CSV</button>
+        <button type="button" id="timesEdit">編輯</button>
+        <button type="button" id="timesLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="timesStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="timesTabs">
+        <button type="button" data-ttab="today" class="on">今日課堂</button>
+        <button type="button" data-ttab="class">全班成績</button>
+        <button type="button" data-ttab="all">全部紀錄</button>
+      </div>
+      <div class="classes" id="timesClassChips"></div>
+      <div class="search">
+        <input id="timesQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+      </div>
+      <p class="status" id="timesStatus">正在讀取成績…</p>
+    </div>
+    <section class="panel" id="timesMain"></section>
+  </div>
+</div>
 <div id="beanLight" class="hidden"></div>
 
 <script>
@@ -615,6 +654,11 @@
     beanFilter: "all",
     beanDay: "all",
     beanQ: "",
+    timesRecords: [],
+    timesLoaded: false,
+    timesTab: "today",
+    timesFilter: "all",
+    timesQ: "",
     editing: false
   };
 
@@ -1204,12 +1248,14 @@
     document.body.classList.add("hub-on");
     document.body.classList.remove("dash-on");
     document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
   function showDash() {
     document.body.classList.remove("hub-on");
     document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1221,12 +1267,249 @@
   function showBeanDash() {
     document.body.classList.remove("hub-on");
     document.body.classList.remove("dash-on");
+    document.body.classList.remove("times-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
       state.beanLoaded = true;
       loadBean();
     }
+  }
+  function showTimesDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.add("times-on");
+    renderTimes();
+    if (!state.timesLoaded) {
+      state.timesLoaded = true;
+      loadTimes();
+    }
+  }
+  const TIMES_ACTIVITY = "乘數表小遊戲";
+  const TIMES_CLASSES = ["4A", "4B", "4C"];
+  function timesClassOk(klass) {
+    return TIMES_CLASSES.indexOf(String(klass || "").toUpperCase()) >= 0;
+  }
+  function timesRoster() {
+    if (state.timesFilter === "all") {
+      let out = [];
+      TIMES_CLASSES.forEach(c => { out = out.concat(rosterStudents(c)); });
+      return out;
+    }
+    return rosterStudents(state.timesFilter);
+  }
+  function parseTimesResult(result, stars) {
+    const text = String(result || "") + " " + String(stars || "");
+    if (/DELETE|刪除|\bDEL\b/i.test(text)) return { deleted: true };
+    const pair = String(result || "").match(/(\d+)\s*\/\s*(\d+)/);
+    if (pair) {
+      const score = Number(pair[1]), total = Number(pair[2]);
+      const pct = total ? Math.round(score / total * 100) : Number(stars) || 0;
+      return { score, total, percent: pct, timed: false };
+    }
+    const n = String(result || "").match(/(\d+)\s*題/);
+    if (n) return { score: Number(n[1]), total: 0, percent: Number(stars) || 0, timed: true };
+    const pct = Number(stars);
+    return { score: isFinite(pct) ? pct : 0, total: 0, percent: isFinite(pct) ? pct : 0, timed: false };
+  }
+  function timesLive(rows) {
+    const allCut = {};
+    (rows || []).forEach(r => {
+      if (r.deleted && r.all) {
+        const k = r.klass + "\t" + r.no;
+        if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+      }
+    });
+    const byKey = {};
+    (rows || []).forEach(r => {
+      const k = r.klass + "\t" + r.no;
+      if (allCut[k] && r.ts <= allCut[k]) return;
+      if (r.all) return;
+      const mk = k + "\t" + r.date + "\t" + r.mode;
+      const cur = byKey[mk];
+      if (!cur || r.ts >= cur.ts) byKey[mk] = r;
+    });
+    return Object.keys(byKey).map(k => byKey[k]).filter(r => !r.deleted);
+  }
+  function timesMatch(r) {
+    if (state.timesFilter === "all") {
+      if (!timesClassOk(r.klass)) return false;
+    } else if (r.klass !== state.timesFilter) return false;
+    const q = state.timesQ.trim().toLowerCase();
+    if (q) {
+      const name = lookupName(r.klass, r.no) || "";
+      if ((r.klass + " " + r.no + "號 " + name + " " + r.mode).toLowerCase().indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  async function fetchTimesGviz() {
+    const cb = "times_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(TIMES_ACTIVITY) +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+    const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星");
+    const iHero = idx("角色"), iSec = idx("用時秒");
+    if (iLevel < 0 && iResult < 0) return [];
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      if (!klass || !no || no === "NaN") return;
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const date = ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) || state.today;
+      const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+      const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+      const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+      const result = iResult >= 0 ? gvizCell(row, iResult) : "";
+      const stars = iStars >= 0 ? gvizCell(row, iStars) : "";
+      const parsed = parseTimesResult(result, stars);
+      if (parsed.deleted) {
+        out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+        return;
+      }
+      out.push({
+        klass, no, date, ts,
+        mode: level || "練習",
+        result: String(result || ""),
+        tables: iHero >= 0 ? String(gvizCell(row, iHero) || "") : "",
+        seconds: iSec >= 0 ? String(gvizCell(row, iSec) || "") : "",
+        score: parsed.score,
+        total: parsed.total,
+        percent: parsed.percent,
+        timed: parsed.timed
+      });
+    });
+    return out;
+  }
+  async function loadTimes() {
+    $("timesStatus").textContent = "正在讀取成績…";
+    try {
+      state.timesRecords = await fetchTimesGviz();
+      const n = timesLive(state.timesRecords).length;
+      $("timesStatus").textContent = n ? ("已更新　共 " + n + " 筆練習") : "暫時未有成績。學生玩完會出現在這裏。";
+    } catch (e) {
+      state.timesRecords = [];
+      $("timesStatus").textContent = "未能讀取成績。請檢查網絡後再整理。";
+    }
+    renderTimes();
+  }
+  function timesScoreText(r) {
+    if (r.timed) return r.score + " 題";
+    if (r.total) return r.score + " / " + r.total + "（" + r.percent + "%）";
+    return r.percent ? (r.percent + "%") : (r.result || "—");
+  }
+  function timesPctClass(pct) {
+    if (pct >= 80) return "up";
+    if (pct < 60) return "down";
+    return "same";
+  }
+  function renderTimes() {
+    if (!$("timesMain")) return;
+    const live = timesLive(state.timesRecords).filter(timesMatch);
+    const roster = timesRoster();
+    const done = {};
+    live.forEach(r => { done[r.klass + "\t" + r.no] = true; });
+    const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
+    const today = live.filter(r => r.date === state.today);
+    let avg = 0;
+    if (live.length) avg = Math.round(live.reduce((s, r) => s + (Number(r.percent) || 0), 0) / live.length);
+    $("timesStats").innerHTML = `
+      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">至少練習一次</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">平均正確率</div><div class="big num">${live.length ? avg + "%" : "—"}</div><div class="tiny">${state.timesFilter === "all" ? "全部班別" : state.timesFilter}</div></div>
+      <div class="stat"><div class="lab">練習次數</div><div class="big num">${live.length}</div><div class="tiny">今日 ${today.length} 次</div></div>`;
+    $("timesClassChips").innerHTML = ["all"].concat(TIMES_CLASSES).map(c =>
+      `<button class="chip${state.timesFilter === c ? " on" : ""}" type="button" data-tclass="${c}">${c === "all" ? "全部班別" : c}</button>`
+    ).join("");
+    document.querySelectorAll("#timesTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-ttab") === state.timesTab));
+    $("timesDateLabel").textContent = "查看日期：" + prettyDate(state.today);
+    let rows = live.slice();
+    if (state.timesTab === "today") rows = live.filter(r => r.date === state.today);
+    if (state.timesTab === "class") {
+      const latest = {};
+      live.forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        const cur = latest[k];
+        if (!cur || r.percent > cur.percent || (r.percent === cur.percent && r.ts > cur.ts)) latest[k] = r;
+      });
+      const list = roster.map(s => {
+        const r = latest[s.klass + "\t" + s.no];
+        return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
+      });
+      $("timesMain").innerHTML = editBanner() + `<h2 class="h2">全班最新／最佳　${list.length} 人</h2>
+        <div class="list">${list.map(r => r.missing ? missRow(r) : timesRow(r)).join("") || `<p class="empty">未有名單。</p>`}</div>`;
+      return;
+    }
+    rows.sort((a, b) => b.ts - a.ts || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    const title = state.timesTab === "today" ? ("今日課堂　" + rows.length) : ("全部紀錄　" + rows.length);
+    $("timesMain").innerHTML = editBanner() + `<h2 class="h2">${title}</h2>
+      <div class="list">${rows.length ? rows.map(timesRow).join("") : `<p class="empty">${state.timesTab === "today" ? "今天還沒有人練習。" : "尚未有成績。"}</p>`}
+      ${state.timesTab === "today" && missing.length ? `<h2 class="h2" style="margin-top:16px">未交　${missing.length}</h2><div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("")}</div>` : ""}</div>`;
+  }
+  function timesRow(r) {
+    const name = r.name || lookupName(r.klass, r.no) || "名單以外";
+    const pct = Number(r.percent) || 0;
+    return `<article class="row">
+      <div>
+        <div class="name">${esc(name)}</div>
+        <div class="who">${esc(r.klass)}　${esc(r.no)}號　${esc(r.mode)}${r.tables ? "　" + esc(r.tables) : ""}</div>
+        <div class="who">${esc(prettyDate(r.date))}${r.seconds ? "　" + esc(r.seconds) + " 秒" : ""}</div>
+        ${state.editing ? `<div class="actions">
+          <button class="danger" type="button" data-tdel="one" data-class="${esc(r.klass)}" data-no="${esc(r.no)}" data-mode="${esc(r.mode)}" data-date="${esc(r.date)}">刪這次</button>
+          <button class="danger" type="button" data-tdel="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+        </div>` : ""}
+      </div>
+      <div>
+        <div class="kg num">${esc(timesScoreText(r))}</div>
+        <div class="delta ${timesPctClass(pct)}">${pct}%</div>
+      </div>
+    </article>`;
+  }
+  async function deleteTimes(klass, no, all, mode, date) {
+    const name = lookupName(klass, no);
+    const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+    const ok = confirm(all
+      ? "確定刪除 " + who + " 的全部乘數表成績？"
+      : "確定刪除 " + who + " 這次練習紀錄？");
+    if (!ok) return;
+    state.timesRecords = (state.timesRecords || []).concat([{
+      klass, no, date: all ? "ALL" : (date || state.today), mode: mode || "",
+      ts: Date.now(), deleted: true, all: !!all
+    }]);
+    renderTimes();
+    toast("已刪除");
+    await postScore({
+      token: SCORE_TOKEN,
+      activity: TIMES_ACTIVITY,
+      class: klass,
+      no: no,
+      level: all ? "ALL" : (mode || date || state.today),
+      result: "DELETE",
+      stars: "DEL",
+      hero: "",
+      seconds: ""
+    });
+    setTimeout(() => loadTimes(), 2500);
+  }
+  function exportTimesCsv() {
+    const rows = [["班別", "學號", "姓名", "日期", "玩法", "分數", "正確率", "乘數表", "用時秒"]];
+    timesLive(state.timesRecords).filter(timesMatch).forEach(r => {
+      rows.push([r.klass, r.no, lookupName(r.klass, r.no), r.date, r.mode, timesScoreText(r), r.percent, r.tables, r.seconds]);
+    });
+    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "乘數表成績-" + state.today + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
   function driveFileId(url) {
     const s = String(url || "");
@@ -1592,14 +1875,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${new URLSearchParams(location.search).get("from")==="beanlog" ? "../beanlog/" : "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "timesEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -1610,6 +1893,7 @@
     syncEditButtons();
     if (document.body.classList.contains("dash-on")) render();
     if (document.body.classList.contains("bean-on")) renderBean();
+    if (document.body.classList.contains("times-on")) renderTimes();
     if (document.body.classList.contains("hub-on") && isIn()) route();
     toast(state.editing ? "已開啟編輯，可刪除不適合的成績或相片。" : "已離開編輯。");
   }
@@ -1742,6 +2026,7 @@
     if (!it) return renderHome();
     if (it.id === "grip") { showDash(); return; }
     if (it.id === "beanlog") { showBeanDash(); return; }
+    if (it.id === "times") { showTimesDash(); return; }
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
@@ -1847,6 +2132,31 @@
     $("editBtn").onclick = toggleEdit;
     $("dashEdit").onclick = toggleEdit;
     $("beanEdit").onclick = toggleEdit;
+    $("timesEdit").onclick = toggleEdit;
+    $("timesLock").onclick = lock;
+    $("timesReload").onclick = () => loadTimes();
+    $("timesCsv").onclick = exportTimesCsv;
+    $("timesTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-ttab]");
+      if (!b) return;
+      state.timesTab = b.getAttribute("data-ttab");
+      renderTimes();
+    };
+    $("timesClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-tclass]");
+      if (!b) return;
+      state.timesFilter = b.getAttribute("data-tclass");
+      renderTimes();
+    };
+    $("timesQ").addEventListener("input", () => {
+      state.timesQ = $("timesQ").value;
+      renderTimes();
+    });
+    $("timesMain").onclick = (e) => {
+      const b = e.target.closest("button[data-tdel]");
+      if (!b) return;
+      deleteTimes(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-tdel") === "all", b.getAttribute("data-mode"), b.getAttribute("data-date"));
+    };
     $("shell").addEventListener("click", (e) => {
       if (e.target.id === "pinGo") tryPin();
     });
