@@ -390,17 +390,22 @@
     }
     .pin-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--hub-dark); }
     .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
-    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times { display: none !important; }
+    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times, body.dash-on #plant { display: none !important; }
     body.dash-on #dash { display: block; }
     #dash { display: none; }
-    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times { display: none !important; }
+    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times, body.bean-on #plant { display: none !important; }
     body.bean-on #bean { display: block; }
     #bean { display: none; }
-    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean { display: none !important; }
+    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean, body.times-on #plant { display: none !important; }
     body.times-on #times { display: block; }
     #times { display: none; }
+    body.plant-on header.hub, body.plant-on #shell, body.plant-on #hubFoot, body.plant-on #dash, body.plant-on #bean, body.plant-on #times { display: none !important; }
+    body.plant-on #plant { display: block; }
+    #plant { display: none; }
     .times-top { background: linear-gradient(180deg, #0f4c5c, #0a343d); }
     .times-top .kicker { color: #e8c15a; }
+    .plant-top { background: linear-gradient(180deg, #2e7d32, #1b5e20); }
+    .plant-top .kicker { color: #f4d35e; }
     .bean-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
     .bean-top .kicker { color: #f4d35e; }
     .photo-wall {
@@ -583,6 +588,40 @@
     <section class="panel" id="timesMain"></section>
   </div>
 </div>
+
+<div id="plant">
+  <header class="top plant-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　科學 · 成績後台</p>
+      <h1>動手種植物</h1>
+      <p class="sub" id="plantDateLabel">有開始種植一次就算已交</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a href="../mungbean/">學生輸入頁</a>
+        <button type="button" id="plantReload">重新整理</button>
+        <button type="button" id="plantCsv">匯出 Excel</button>
+        <button type="button" id="plantEdit">編輯</button>
+        <button type="button" id="plantLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="plantStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="plantTabs">
+        <button type="button" data-ptab="class" class="on">全班成績</button>
+        <button type="button" data-ptab="all">全部紀錄</button>
+      </div>
+      <div class="classes" id="plantClassChips"></div>
+      <div class="search">
+        <input id="plantQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="plantCsvBar" type="button">匯出 Excel</button>
+      </div>
+      <p class="status" id="plantStatus">正在讀取成績…</p>
+    </div>
+    <section class="panel" id="plantMain"></section>
+  </div>
+</div>
 <div id="beanLight" class="hidden"></div>
 
 <script>
@@ -666,6 +705,11 @@
     timesTab: "class",
     timesFilter: "all",
     timesQ: "",
+    plantRecords: [],
+    plantLoaded: false,
+    plantTab: "class",
+    plantFilter: "all",
+    plantQ: "",
     editing: false
   };
 
@@ -1264,6 +1308,7 @@
     document.body.classList.remove("dash-on");
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
@@ -1271,6 +1316,7 @@
     document.body.classList.remove("hub-on");
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1283,6 +1329,7 @@
     document.body.classList.remove("hub-on");
     document.body.classList.remove("dash-on");
     document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
@@ -1294,12 +1341,205 @@
     document.body.classList.remove("hub-on");
     document.body.classList.remove("dash-on");
     document.body.classList.remove("bean-on");
+    document.body.classList.remove("plant-on");
     document.body.classList.add("times-on");
     renderTimes();
     if (!state.timesLoaded) {
       state.timesLoaded = true;
       loadTimes();
     }
+  }
+  function showPlantDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
+    document.body.classList.add("plant-on");
+    renderPlant();
+    if (!state.plantLoaded) {
+      state.plantLoaded = true;
+      loadPlant();
+    }
+  }
+  const PLANT_ACTIVITY = "動手種植物";
+  const PLANT_CLASSES = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+  function plantClassOk(klass) {
+    return PLANT_CLASSES.indexOf(String(klass || "").toUpperCase()) >= 0;
+  }
+  function plantRoster() {
+    if (state.plantFilter === "all") {
+      let out = [];
+      PLANT_CLASSES.forEach(c => { out = out.concat(rosterStudents(c)); });
+      return out;
+    }
+    return rosterStudents(state.plantFilter);
+  }
+  function plantLive(rows) {
+    const allCut = {};
+    (rows || []).forEach(r => {
+      if (r.deleted && r.all) {
+        const k = r.klass + "\t" + r.no;
+        if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+      }
+    });
+    const byKey = {};
+    (rows || []).forEach(r => {
+      const k = r.klass + "\t" + r.no;
+      if (allCut[k] && r.ts <= allCut[k]) return;
+      if (r.all) return;
+      const mk = k + "\t" + r.date + "\t" + r.level;
+      const cur = byKey[mk];
+      if (!cur || r.ts >= cur.ts) byKey[mk] = r;
+    });
+    return Object.keys(byKey).map(k => byKey[k]).filter(r => !r.deleted);
+  }
+  function plantMatch(r) {
+    if (state.plantFilter === "all") {
+      if (!plantClassOk(r.klass)) return false;
+    } else if (r.klass !== state.plantFilter) return false;
+    const q = state.plantQ.trim().toLowerCase();
+    if (q) {
+      const name = lookupName(r.klass, r.no) || "";
+      if ((r.klass + " " + r.no + "號 " + name + " " + r.level).toLowerCase().indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  async function fetchPlantGviz() {
+    const cb = "plant_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(PLANT_ACTIVITY) +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+    const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星"), iSec = idx("用時秒");
+    if (iLevel < 0 && iResult < 0) return [];
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      if (!klass || !no || no === "NaN") return;
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const date = ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) || state.today;
+      const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+      const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+      const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+      const result = iResult >= 0 ? String(gvizCell(row, iResult) || "") : "";
+      const stars = iStars >= 0 ? String(gvizCell(row, iStars) || "") : "";
+      if (/DELETE|刪除|\bDEL\b/i.test(result + " " + stars + " " + level)) {
+        out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+        return;
+      }
+      out.push({
+        klass, no, date, ts,
+        level: level || "開始",
+        result: result || level || "",
+        day: stars,
+        seconds: iSec >= 0 ? String(gvizCell(row, iSec) || "") : "",
+        done: /完成/.test(level + result)
+      });
+    });
+    return out;
+  }
+  async function loadPlant() {
+    $("plantStatus").textContent = "正在讀取成績…";
+    try {
+      state.plantRecords = await fetchPlantGviz();
+      const n = plantLive(state.plantRecords).length;
+      $("plantStatus").textContent = n ? ("已更新　共 " + n + " 筆紀錄") : "暫時未有成績。學生開始種植後會出現在這裏。";
+    } catch (e) {
+      state.plantRecords = [];
+      $("plantStatus").textContent = "未能讀取成績。請檢查網絡後再整理。";
+    }
+    renderPlant();
+  }
+  function renderPlant() {
+    if (!$("plantMain")) return;
+    const live = plantLive(state.plantRecords).filter(plantMatch);
+    const roster = plantRoster();
+    const done = {};
+    const finished = {};
+    live.forEach(r => {
+      done[r.klass + "\t" + r.no] = true;
+      if (r.done) finished[r.klass + "\t" + r.no] = true;
+    });
+    const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
+    $("plantStats").innerHTML = `
+      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">有開始種植一次即可</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">已完成</div><div class="big num">${Object.keys(finished).length}</div><div class="tiny">種到完成</div></div>
+      <div class="stat"><div class="lab">紀錄</div><div class="big num">${live.length}</div><div class="tiny">${state.plantFilter === "all" ? "全部班別" : state.plantFilter}</div></div>`;
+    $("plantClassChips").innerHTML = ["all"].concat(PLANT_CLASSES).map(c =>
+      `<button class="chip${state.plantFilter === c ? " on" : ""}" type="button" data-pclass="${c}">${c === "all" ? "全部班別" : c}</button>`
+    ).join("");
+    document.querySelectorAll("#plantTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-ptab") === state.plantTab));
+    if (state.plantTab !== "all") {
+      const latest = {};
+      live.forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        const cur = latest[k];
+        if (!cur || (r.done && !cur.done) || r.ts > cur.ts) latest[k] = r;
+      });
+      const list = roster.map(s => {
+        const r = latest[s.klass + "\t" + s.no];
+        return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
+      });
+      $("plantMain").innerHTML = editBanner() + `<h2 class="h2">全班成績　已交 ${Object.keys(done).length}　未交 ${missing.length}</h2>
+        <div class="list">${list.map(r => r.missing ? missRow(r) : plantRow(r)).join("") || `<p class="empty">未有名單。</p>`}</div>`;
+      return;
+    }
+    const rows = live.slice().sort((a, b) => b.ts - a.ts || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    $("plantMain").innerHTML = editBanner() + `<h2 class="h2">全部紀錄　${rows.length}</h2>
+      <div class="list">${rows.length ? rows.map(plantRow).join("") : `<p class="empty">尚未有成績。</p>`}</div>`;
+  }
+  function plantRow(r) {
+    const name = r.name || lookupName(r.klass, r.no) || "名單以外";
+    const label = r.done ? "已完成" : "已開始";
+    return `<article class="row">
+      <div>
+        <div class="name">${esc(name)}</div>
+        <div class="who">${esc(r.klass)}　${esc(r.no)}號　${esc(r.level || "")}${r.day ? "　第" + esc(r.day) + "日" : ""}</div>
+        <div class="who">${esc(prettyDate(r.date))}${r.seconds ? "　" + esc(r.seconds) + " 秒" : ""}</div>
+        ${state.editing ? `<div class="actions">
+          <button class="danger" type="button" data-pdel="one" data-class="${esc(r.klass)}" data-no="${esc(r.no)}" data-date="${esc(r.date)}">刪這次</button>
+          <button class="danger" type="button" data-pdel="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+        </div>` : ""}
+      </div>
+      <div>
+        <div class="kg">${label}</div>
+        <div class="delta ${r.done ? "up" : "same"}">${esc(r.result || r.level || "")}</div>
+      </div>
+    </article>`;
+  }
+  async function deletePlant(klass, no, all, date) {
+    const name = lookupName(klass, no);
+    const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+    if (!confirm(all ? "確定刪除 " + who + " 的全部動手種植物紀錄？" : "確定刪除 " + who + " 這次紀錄？")) return;
+    state.plantRecords = (state.plantRecords || []).concat([{
+      klass, no, date: all ? "ALL" : (date || state.today), ts: Date.now(), deleted: true, all: !!all
+    }]);
+    renderPlant();
+    toast("已刪除");
+    await postScore({
+      token: SCORE_TOKEN,
+      activity: PLANT_ACTIVITY,
+      class: klass,
+      no: no,
+      level: all ? "ALL" : (date || state.today),
+      result: "DELETE",
+      stars: "DEL"
+    });
+    setTimeout(() => loadPlant(), 2500);
+  }
+  function exportPlantExcel() {
+    const headers = ["班別", "學號", "姓名", "日期", "關卡", "結果", "第幾日", "用時秒"];
+    const rows = plantLive(state.plantRecords).filter(plantMatch).map(r =>
+      [r.klass, r.no, lookupName(r.klass, r.no), r.date, r.level, r.result, r.day, r.seconds]
+    );
+    downloadExcel("動手種植物成績-" + state.today, headers, rows);
   }
   const TIMES_ACTIVITY = "乘數表小遊戲";
   const TIMES_CLASSES = ["2A", "2B", "2C", "3A", "3B", "3C", "4A", "4B", "4C"];
@@ -1889,14 +2129,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit", "timesEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -1908,6 +2148,7 @@
     if (document.body.classList.contains("dash-on")) render();
     if (document.body.classList.contains("bean-on")) renderBean();
     if (document.body.classList.contains("times-on")) renderTimes();
+    if (document.body.classList.contains("plant-on")) renderPlant();
     if (document.body.classList.contains("hub-on") && isIn()) route();
     toast(state.editing ? "已開啟編輯，可刪除不適合的成績或相片。" : "已離開編輯。");
   }
@@ -2041,6 +2282,7 @@
     if (it.id === "grip") { showDash(); return; }
     if (it.id === "beanlog") { showBeanDash(); return; }
     if (it.id === "times") { showTimesDash(); return; }
+    if (it.id === "mungbean") { showPlantDash(); return; }
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
@@ -2153,6 +2395,32 @@
     $("timesReload").onclick = () => loadTimes();
     $("timesCsv").onclick = exportTimesCsv;
     $("timesCsvBar").onclick = exportTimesCsv;
+    $("plantEdit").onclick = toggleEdit;
+    $("plantLock").onclick = lock;
+    $("plantReload").onclick = () => loadPlant();
+    $("plantCsv").onclick = exportPlantExcel;
+    $("plantCsvBar").onclick = exportPlantExcel;
+    $("plantTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-ptab]");
+      if (!b) return;
+      state.plantTab = b.getAttribute("data-ptab");
+      renderPlant();
+    };
+    $("plantClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-pclass]");
+      if (!b) return;
+      state.plantFilter = b.getAttribute("data-pclass");
+      renderPlant();
+    };
+    $("plantQ").addEventListener("input", () => {
+      state.plantQ = $("plantQ").value;
+      renderPlant();
+    });
+    $("plantMain").onclick = (e) => {
+      const b = e.target.closest("button[data-pdel]");
+      if (!b) return;
+      deletePlant(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-pdel") === "all", b.getAttribute("data-date"));
+    };
     $("timesTabs").onclick = (e) => {
       const b = e.target.closest("button[data-ttab]");
       if (!b) return;
