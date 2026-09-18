@@ -390,21 +390,26 @@
     }
     .pin-go:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--hub-dark); }
     .gate-msg { min-height: 22px; margin: 10px 0 0; font-weight: 800; color: var(--bad); }
-    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times, body.dash-on #plant, body.dash-on #lang { display: none !important; }
+    body.dash-on header.hub, body.dash-on #shell, body.dash-on #hubFoot, body.dash-on #times, body.dash-on #plant, body.dash-on #lang, body.dash-on #jump { display: none !important; }
     body.dash-on #dash { display: block; }
     #dash { display: none; }
-    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times, body.bean-on #plant, body.bean-on #lang { display: none !important; }
+    body.bean-on header.hub, body.bean-on #shell, body.bean-on #hubFoot, body.bean-on #dash, body.bean-on #times, body.bean-on #plant, body.bean-on #lang, body.bean-on #jump { display: none !important; }
     body.bean-on #bean { display: block; }
     #bean { display: none; }
-    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean, body.times-on #plant, body.times-on #lang { display: none !important; }
+    body.times-on header.hub, body.times-on #shell, body.times-on #hubFoot, body.times-on #dash, body.times-on #bean, body.times-on #plant, body.times-on #lang, body.times-on #jump { display: none !important; }
     body.times-on #times { display: block; }
     #times { display: none; }
-    body.plant-on header.hub, body.plant-on #shell, body.plant-on #hubFoot, body.plant-on #dash, body.plant-on #bean, body.plant-on #times, body.plant-on #lang { display: none !important; }
+    body.plant-on header.hub, body.plant-on #shell, body.plant-on #hubFoot, body.plant-on #dash, body.plant-on #bean, body.plant-on #times, body.plant-on #lang, body.plant-on #jump { display: none !important; }
     body.plant-on #plant { display: block; }
     #plant { display: none; }
-    body.lang-on header.hub, body.lang-on #shell, body.lang-on #hubFoot, body.lang-on #dash, body.lang-on #bean, body.lang-on #times, body.lang-on #plant { display: none !important; }
+    body.lang-on header.hub, body.lang-on #shell, body.lang-on #hubFoot, body.lang-on #dash, body.lang-on #bean, body.lang-on #times, body.lang-on #plant, body.lang-on #jump { display: none !important; }
     body.lang-on #lang { display: block; }
     #lang { display: none; }
+    body.jump-on header.hub, body.jump-on #shell, body.jump-on #hubFoot, body.jump-on #dash, body.jump-on #bean, body.jump-on #times, body.jump-on #plant, body.jump-on #lang { display: none !important; }
+    body.jump-on #jump { display: block; }
+    #jump { display: none; }
+    .jump-top { background: linear-gradient(180deg, #ef6c00, #e65100); }
+    .jump-top .kicker { color: #fff8e1; }
     .lang-top { background: linear-gradient(180deg, #6a1b9a, #4a148c); }
     .lang-top .kicker { color: #f4d35e; }
     .times-top { background: linear-gradient(180deg, #0f4c5c, #0a343d); }
@@ -666,6 +671,44 @@
     <section class="panel" id="langMain"></section>
   </div>
 </div>
+
+<div id="jump">
+  <header class="top jump-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　科學 · 成績後台</p>
+      <h1 id="jumpTitle">跳跳關</h1>
+      <p class="sub">有玩過一次就算已交，唔使日日做。</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a id="jumpPlay" href="../engineer/">學生輸入頁</a>
+        <button type="button" id="jumpReload">重新整理</button>
+        <button type="button" id="jumpCsv">匯出 Excel</button>
+        <button type="button" id="jumpEdit">編輯</button>
+        <button type="button" id="jumpLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="jumpStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="jumpKindTabs">
+        <button type="button" data-jump="jump" class="on">🦘 小小發明家</button>
+        <button type="button" data-jump="engineer">🔧 小小工程師</button>
+      </div>
+      <div class="tabs" id="jumpTabs">
+        <button type="button" data-jtab="class" class="on">全班成績</button>
+        <button type="button" data-jtab="all">全部紀錄</button>
+      </div>
+      <div class="classes" id="jumpClassChips"></div>
+      <div class="search">
+        <input id="jumpQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="jumpCsvBar" type="button">匯出 Excel</button>
+      </div>
+      <p class="status" id="jumpStatus">正在讀取成績…</p>
+    </div>
+    <section class="panel" id="jumpMain"></section>
+  </div>
+</div>
 <div id="beanLight" class="hidden"></div>
 
 <script>
@@ -760,6 +803,12 @@
     langTab: "class",
     langFilter: "all",
     langQ: "",
+    jumpRecords: [],
+    jumpLoaded: "",
+    jumpKey: "jump",
+    jumpTab: "class",
+    jumpFilter: "all",
+    jumpQ: "",
     editing: false
   };
 
@@ -1360,6 +1409,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
@@ -1369,6 +1419,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1383,6 +1434,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
@@ -1396,6 +1448,7 @@
     document.body.classList.remove("bean-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
     document.body.classList.add("times-on");
     renderTimes();
     if (!state.timesLoaded) {
@@ -1409,6 +1462,7 @@
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
     document.body.classList.add("plant-on");
     renderPlant();
     if (!state.plantLoaded) {
@@ -1429,6 +1483,7 @@
     document.body.classList.remove("bean-on");
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
+    document.body.classList.remove("jump-on");
     document.body.classList.add("lang-on");
     $("langTitle").textContent = langGame().emoji + " " + langGame().title;
     $("langPlay").href = langGame().play;
@@ -1615,6 +1670,214 @@
     const title = langGame().title;
     const rows = langLive(state.langRecords).filter(langMatch).map(r =>
       [title, r.klass, r.no, lookupName(r.klass, r.no), r.date, r.score, r.pass, r.total, r.result]
+    );
+    downloadExcel(title + "成績-" + state.today, headers, rows);
+  }
+  const JUMP_GAMES = {
+    jump: { id: "jump", activity: "小小發明家跳跳關", title: "小小發明家跳跳關", emoji: "🦘", play: "https://cheungsiredu.github.io/chilin-jump-game/", classes: ["2A", "2B", "2C"] },
+    engineer: { id: "engineer", activity: "小小工程師跳跳關", title: "小小工程師跳跳關", emoji: "🔧", play: "../engineer/", classes: ["4A", "4B", "4C"] }
+  };
+  function jumpGame() { return JUMP_GAMES[state.jumpKey] || JUMP_GAMES.jump; }
+  function showJumpDash(key) {
+    if (key && JUMP_GAMES[key]) state.jumpKey = key;
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
+    document.body.classList.add("jump-on");
+    const g = jumpGame();
+    $("jumpTitle").textContent = g.emoji + " " + g.title;
+    $("jumpPlay").href = g.play;
+    renderJump();
+    if (state.jumpLoaded !== state.jumpKey) {
+      state.jumpLoaded = state.jumpKey;
+      loadJump();
+    }
+  }
+  function jumpClasses() { return jumpGame().classes || ["2A", "2B", "2C"]; }
+  function jumpClassOk(klass) {
+    return jumpClasses().indexOf(String(klass || "").toUpperCase()) >= 0;
+  }
+  function jumpRoster() {
+    const list = jumpClasses();
+    if (state.jumpFilter === "all") {
+      let out = [];
+      list.forEach(c => { out = out.concat(rosterStudents(c)); });
+      return out;
+    }
+    return rosterStudents(state.jumpFilter);
+  }
+  function jumpLive(rows) {
+    const allCut = {};
+    (rows || []).forEach(r => {
+      if (r.deleted && r.all) {
+        const k = r.klass + "\t" + r.no;
+        if (!allCut[k] || r.ts > allCut[k]) allCut[k] = r.ts;
+      }
+    });
+    const byKey = {};
+    (rows || []).forEach(r => {
+      const k = r.klass + "\t" + r.no;
+      if (allCut[k] && r.ts <= allCut[k]) return;
+      if (r.all) return;
+      const mk = k + "\t" + r.date + "\t" + r.level + "\t" + r.result;
+      const cur = byKey[mk];
+      if (!cur || r.ts >= cur.ts) byKey[mk] = r;
+    });
+    return Object.keys(byKey).map(k => byKey[k]).filter(r => !r.deleted);
+  }
+  function jumpMatch(r) {
+    if (state.jumpFilter === "all") {
+      if (!jumpClassOk(r.klass)) return false;
+    } else if (r.klass !== state.jumpFilter) return false;
+    const q = state.jumpQ.trim().toLowerCase();
+    if (q) {
+      const name = lookupName(r.klass, r.no) || "";
+      if ((r.klass + " " + r.no + "號 " + name + " " + r.level + " " + r.result).toLowerCase().indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  async function fetchJumpGviz(activity) {
+    const cb = "jump_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(activity) +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iTime = idx("時間"), iClass = idx("班別"), iNo = idx("學號");
+    const iLevel = idx("關卡"), iResult = idx("結果"), iStars = idx("星星");
+    const iHero = idx("角色"), iSec = idx("用時秒");
+    if (iLevel < 0 && iResult < 0) return [];
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase().replace(/\s+/g, "");
+      const no = String(parseInt(String(gvizCell(row, iNo)), 10));
+      if (!klass || !no || no === "NaN") return;
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const date = ymdFromGviz(timeCell && timeCell.v, timeCell && timeCell.f) || state.today;
+      const tsMatch = String(timeCell && timeCell.v || "").match(/^Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)/);
+      const ts = tsMatch ? Date.UTC(+tsMatch[1], +tsMatch[2], +tsMatch[3], +tsMatch[4], +tsMatch[5], +tsMatch[6]) : 0;
+      const level = iLevel >= 0 ? String(gvizCell(row, iLevel) || "") : "";
+      const result = iResult >= 0 ? String(gvizCell(row, iResult) || "") : "";
+      const stars = iStars >= 0 ? String(gvizCell(row, iStars) || "") : "";
+      if (/DELETE|刪除|\bDEL\b/i.test(result + " " + stars + " " + level)) {
+        out.push({ klass, no, date: level === "ALL" ? "ALL" : date, ts, deleted: true, all: level === "ALL" });
+        return;
+      }
+      out.push({
+        klass, no, date, ts, level, result,
+        stars: stars,
+        hero: iHero >= 0 ? String(gvizCell(row, iHero) || "") : "",
+        seconds: iSec >= 0 ? String(gvizCell(row, iSec) || "") : "",
+        clear: /全通關/.test(result),
+        win: /過關|全通關/.test(result)
+      });
+    });
+    return out;
+  }
+  async function loadJump() {
+    $("jumpStatus").textContent = "正在讀取成績…";
+    try {
+      state.jumpRecords = await fetchJumpGviz(jumpGame().activity);
+      const n = jumpLive(state.jumpRecords).length;
+      $("jumpStatus").textContent = n ? ("已更新　共 " + n + " 筆紀錄") : "暫時未有成績。學生玩過會出現在這裏。";
+    } catch (e) {
+      state.jumpRecords = [];
+      $("jumpStatus").textContent = "未能讀取成績。請檢查網絡後再整理。";
+    }
+    renderJump();
+  }
+  function renderJump() {
+    if (!$("jumpMain")) return;
+    const g = jumpGame();
+    $("jumpTitle").textContent = g.emoji + " " + g.title;
+    $("jumpPlay").href = g.play;
+    document.querySelectorAll("#jumpKindTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-jump") === state.jumpKey));
+    document.querySelectorAll("#jumpTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-jtab") === state.jumpTab));
+    const live = jumpLive(state.jumpRecords).filter(jumpMatch);
+    const roster = jumpRoster();
+    const done = {}, cleared = {};
+    live.forEach(r => {
+      done[r.klass + "\t" + r.no] = true;
+      if (r.clear) cleared[r.klass + "\t" + r.no] = true;
+    });
+    const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
+    $("jumpStats").innerHTML = `
+      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">有玩過一次即可</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
+      <div class="stat"><div class="lab">全通關</div><div class="big num">${Object.keys(cleared).length}</div><div class="tiny">${g.title}</div></div>
+      <div class="stat"><div class="lab">紀錄</div><div class="big num">${live.length}</div><div class="tiny">唔使日日交</div></div>`;
+    $("jumpClassChips").innerHTML = ["all"].concat(jumpClasses()).map(c =>
+      `<button class="chip${state.jumpFilter === c ? " on" : ""}" type="button" data-jclass="${c}">${c === "all" ? "全部班別" : c}</button>`
+    ).join("");
+    if (state.jumpTab !== "all") {
+      const latest = {};
+      live.forEach(r => {
+        const k = r.klass + "\t" + r.no;
+        const cur = latest[k];
+        if (!cur || (r.clear && !cur.clear) || (r.win && !cur.win) || r.ts > cur.ts) latest[k] = r;
+      });
+      const list = roster.map(s => {
+        const r = latest[s.klass + "\t" + s.no];
+        return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
+      });
+      $("jumpMain").innerHTML = editBanner() + `<h2 class="h2">${g.title}　已交 ${Object.keys(done).length}　未交 ${missing.length}</h2>
+        <div class="list">${list.map(r => r.missing ? missRow(r) : jumpRow(r)).join("") || `<p class="empty">未有名單。</p>`}</div>`;
+      return;
+    }
+    const rows = live.slice().sort((a, b) => b.ts - a.ts || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
+    $("jumpMain").innerHTML = editBanner() + `<h2 class="h2">全部紀錄　${rows.length}</h2>
+      <div class="list">${rows.length ? rows.map(jumpRow).join("") : `<p class="empty">尚未有成績。</p>`}</div>`;
+  }
+  function jumpRow(r) {
+    const name = r.name || lookupName(r.klass, r.no) || "名單以外";
+    const label = r.clear ? "全通關" : r.win ? "過關" : (r.result || "已玩");
+    return `<article class="row">
+      <div>
+        <div class="name">${esc(name)}</div>
+        <div class="who">${esc(r.klass)}　${esc(r.no)}號　${esc(r.level || "")}${r.hero ? "　" + esc(r.hero) : ""}</div>
+        <div class="who">${esc(prettyDate(r.date))}${r.stars ? "　星星 " + esc(r.stars) : ""}${r.seconds ? "　" + esc(r.seconds) + " 秒" : ""}</div>
+        ${state.editing ? `<div class="actions">
+          <button class="danger" type="button" data-jdel="one" data-class="${esc(r.klass)}" data-no="${esc(r.no)}" data-date="${esc(r.date)}">刪這次</button>
+          <button class="danger" type="button" data-jdel="all" data-class="${esc(r.klass)}" data-no="${esc(r.no)}">刪全部</button>
+        </div>` : ""}
+      </div>
+      <div>
+        <div class="kg">${esc(label)}</div>
+        <div class="delta ${r.clear ? "up" : r.win ? "same" : "down"}">${esc(r.result || "")}</div>
+      </div>
+    </article>`;
+  }
+  async function deleteJump(klass, no, all, date) {
+    const name = lookupName(klass, no);
+    const who = (name ? name + "　" : "") + klass + "　" + no + "號";
+    if (!confirm(all ? "確定刪除 " + who + " 的全部" + jumpGame().title + "紀錄？" : "確定刪除 " + who + " 這次紀錄？")) return;
+    state.jumpRecords = (state.jumpRecords || []).concat([{
+      klass, no, date: all ? "ALL" : (date || state.today), ts: Date.now(), deleted: true, all: !!all
+    }]);
+    renderJump();
+    toast("已刪除");
+    await postScore({
+      token: SCORE_TOKEN,
+      activity: jumpGame().activity,
+      class: klass,
+      no: no,
+      level: all ? "ALL" : (date || state.today),
+      result: "DELETE",
+      stars: "DEL"
+    });
+    setTimeout(() => loadJump(), 2500);
+  }
+  function exportJumpExcel() {
+    const headers = ["遊戲", "班別", "學號", "姓名", "日期", "關卡", "結果", "星星", "角色", "用時秒"];
+    const title = jumpGame().title;
+    const rows = jumpLive(state.jumpRecords).filter(jumpMatch).map(r =>
+      [title, r.klass, r.no, lookupName(r.klass, r.no), r.date, r.level, r.result, r.stars, r.hero, r.seconds]
     );
     downloadExcel(title + "成績-" + state.today, headers, rows);
   }
@@ -2386,14 +2649,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/",jump:"https://cheungsiredu.github.io/chilin-jump-game/",engineer:"../engineer/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit", "langEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit", "langEdit", "jumpEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -2407,6 +2670,7 @@
     if (document.body.classList.contains("times-on")) renderTimes();
     if (document.body.classList.contains("plant-on")) renderPlant();
     if (document.body.classList.contains("lang-on")) renderLang();
+    if (document.body.classList.contains("jump-on")) renderJump();
     if (document.body.classList.contains("hub-on") && isIn()) route();
     toast(state.editing ? "已開啟編輯，可刪除不適合的成績或相片。" : "已離開編輯。");
   }
@@ -2542,6 +2806,7 @@
     if (it.id === "times") { showTimesDash(); return; }
     if (it.id === "mungbean") { showPlantDash(); return; }
     if (it.id === "jp" || it.id === "fr" || it.id === "ko") { showLangDash(it.id); return; }
+    if (it.id === "jump" || it.id === "engineer") { showJumpDash(it.id); return; }
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
@@ -2714,6 +2979,42 @@
       const b = e.target.closest("button[data-ldel]");
       if (!b) return;
       deleteLang(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-ldel") === "all", b.getAttribute("data-date"));
+    };
+    $("jumpEdit").onclick = toggleEdit;
+    $("jumpLock").onclick = lock;
+    $("jumpReload").onclick = () => loadJump();
+    $("jumpCsv").onclick = exportJumpExcel;
+    $("jumpCsvBar").onclick = exportJumpExcel;
+    $("jumpKindTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-jump]");
+      if (!b) return;
+      const key = b.getAttribute("data-jump");
+      if (key === state.jumpKey) return;
+      state.jumpKey = key;
+      state.jumpLoaded = "";
+      state.jumpFilter = "all";
+      showJumpDash(key);
+    };
+    $("jumpTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-jtab]");
+      if (!b) return;
+      state.jumpTab = b.getAttribute("data-jtab");
+      renderJump();
+    };
+    $("jumpClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-jclass]");
+      if (!b) return;
+      state.jumpFilter = b.getAttribute("data-jclass");
+      renderJump();
+    };
+    $("jumpQ").addEventListener("input", () => {
+      state.jumpQ = $("jumpQ").value;
+      renderJump();
+    });
+    $("jumpMain").onclick = (e) => {
+      const b = e.target.closest("button[data-jdel]");
+      if (!b) return;
+      deleteJump(b.getAttribute("data-class"), b.getAttribute("data-no"), b.getAttribute("data-jdel") === "all", b.getAttribute("data-date"));
     };
     $("timesTabs").onclick = (e) => {
       const b = e.target.closest("button[data-ttab]");
