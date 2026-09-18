@@ -481,7 +481,7 @@
         <a href="#/">返回目錄</a>
         <a href="index.html">學生輸入頁</a>
         <button type="button" id="reloadBtn">重新整理</button>
-        <button type="button" id="csvBtn">匯出 CSV</button>
+        <button type="button" id="csvBtn">匯出 Excel</button>
         <button type="button" id="dashEdit">編輯</button>
         <button type="button" id="dashLock">離開後台</button>
       </div>
@@ -520,6 +520,7 @@
         <a href="#/">返回目錄</a>
         <a id="beanPlay" href="../beanlog/">學生輸入頁</a>
         <button type="button" id="beanReload">重新整理</button>
+        <button type="button" id="beanCsv">匯出 Excel</button>
         <button type="button" id="beanEdit">編輯</button>
         <button type="button" id="beanLock">離開後台</button>
       </div>
@@ -553,7 +554,7 @@
         <a href="#/">返回目錄</a>
         <a href="../times/">學生輸入頁</a>
         <button type="button" id="timesReload">重新整理</button>
-        <button type="button" id="timesCsv">匯出 CSV</button>
+        <button type="button" id="timesCsv">匯出 Excel</button>
         <button type="button" id="timesEdit">編輯</button>
         <button type="button" id="timesLock">離開後台</button>
       </div>
@@ -1152,21 +1153,29 @@
     setTimeout(() => loadBoard(true), 2500);
   }
 
+  function downloadExcel(filename, headers, rows) {
+    function cell(v) {
+      return "<td>" + String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</td>";
+    }
+    const html = "<html><head><meta charset='UTF-8'></head><body><table border='1'><tr>" +
+      headers.map(cell).join("") + "</tr>" +
+      (rows || []).map(r => "<tr>" + r.map(cell).join("") + "</tr>").join("") +
+      "</table></body></html>";
+    const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = String(filename || "成績").replace(/\.(csv|xls|xlsx)$/i, "") + ".xls";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast("已下載，可用 Excel 打開。");
+  }
   function exportCsv() {
-    const rows = [["班別", "學號", "姓名", "日期", "左手kg", "右手kg", "平均kg"]];
+    const headers = ["班別", "學號", "姓名", "日期", "左手kg", "右手kg", "平均kg"];
     const data = state.tab === "class"
       ? latestByStudent(state.records).sort((a, b) => a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no))
       : sortRows(filteredToday());
-    data.forEach(r => {
-      rows.push([r.klass, r.no, lookupName(r.klass, r.no), r.date, kg(r.left), kg(r.right), kg(r.avg)]);
-    });
-    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "手握力成績-" + state.viewDate + ".csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const rows = data.map(r => [r.klass, r.no, lookupName(r.klass, r.no), r.date, kg(r.left), kg(r.right), kg(r.avg)]);
+    downloadExcel("手握力成績-" + state.viewDate, headers, rows);
   }
 
   function escapeHtml(s) {
@@ -1499,17 +1508,20 @@
     setTimeout(() => loadTimes(), 2500);
   }
   function exportTimesCsv() {
-    const rows = [["班別", "學號", "姓名", "日期", "玩法", "分數", "正確率", "乘數表", "用時秒"]];
-    timesLive(state.timesRecords).filter(timesMatch).forEach(r => {
-      rows.push([r.klass, r.no, lookupName(r.klass, r.no), r.date, r.mode, timesScoreText(r), r.percent, r.tables, r.seconds]);
-    });
-    const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "乘數表成績-" + state.today + ".csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const headers = ["班別", "學號", "姓名", "日期", "玩法", "分數", "正確率", "乘數表", "用時秒"];
+    const rows = timesLive(state.timesRecords).filter(timesMatch).map(r =>
+      [r.klass, r.no, lookupName(r.klass, r.no), r.date, r.mode, timesScoreText(r), r.percent, r.tables, r.seconds]
+    );
+    downloadExcel("乘數表成績-" + state.today, headers, rows);
+  }
+  function exportBeanExcel() {
+    const headers = ["班別", "學號", "姓名", "第幾日", "生長情況", "觀察", "相片"];
+    const rows = beanLive(state.beanRecords).filter(beanMatch).map(r => [
+      r.klass, r.no, beanName(r), r.day, r.stage,
+      String(r.note || "").replace(/IMG:[A-Za-z0-9]+/g, "").replace(/📷https?:\/\/\S+/g, "").trim(),
+      beanHasPhoto(r) ? "有" : "無"
+    ]);
+    downloadExcel("家中種綠豆成績-" + state.today, headers, rows);
   }
   function driveFileId(url) {
     const s = String(url || "");
@@ -2088,6 +2100,7 @@
     $("dashLock").onclick = lock;
     $("beanLock").onclick = lock;
     $("beanReload").onclick = () => loadBean();
+    $("beanCsv").onclick = exportBeanExcel;
     $("beanTabs").onclick = (e) => {
       const b = e.target.closest("button[data-btab]");
       if (!b) return;
