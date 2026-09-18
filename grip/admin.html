@@ -1351,7 +1351,9 @@
     return (r.klass + " " + r.no + "號 " + beanName(r) + " " + r.day + " " + r.stage).toLowerCase().indexOf(q) >= 0;
   }
   function beanMatch(r) {
-    if (state.beanFilter !== "all" && r.klass !== state.beanFilter) return false;
+    if (state.beanFilter === "all") {
+      if (!beanClassOk(r.klass)) return false;
+    } else if (r.klass !== state.beanFilter) return false;
     if (state.beanDay !== "all" && r.day !== state.beanDay) return false;
     return beanPassQ(r);
   }
@@ -1463,13 +1465,9 @@
     renderBean();
   }
   function renderBeanChips() {
-    const live = beanLive(state.beanRecords);
-    const classes = {};
-    classList().forEach(c => { classes[c] = true; });
-    live.forEach(r => { if (r.klass) classes[r.klass] = true; });
-    const cls = ["all"].concat(Object.keys(classes).sort((a, b) => String(a).localeCompare(String(b), "zh-Hant")));
+    const cls = ["all"].concat(BEAN_CLASSES);
     $("beanClassChips").innerHTML = cls.map(c =>
-      `<button class="chip${state.beanFilter === c ? " on" : ""}" type="button" data-bclass="${c}">${c === "all" ? "全校" : c}</button>`
+      `<button class="chip${state.beanFilter === c ? " on" : ""}" type="button" data-bclass="${c}">${c === "all" ? "全部班別" : c}</button>`
     ).join("");
     const days = {};
     live.forEach(r => { if (r.day) days[r.day] = true; });
@@ -1482,17 +1480,19 @@
       .concat(dayList.map(d => `<button class="chip${state.beanDay === d ? " on" : ""}" type="button" data-bday="${esc(d)}">${esc(d)}</button>`)).join("");
   }
   function renderBeanStats() {
-    const live = beanLive(state.beanRecords).filter(r => state.beanFilter === "all" || r.klass === state.beanFilter);
+    const live = beanLive(state.beanRecords).filter(r =>
+      (state.beanFilter === "all" ? beanClassOk(r.klass) : r.klass === state.beanFilter)
+    );
     const photos = live.filter(r => beanHasPhoto(r) && (state.beanDay === "all" || r.day === state.beanDay));
     const done = {};
     live.forEach(r => { if (beanHasPhoto(r)) done[r.klass + "\t" + r.no] = true; });
-    const roster = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter);
+    const roster = beanRoster();
     const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
     $("beanStats").innerHTML = `
       <div class="stat ok"><div class="lab">相片</div><div class="big num">${photos.length}</div><div class="tiny">一目了然</div></div>
       <div class="stat"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">至少一張相片</div></div>
       <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
-      <div class="stat"><div class="lab">日子</div><div class="big num">${state.beanDay === "all" ? "全部" : state.beanDay.replace("第","").replace("日","")}</div><div class="tiny">${state.beanFilter === "all" ? "全校" : state.beanFilter}</div></div>`;
+      <div class="stat"><div class="lab">日子</div><div class="big num">${state.beanDay === "all" ? "全部" : state.beanDay.replace("第","").replace("日","")}</div><div class="tiny">${state.beanFilter === "all" ? "全部班別" : state.beanFilter}</div></div>`;
   }
   function openBeanLight(r) {
     const src = r.photo && String(r.photo).indexOf("data:image") === 0
@@ -1519,10 +1519,10 @@
       const done = {};
       beanLive(state.beanRecords).forEach(r => {
         if (!beanHasPhoto(r)) return;
-        if (state.beanFilter !== "all" && r.klass !== state.beanFilter) return;
+        if (state.beanFilter === "all" ? !beanClassOk(r.klass) : r.klass !== state.beanFilter) return;
         done[r.klass + "\t" + r.no] = true;
       });
-      const missing = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter)
+      const missing = beanRoster()
         .filter(s => !done[s.klass + "\t" + s.no] && beanPassQ({ klass: s.klass, no: s.no, day: "", stage: "" }));
       $("beanMain").innerHTML = editBanner() + `<h2 class="h2">未交　${missing.length}</h2>
         <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
@@ -1603,6 +1603,18 @@
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     }).catch(function () {});
+  }
+  const BEAN_CLASSES = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+  function beanClassOk(klass) {
+    return BEAN_CLASSES.indexOf(String(klass || "").toUpperCase()) >= 0;
+  }
+  function beanRoster() {
+    if (state.beanFilter === "all") {
+      let out = [];
+      BEAN_CLASSES.forEach(c => { out = out.concat(rosterStudents(c)); });
+      return out;
+    }
+    return rosterStudents(state.beanFilter);
   }
   function beanDayNum(day) {
     const n = parseInt(String(day || "").replace(/[^\d]/g, ""), 10);
