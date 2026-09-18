@@ -191,9 +191,9 @@
     }
     .meter:hover { border-color: var(--navy); }
     .meter .cls { font-weight: 900; color: var(--navy); font-size: 16px; }
-    .bar { height: 12px; background: var(--soft); border-radius: 99px; overflow: hidden; }
-    .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); }
-    .meter.done .bar > span { background: var(--ok); }
+    .meter-fill { height: 12px; background: var(--soft); border-radius: 99px; overflow: hidden; }
+    .meter-fill > span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--red)); }
+    .meter.done .meter-fill > span { background: var(--ok); }
     .meter .frac { font-weight: 900; color: var(--ink); font-size: 14px; white-space: nowrap; }
 
     .split { display: grid; gap: 12px; }
@@ -284,7 +284,7 @@
       padding: max(14px, env(safe-area-inset-top)) 58px 16px 16px;
       box-shadow: 0 8px 0 var(--hub-dark);
       position: relative;
-      z-index: 4;
+      z-index: 2;
     }
     header.hub .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--gold-2); }
     header.hub h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
@@ -323,7 +323,7 @@
       z-index: 1;
       max-width: 920px;
       margin: 0 auto;
-      padding: 24px 16px calc(48px + env(safe-area-inset-bottom));
+      padding: 20px 16px calc(48px + env(safe-area-inset-bottom));
       overflow: visible;
     }
     .chars { display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px; }
@@ -957,7 +957,7 @@
       const pct = all ? Math.round(n / all * 100) : 0;
       return `<button class="meter${n === all && all ? " done" : ""}" type="button" data-filter="${esc(klass)}">
         <div class="cls">${esc(klass)}</div>
-        <div class="bar"><span style="width:${pct}%"></span></div>
+        <div class="meter-fill"><span style="width:${pct}%"></span></div>
         <div class="frac num">${n}/${all}</div>
       </button>`;
     }).join("")}</div>`;
