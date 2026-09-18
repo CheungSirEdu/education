@@ -382,6 +382,29 @@
       background: #fff; border: 3px solid var(--line); border-radius: 16px;
       overflow: hidden; cursor: pointer; text-align: left; padding: 0; width: 100%;
       box-shadow: 0 3px 0 rgba(27,94,32,.16);
+      position: relative;
+    }
+    .photo-del {
+      position: absolute; top: 8px; right: 8px; z-index: 3;
+      width: auto; min-height: 36px; padding: 6px 10px; margin: 0;
+      background: #b91c1c; color: #fff; border: 2px solid #7f1d1d; font-size: 13px;
+      box-shadow: 0 3px 0 #7f1d1d;
+    }
+    .edit-banner {
+      background: #fff6e5; border: 3px solid var(--gold);
+      border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
+      font-weight: 800; color: var(--red-dark); line-height: 1.5;
+    }
+    .btn-edit-mode {
+      right: 118px;
+      background: #fff;
+      color: var(--hub-dark);
+    }
+    body.editing .btn-edit-mode {
+      background: var(--gold-2);
+    }
+    @media (max-width: 560px) {
+      .btn-edit-mode { right: auto; left: 10px; top: auto; bottom: 10px; }
     }
     .photo-card img {
       width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #e8f5e9;
@@ -418,6 +441,7 @@
   <p class="school">佛教志蓮小學</p>
   <h1>張老師成績後台</h1>
   <p>供教師查看成績。學生及家長不會看到這一頁。</p>
+  <button class="btn-edit btn-edit-mode hidden" id="editBtn" type="button">編輯</button>
   <button class="btn-edit hidden" id="lockBtn" type="button">離開後台</button>
   <img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="44" height="44">
   <script src="zhang-sir.js"></script>
@@ -436,6 +460,7 @@
         <a href="index.html">學生輸入頁</a>
         <button type="button" id="reloadBtn">重新整理</button>
         <button type="button" id="csvBtn">匯出 CSV</button>
+        <button type="button" id="dashEdit">編輯</button>
         <button type="button" id="dashLock">離開後台</button>
       </div>
     </div>
@@ -473,6 +498,7 @@
         <a href="#/">返回目錄</a>
         <a id="beanPlay" href="../beanlog/">學生輸入頁</a>
         <button type="button" id="beanReload">重新整理</button>
+        <button type="button" id="beanEdit">編輯</button>
         <button type="button" id="beanLock">離開後台</button>
       </div>
     </div>
@@ -571,7 +597,8 @@
     beanTab: "photos",
     beanFilter: "all",
     beanDay: "all",
-    beanQ: ""
+    beanQ: "",
+    editing: false
   };
 
   function todayYmd() {
@@ -824,8 +851,8 @@
   function delBtns(klass, no) {
     return `<div class="actions">
       ${personBtn(klass, no)}
-      <button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪今日</button>
-      <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪全部</button>
+      ${state.editing ? `<button class="danger" type="button" data-del="today" data-class="${esc(klass)}" data-no="${esc(no)}">刪今日</button>
+      <button class="danger" type="button" data-del="all" data-class="${esc(klass)}" data-no="${esc(no)}">刪全部</button>` : ""}
     </div>`;
   }
   function scoreRow(r, extra) {
@@ -1011,9 +1038,8 @@
     $("sortBtn").textContent = state.sort === "kg" ? "按成績" : "按學號";
     document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-tab") === state.tab));
     const main = $("main");
-    if (state.tab === "class") main.innerHTML = renderClass();
-    else if (state.tab === "person") main.innerHTML = renderPerson();
-    else main.innerHTML = renderToday();
+    const body = state.tab === "class" ? renderClass() : state.tab === "person" ? renderPerson() : renderToday();
+    main.innerHTML = editBanner() + body;
   }
 
   async function loadBoard(quiet) {
@@ -1457,8 +1483,12 @@
     const note = String(r.note || "").replace(/📷https?:\/\/\S+/g, "").trim();
     $("beanLight").innerHTML = `
       <img src="${esc(src)}" alt="">
-      <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>`;
+      <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span>
+      ${state.editing ? `<br><button class="danger" type="button" id="lightDel" style="margin-top:10px">刪除這張相片</button>` : ""}</div>`;
     $("beanLight").classList.remove("hidden");
+    $("beanLight")._rec = r;
+    const del = $("lightDel");
+    if (del) del.onclick = function (ev) { ev.stopPropagation(); deleteBeanPhoto(r); };
   }
   function renderBean() {
     if (!$("beanMain")) return;
@@ -1475,7 +1505,7 @@
       });
       const missing = rosterStudents(state.beanFilter === "all" ? "all" : state.beanFilter)
         .filter(s => !done[s.klass + "\t" + s.no] && beanPassQ({ klass: s.klass, no: s.no, day: "", stage: "" }));
-      $("beanMain").innerHTML = `<h2 class="h2">未交　${missing.length}</h2>
+      $("beanMain").innerHTML = editBanner() + `<h2 class="h2">未交　${missing.length}</h2>
         <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
       return;
     }
@@ -1483,12 +1513,13 @@
       a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no) || String(a.day).localeCompare(String(b.day))
     );
     if (!photos.length) {
-      $("beanMain").innerHTML = `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
+      $("beanMain").innerHTML = editBanner() + `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
       return;
     }
-    $("beanMain").innerHTML = `<h2 class="h2">全部相片　${photos.length}</h2>
+    $("beanMain").innerHTML = editBanner() + `<h2 class="h2">全部相片　${photos.length}</h2>
       <div class="photo-wall">${photos.map((r, i) => `
         <button class="photo-card" type="button" data-bean="${i}">
+          ${state.editing ? `<span class="photo-del" data-bean-del="${i}">刪除</span>` : ""}
           <span class="photo-ph" style="display:block;min-height:140px;background:#e8f5e9"></span>
           <div class="cap"><div class="who">${esc(beanName(r))}</div>
           <div class="meta">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
@@ -1530,12 +1561,101 @@
     const pin = $("pin");
     if (pin) pin.focus();
   }
+  function syncEditButtons() {
+    const label = state.editing ? "完成編輯" : "編輯";
+    ["editBtn", "dashEdit", "beanEdit"].forEach(id => {
+      const b = $(id);
+      if (b) b.textContent = label;
+    });
+    document.body.classList.toggle("editing", !!state.editing);
+  }
+  function toggleEdit() {
+    state.editing = !state.editing;
+    syncEditButtons();
+    if (document.body.classList.contains("dash-on")) render();
+    if (document.body.classList.contains("bean-on")) renderBean();
+    if (document.body.classList.contains("hub-on") && isIn()) route();
+    toast(state.editing ? "已開啟編輯，可刪除不適合的成績或相片。" : "已離開編輯。");
+  }
+  function postScore(payload) {
+    return fetch(SCORE_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
+  }
+  function beanDayNum(day) {
+    const n = parseInt(String(day || "").replace(/[^\d]/g, ""), 10);
+    return n >= 1 && n <= 20 ? n : 1;
+  }
+  async function deleteLocalBean(klass, no, dayNum) {
+    const key = String(klass) + "|" + String(no);
+    try {
+      const recs = await new Promise(function (resolve, reject) {
+        const req = indexedDB.open("beanlog-v1", 1);
+        req.onerror = () => resolve(null);
+        req.onsuccess = function () {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("recs")) return resolve(null);
+          const tx = db.transaction("recs", "readonly");
+          const q = tx.objectStore("recs").get(key);
+          q.onsuccess = () => resolve(q.result || {});
+          q.onerror = () => resolve(null);
+        };
+      });
+      if (!recs) return;
+      delete recs[dayNum];
+      delete recs[String(dayNum)];
+      await new Promise(function (resolve) {
+        const req = indexedDB.open("beanlog-v1", 1);
+        req.onsuccess = function () {
+          const db = req.result;
+          const tx = db.transaction("recs", "readwrite");
+          tx.objectStore("recs").put(recs, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        };
+        req.onerror = () => resolve();
+      });
+    } catch (e) {}
+  }
+  async function deleteBeanPhoto(r) {
+    if (!r) return;
+    const who = beanName(r) + "　" + r.klass + "　" + r.no + "號　" + r.day;
+    if (!confirm("確定刪除這張相片？\n" + who + "\n刪除後學生可以重新拍攝。")) return;
+    const dayNum = beanDayNum(r.day);
+    await postScore({
+      token: SCORE_TOKEN,
+      kind: "beanlog",
+      activity: "家中種綠豆",
+      class: r.klass,
+      no: r.no,
+      day: dayNum,
+      level: r.day || ("第" + dayNum + "日"),
+      op: "delete",
+      photo: ""
+    });
+    await deleteLocalBean(r.klass, r.no, dayNum);
+    state.beanRecords = (state.beanRecords || []).filter(x =>
+      !(x.klass === r.klass && x.no === r.no && x.day === r.day)
+    );
+    $("beanLight").classList.add("hidden");
+    renderBean();
+    toast("已刪除相片");
+  }
+  function editBanner() {
+    return state.editing
+      ? `<p class="edit-banner">編輯中：請刪除不適合的成績或相片。完成後請撳「完成編輯」。</p>`
+      : "";
+  }
   function renderHome() {
     hideDash();
     const areas = orderedAreas();
     $("shell").innerHTML = `
       ${charsHtml()}
-      <p class="note">請選擇分類。準小一入學適合五至六歲。數學、體育、科學、資訊科技入面再按年級揀教材。入去可查看已交／未交。</p>
+      ${editBanner()}
+      <p class="note">請選擇分類。準小一入學適合五至六歲。數學、體育、科學、資訊科技入面再按年級揀教材。入去可查看已交／未交${state.editing ? "，並刪除不適合的內容" : ""}。</p>
       <div class="grid">${cardsHtml(areas, areaHref)}</div>`;
   }
   function renderArea(id) {
@@ -1546,6 +1666,7 @@
     const folders = orderedFolders(id);
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/">← 返回目錄</a></div>
+      ${editBanner()}
       <h3 class="sec">${area.emoji} ${escapeHtml(toPlainLines(area.title))}</h3>
       ${folders.length
         ? `<p class="note">請選擇年級或分類。</p><div class="grid">${cardsHtml(folders, f => "#/s/" + f.id)}</div>`
@@ -1562,9 +1683,10 @@
     const items = orderedItems(id);
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/">← 返回目錄</a></div>
+      ${editBanner()}
       <h3 class="sec">${s.emoji} ${escapeHtml(toPlainLines(s.title))}</h3>
       ${items.length
-        ? `<p class="note">請選擇遊戲或活動，查看成績。</p><div class="grid">${cardsHtml(items, it => "#/i/" + it.id)}</div>`
+        ? `<p class="note">請選擇遊戲或活動，查看成績${state.editing ? "或刪除不適合的內容" : ""}。</p><div class="grid">${cardsHtml(items, it => "#/i/" + it.id)}</div>`
         : `<p class="note">此部分暫時沒有成績。</p>`}`;
   }
   function renderItem(id) {
@@ -1575,10 +1697,11 @@
     hideDash();
     $("shell").innerHTML = `
       <div class="bar"><a class="btn-back" href="#/s/${it.subject}">← 返回</a></div>
+      ${editBanner()}
       <h3 class="sec">${it.emoji} ${escapeHtml(toPlainLines(it.title))}</h3>
       <p class="note">${it.noScore
         ? "此項目沒有學生成績紀錄。"
-        : "此遊戲成績頁即將推出。而家請先查看手握力龍虎榜。"}</p>`;
+        : "此遊戲成績頁即將推出。手握力同家中種綠豆已可刪除不適合的內容。"}</p>`;
   }
   function route() {
     if (!isIn()) { renderLogin(); return; }
@@ -1609,12 +1732,16 @@
     document.body.classList.add("in");
     try { sessionStorage.setItem("grip-admin", "1"); } catch (e) {}
     $("lockBtn").classList.remove("hidden");
+    $("editBtn").classList.remove("hidden");
+    syncEditButtons();
     route();
   }
   function lock() {
     document.body.classList.remove("in");
+    state.editing = false;
     try { sessionStorage.removeItem("grip-admin"); } catch (e) {}
     hideDash();
+    $("editBtn").classList.add("hidden");
     if (location.hash && location.hash !== "#/") location.hash = "#/";
     renderLogin();
   }
@@ -1652,13 +1779,27 @@
       renderBean();
     });
     $("beanMain").onclick = (e) => {
+      const photos = $("beanMain")._photos || [];
+      const del = e.target.closest("[data-bean-del]");
+      if (del) {
+        e.preventDefault();
+        e.stopPropagation();
+        const r = photos[Number(del.getAttribute("data-bean-del"))];
+        if (r) deleteBeanPhoto(r);
+        return;
+      }
       const card = e.target.closest("button[data-bean]");
       if (!card) return;
-      const photos = $("beanMain")._photos || [];
       const r = photos[Number(card.getAttribute("data-bean"))];
       if (r) openBeanLight(r);
     };
-    $("beanLight").onclick = () => $("beanLight").classList.add("hidden");
+    $("beanLight").onclick = (e) => {
+      if (e.target.closest("#lightDel")) return;
+      $("beanLight").classList.add("hidden");
+    };
+    $("editBtn").onclick = toggleEdit;
+    $("dashEdit").onclick = toggleEdit;
+    $("beanEdit").onclick = toggleEdit;
     $("shell").addEventListener("click", (e) => {
       if (e.target.id === "pinGo") tryPin();
     });
