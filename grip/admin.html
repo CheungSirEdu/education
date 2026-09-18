@@ -281,9 +281,10 @@
       background: var(--hub);
       color: #fff;
       text-align: center;
-      padding: max(14px, env(safe-area-inset-top)) 16px 16px;
+      padding: max(14px, env(safe-area-inset-top)) 58px 16px 16px;
       box-shadow: 0 8px 0 var(--hub-dark);
       position: relative;
+      z-index: 4;
     }
     header.hub .school { margin: 0; font-size: 15px; font-weight: 700; color: var(--gold-2); }
     header.hub h1 { margin: 6px 0 0; font-size: clamp(22px, 6vw, 26px); font-weight: 900; letter-spacing: .04em; }
@@ -295,19 +296,36 @@
       width: 44px; height: 44px; z-index: 5;
       pointer-events: none;
     }
+    .hub-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .hub-actions.hidden { display: none !important; }
+    header.hub .btn-edit,
     .btn-edit {
-      position: absolute;
-      right: 60px;
-      top: max(10px, env(safe-area-inset-top));
+      position: static;
+      width: auto;
+      min-width: 108px;
+      min-height: 40px;
+      padding: 8px 14px;
+      margin: 0;
       background: var(--gold-2);
       color: var(--hub-dark);
       border: 3px solid #c9a227;
-      min-height: 40px;
-      padding: 8px 12px;
       font-size: 14px;
       box-shadow: 0 3px 0 #a7861c;
     }
-    .hub-wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
+    .hub-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 16px calc(48px + env(safe-area-inset-bottom));
+      overflow: visible;
+    }
     .chars { display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px; }
     .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
     .note {
@@ -340,11 +358,14 @@
     a.card .emoji { font-size: 42px; line-height: 1; }
     a.card h2 { margin: 8px 0 6px; font-size: 20px; color: var(--hub-dark); line-height: 1.4; }
     a.card p { margin: 0; color: var(--hub-muted); font-size: 15px; font-weight: 700; line-height: 1.5; }
-    .bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .bar { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 16px; }
     .btn-back {
       background: #fff; color: var(--hub-dark); border: 4px solid var(--hub);
-      min-height: 44px; border-radius: 16px; padding: 12px 16px;
-      font-weight: 900; text-decoration: none; display: inline-block;
+      min-height: 44px; width: auto; max-width: 100%;
+      border-radius: 16px; padding: 10px 16px;
+      font-weight: 900; text-decoration: none;
+      display: inline-flex; align-items: center;
+      box-shadow: 0 4px 0 var(--hub-dark);
     }
     h3.sec { margin: 0 0 12px; font-size: 24px; color: var(--hub-dark); }
     .hub-foot {
@@ -395,16 +416,11 @@
       border-radius: 14px; padding: 10px 12px; margin-bottom: 12px;
       font-weight: 800; color: var(--red-dark); line-height: 1.5;
     }
-    .btn-edit-mode {
-      right: 118px;
-      background: #fff;
-      color: var(--hub-dark);
-    }
-    body.editing .btn-edit-mode {
-      background: var(--gold-2);
-    }
+    .btn-edit-mode { background: #fff; color: var(--hub-dark); }
+    body.editing .btn-edit-mode { background: var(--gold-2); }
     @media (max-width: 560px) {
-      .btn-edit-mode { right: auto; left: 10px; top: auto; bottom: 10px; }
+      header.hub { padding-right: 58px; text-align: center; }
+      header.hub .btn-edit, .btn-edit { font-size: 14px; min-width: 96px; }
     }
     .photo-card img {
       width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: #e8f5e9;
@@ -431,20 +447,21 @@
       color: #fff; font-weight: 800; text-align: center; margin-top: 12px; line-height: 1.5;
     }
     @media (max-width: 560px) {
-      header.hub { padding-right: 148px; text-align: left; }
-      .btn-edit { font-size: 13px; padding: 8px 10px; }
+      header.hub { padding-right: 58px; }
     }
   </style>
 </head>
 <body class="hub-on">
 <header class="hub">
+  <img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="44" height="44">
+  <script src="zhang-sir.js"></script>
   <p class="school">佛教志蓮小學</p>
   <h1>張老師成績後台</h1>
   <p>供教師查看成績。學生及家長不會看到這一頁。</p>
-  <button class="btn-edit btn-edit-mode hidden" id="editBtn" type="button">編輯</button>
-  <button class="btn-edit hidden" id="lockBtn" type="button">離開後台</button>
-  <img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="44" height="44">
-  <script src="zhang-sir.js"></script>
+  <div class="hub-actions hidden" id="hubActions">
+    <button class="btn-edit btn-edit-mode" id="editBtn" type="button">編輯</button>
+    <button class="btn-edit" id="lockBtn" type="button">離開後台</button>
+  </div>
 </header>
 <main class="hub-wrap" id="shell"></main>
 <footer class="hub-foot" id="hubFoot">此頁只供教師使用。<br>學生及家長不會看到成績後台。</footer>
@@ -1762,8 +1779,7 @@
   function enterApp() {
     document.body.classList.add("in");
     try { sessionStorage.setItem("grip-admin", "1"); } catch (e) {}
-    $("lockBtn").classList.remove("hidden");
-    $("editBtn").classList.remove("hidden");
+    $("hubActions").classList.remove("hidden");
     syncEditButtons();
     route();
   }
@@ -1772,7 +1788,7 @@
     state.editing = false;
     try { sessionStorage.removeItem("grip-admin"); } catch (e) {}
     hideDash();
-    $("editBtn").classList.add("hidden");
+    $("hubActions").classList.add("hidden");
     if (location.hash && location.hash !== "#/") location.hash = "#/";
     renderLogin();
   }
