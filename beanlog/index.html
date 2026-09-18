@@ -694,10 +694,16 @@ img.zhang-sir-mark {
       return "";
     }
 
+    function imgurIdFromUrl(url) {
+      const m = String(url || "").match(/imgur\.com\/([A-Za-z0-9]{5,8})/i);
+      return m ? m[1] : "";
+    }
+
     function sendTeacher(extra) {
       let note = $("note").value.trim();
-      if (state.publicUrl && note.indexOf("https://") < 0) {
-        note = (note ? note + "\n" : "") + "📷" + state.publicUrl;
+      const imgId = imgurIdFromUrl(state.publicUrl);
+      if (imgId && note.indexOf("IMG:") < 0) {
+        note = (note ? note + "\n" : "") + "IMG:" + imgId;
       }
       const body = Object.assign({
         token: SCORE_TOKEN,
@@ -715,17 +721,18 @@ img.zhang-sir-mark {
     }
 
     function sendPublicUrl(url) {
-      if (!url) return;
+      const imgId = imgurIdFromUrl(url);
+      if (!imgId) return;
       postScore({
         token: SCORE_TOKEN,
         activity: "綠豆相片網址",
         class: state.class,
         no: state.no,
         level: "第" + state.day + "日",
-        result: url,
-        stars: state.stage || "",
-        hero: "",
-        seconds: ""
+        result: "im:" + imgId,
+        stars: imgId.slice(0, 8),
+        hero: imgId.slice(0, 8),
+        seconds: String(state.day || "")
       });
     }
 

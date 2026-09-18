@@ -1217,6 +1217,24 @@
       s.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
     return m ? m[1] : "";
   }
+  function parseImgurId(s) {
+    const t = String(s || "");
+    const m = t.match(/(?:IMG:|im:|imgur\.com\/)([A-Za-z0-9]{5,8})/i);
+    if (m) return m[1];
+    if (/^[A-Za-z0-9]{5,8}$/.test(t.trim())) return t.trim();
+    return "";
+  }
+  function imgurFull(id) { return id ? "https://i.imgur.com/" + id + ".jpg" : ""; }
+  function imgurPreview(id) { return id ? "https://i.imgur.com/" + id + "m.jpg" : ""; }
+  function isGoodPhotoUrl(u) {
+    const s = String(u || "");
+    if (s.indexOf("data:image") === 0) return true;
+    if (parseImgurId(s)) return true;
+    if (!/^https?:\/\//i.test(s)) return false;
+    if (/i\.imgur\.com\/?$/i.test(s.replace(/\/+$/, ""))) return false;
+    if (s.indexOf("drive.google") >= 0 || s.indexOf("googleusercontent") >= 0) return false;
+    return s.length > 28;
+  }
   function beanNorm(raw) {
     const klass = String(raw.klass || raw.class || "").trim().toUpperCase().replace(/\s+/g, "");
     const no = String(parseInt(String(raw.no || "").replace(/[^\d]/g, ""), 10));
@@ -1225,12 +1243,10 @@
     const src = String(raw.src || "");
     const photo = String(raw.photo || "");
     const note = String(raw.note || "").trim();
-    const http = [src, photo, note].map(function (s) {
-      const m = String(s || "").match(/https?:\/\/[^\s]+/i);
-      return m ? m[0].replace(/[)\].,;]+$/, "") : "";
-    }).find(function (u) {
-      return u && u.indexOf("drive.google.com") < 0 && u.indexOf("googleusercontent.com") < 0;
-    }) || "";
+    const imgId = parseImgurId(src) || parseImgurId(photo) || parseImgurId(note) ||
+      parseImgurId(raw.result) || parseImgurId(raw.hero) || parseImgurId(raw.stars);
+    const rebuilt = imgurFull(imgId);
+    const http = [src, photo, note, rebuilt].find(isGoodPhotoUrl) || rebuilt;
     return {
       klass, no: no === "NaN" ? "" : no,
       day, stage: String(raw.stage || "").trim(),
@@ -1243,22 +1259,20 @@
   function beanThumb(r) {
     if (!r) return "";
     if (r.src && r.src.indexOf("data:") === 0) return r.src;
-    if (r.src && /^https?:\/\//i.test(r.src) && r.src.indexOf("drive.google.com") < 0) {
-      return beanPreviewUrl(r.src);
-    }
+    const id = parseImgurId(r.src || r.photo || r.note);
+    if (id) return imgurPreview(id);
+    if (isGoodPhotoUrl(r.src)) return beanPreviewUrl(r.src);
     return "";
   }
   function beanPreviewUrl(url) {
-    const u = String(url || "");
-    const m = u.match(/i\.imgur\.com\/([A-Za-z0-9]+)/i);
-    if (m) return "https://i.imgur.com/" + m[1] + "m.jpg";
-    return u;
+    const id = parseImgurId(url);
+    if (id) return imgurPreview(id);
+    return isGoodPhotoUrl(url) ? String(url) : "";
   }
   function beanFullUrl(url) {
-    const u = String(url || "");
-    const m = u.match(/i\.imgur\.com\/([A-Za-z0-9]+)/i);
-    if (m) return "https://i.imgur.com/" + m[1] + "l.jpg";
-    return u;
+    const id = parseImgurId(url);
+    if (id) return imgurFull(id);
+    return isGoodPhotoUrl(url) ? String(url) : "";
   }
   function beanHasPhoto(r) { return !!(r && (beanThumb(r) || r.thumb || r.photo)); }
   function fillBeanImages() {}
@@ -1391,14 +1405,19 @@
       const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
       const idx = (name) => cols.indexOf(name);
       const iClass = idx("班別"), iNo = idx("學號"), iLevel = idx("關卡"), iResult = idx("結果");
+      const iStars = idx("星星"), iHero = idx("角色");
       const out = [];
       (data.table.rows || []).forEach(row => {
         const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
         const no = String(parseInt(String(gvizCell(row, iNo)), 10));
         const day = String(gvizCell(row, iLevel) || "").trim();
-        const url = String(gvizCell(row, iResult) || "").trim();
-        if (!klass || !no || no === "NaN" || !/^https?:\/\//i.test(url)) return;
-        out.push(beanNorm({ klass, no, day, photo: url, src: url }));
+        const result = String(gvizCell(row, iResult) || "").trim();
+        const hero = iHero >= 0 ? String(gvizCell(row, iHero) || "") : "";
+        const stars = iStars >= 0 ? String(gvizCell(row, iStars) || "") : "";
+        const id = parseImgurId(result) || parseImgurId(hero) || parseImgurId(stars);
+        const url = id ? imgurFull(id) : result;
+        if (!klass || !no || no === "NaN" || !isGoodPhotoUrl(url)) return;
+        out.push(beanNorm({ klass, no, day, photo: url, src: url, result: result, hero: hero, stars: stars }));
       });
       return out;
     } catch (e) { return []; }
