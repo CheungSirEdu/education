@@ -570,8 +570,7 @@
     <div class="stats" id="timesStats"></div>
     <div class="toolbar">
       <div class="tabs" id="timesTabs">
-        <button type="button" data-ttab="today" class="on">今日課堂</button>
-        <button type="button" data-ttab="class">全班成績</button>
+        <button type="button" data-ttab="class" class="on">全班成績</button>
         <button type="button" data-ttab="all">全部紀錄</button>
       </div>
       <div class="classes" id="timesClassChips"></div>
@@ -664,7 +663,7 @@
     beanQ: "",
     timesRecords: [],
     timesLoaded: false,
-    timesTab: "today",
+    timesTab: "class",
     timesFilter: "all",
     timesQ: "",
     editing: false
@@ -1433,22 +1432,20 @@
     const done = {};
     live.forEach(r => { done[r.klass + "\t" + r.no] = true; });
     const missing = roster.filter(s => !done[s.klass + "\t" + s.no]);
-    const today = live.filter(r => r.date === state.today);
     let avg = 0;
     if (live.length) avg = Math.round(live.reduce((s, r) => s + (Number(r.percent) || 0), 0) / live.length);
     $("timesStats").innerHTML = `
-      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">至少練習一次</div></div>
+      <div class="stat ok"><div class="lab">已交</div><div class="big num">${Object.keys(done).length}</div><div class="tiny">有交過一次即可</div></div>
       <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${roster.length} 人名單</div></div>
       <div class="stat"><div class="lab">平均正確率</div><div class="big num">${live.length ? avg + "%" : "—"}</div><div class="tiny">${state.timesFilter === "all" ? "全部班別" : state.timesFilter}</div></div>
-      <div class="stat"><div class="lab">練習次數</div><div class="big num">${live.length}</div><div class="tiny">今日 ${today.length} 次</div></div>`;
+      <div class="stat"><div class="lab">練習次數</div><div class="big num">${live.length}</div><div class="tiny">唔使日日交</div></div>`;
     $("timesClassChips").innerHTML = ["all"].concat(TIMES_CLASSES).map(c =>
       `<button class="chip${state.timesFilter === c ? " on" : ""}" type="button" data-tclass="${c}">${c === "all" ? "全部班別" : c}</button>`
     ).join("");
     document.querySelectorAll("#timesTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-ttab") === state.timesTab));
-    $("timesDateLabel").textContent = "查看日期：" + prettyDate(state.today);
+    $("timesDateLabel").textContent = "有交過一次就算已交，唔使日日做。";
     let rows = live.slice();
-    if (state.timesTab === "today") rows = live.filter(r => r.date === state.today);
-    if (state.timesTab === "class") {
+    if (state.timesTab !== "all") {
       const latest = {};
       live.forEach(r => {
         const k = r.klass + "\t" + r.no;
@@ -1459,15 +1456,13 @@
         const r = latest[s.klass + "\t" + s.no];
         return r ? Object.assign({ name: s.name }, r) : { klass: s.klass, no: s.no, name: s.name, missing: true };
       });
-      $("timesMain").innerHTML = editBanner() + `<h2 class="h2">全班最新／最佳　${list.length} 人</h2>
+      $("timesMain").innerHTML = editBanner() + `<h2 class="h2">全班成績　已交 ${Object.keys(done).length}　未交 ${missing.length}</h2>
         <div class="list">${list.map(r => r.missing ? missRow(r) : timesRow(r)).join("") || `<p class="empty">未有名單。</p>`}</div>`;
       return;
     }
     rows.sort((a, b) => b.ts - a.ts || a.klass.localeCompare(b.klass) || Number(a.no) - Number(b.no));
-    const title = state.timesTab === "today" ? ("今日課堂　" + rows.length) : ("全部紀錄　" + rows.length);
-    $("timesMain").innerHTML = editBanner() + `<h2 class="h2">${title}</h2>
-      <div class="list">${rows.length ? rows.map(timesRow).join("") : `<p class="empty">${state.timesTab === "today" ? "今天還沒有人練習。" : "尚未有成績。"}</p>`}
-      ${state.timesTab === "today" && missing.length ? `<h2 class="h2" style="margin-top:16px">未交　${missing.length}</h2><div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("")}</div>` : ""}</div>`;
+    $("timesMain").innerHTML = editBanner() + `<h2 class="h2">全部紀錄　${rows.length}</h2>
+      <div class="list">${rows.length ? rows.map(timesRow).join("") : `<p class="empty">尚未有成績。</p>`}</div>`;
   }
   function timesRow(r) {
     const name = r.name || lookupName(r.klass, r.no) || "名單以外";
