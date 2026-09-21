@@ -1,0 +1,11 @@
+相片來源（Wikimedia Commons）
+01-dog 小狗
+02-rock 石頭
+03-cat 小貓
+04-chair 椅子
+05-bird 雀鳥
+06-car 汽車
+07-tree 大樹
+08-pencil 鉛筆
+09-flower 花朵
+10-edog 電子狗　File:Aibo ERS-1000 - 1.jpg　Sony Aibo　挑戰題（非生物）

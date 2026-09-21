@@ -114,6 +114,18 @@
       width: 100%; height: 46vh; max-height: 420px; min-height: 220px;
       object-fit: contain; background: #e8f5e9;
     }
+    .challenge-tag {
+      display: none;
+      margin: 0 auto 4px;
+      background: #ef6c00;
+      color: #fff;
+      font-weight: 900;
+      font-size: clamp(14px, 3.8vw, 17px);
+      padding: 4px 14px;
+      border-radius: 999px;
+      width: fit-content;
+    }
+    .challenge-tag.on { display: inline-block; }
     .q {
       text-align: center; font-weight: 900; font-size: clamp(20px, 5.2vw, 26px);
       color: var(--green-dark); margin: 2px 0 0;
@@ -188,7 +200,7 @@
         <img src="assets/girl.png" alt="" />
       </div>
       <div class="how">
-        一共 10 題。先看相片，再選「生物」或「非生物」。
+        一共 10 題。先看相片，再選「生物」或「非生物」。最後一題是挑戰題。
       </div>
       <div class="ids">
         <label>班別
@@ -215,7 +227,8 @@
         <div class="chip" id="progChip">第 1 / 10 題</div>
       </div>
       <div class="photo-box"><img id="photo" alt="評估相片" /></div>
-      <p class="q">這是生物還是非生物？</p>
+      <div class="challenge-tag" id="challengeTag">挑戰題</div>
+      <p class="q" id="qText">這是生物還是非生物？</p>
       <div class="choices">
         <button class="choice living" data-ans="生物">生物</button>
         <button class="choice nonliving" data-ans="非生物">非生物</button>
@@ -263,7 +276,7 @@
       { id: 7, src: "photos/07-tree.jpg", name: "大樹", ans: "生物" },
       { id: 8, src: "photos/08-pencil.jpg", name: "鉛筆", ans: "非生物" },
       { id: 9, src: "photos/09-flower.jpg", name: "花朵", ans: "生物" },
-      { id: 10, src: "photos/10-clock.jpg", name: "時鐘", ans: "非生物" }
+      { id: 10, src: "photos/10-edog.jpg", name: "電子狗", ans: "非生物", challenge: true }
     ];
 
     const TEACHER_PIN = "22463959";
@@ -322,6 +335,8 @@
       $("progChip").textContent = "第 " + (state.i + 1) + " / " + QUESTIONS.length + " 題";
       $("photo").src = q.src;
       $("photo").alt = "第 " + (state.i + 1) + " 題相片";
+      $("challengeTag").classList.toggle("on", !!q.challenge);
+      $("qText").textContent = q.challenge ? "挑戰題：這是生物還是非生物？" : "這是生物還是非生物？";
       document.querySelectorAll(".choice").forEach(function (btn) {
         btn.classList.toggle("picked", state.picks[state.i] === btn.getAttribute("data-ans"));
       });
@@ -358,7 +373,7 @@
         const pick = state.picks[i] || "";
         const ok = pick === q.ans;
         if (ok) score += 1;
-        return { id: q.id, name: q.name, src: q.src, ans: q.ans, pick: pick, ok: ok };
+        return { id: q.id, name: q.name, src: q.src, ans: q.ans, pick: pick, ok: ok, challenge: !!q.challenge };
       });
       return { score: score, total: QUESTIONS.length, detail: detail };
     }
@@ -375,7 +390,7 @@
       $("review").innerHTML = m.detail.map(function (d, i) {
         return '<div class="review-row">'
           + '<img src="' + d.src + '" alt="">'
-          + '<div>第' + (i + 1) + '題　' + d.name + '<br><span style="font-size:13px">你選：' + (d.pick || "未選") + '</span></div>'
+          + '<div>第' + (i + 1) + '題　' + d.name + (d.challenge ? "（挑戰題）" : "") + '<br><span style="font-size:13px">你選：' + (d.pick || "未選") + '</span></div>'
           + '<div class="' + (d.ok ? "ok" : "bad") + '">' + (d.ok ? "✓ 正確" : "✗ 答案：" + d.ans) + "</div>"
           + "</div>";
       }).join("");
