@@ -69,12 +69,12 @@
   <div id="app" class="hidden">
   <header>
     <h1>二年級科學　生物和非生物　成績</h1>
-    <div class="sub">即時顯示學生交卷分數。Excel 分頁：2A班／2B班／2C班</div>
+    <div class="sub">即時顯示學生交卷分數。Google 表分頁：2A班／2B班／2C班</div>
   </header>
   <main>
     <div class="bar">
       <button type="button" onclick="load()">重新整理</button>
-      <button type="button" class="ghost" onclick="rebuild()">把分數寫入 Excel</button>
+      <a class="ghost" href="https://docs.google.com/spreadsheets/d/18Hr-LwnjE80Ja3JgD706x5T8qqIw-5GwLFNcp2dTM2o/edit" target="_blank" rel="noopener">打開成績 Google 表</a>
       <button type="button" class="danger" id="editBtn" onclick="toggleEdit()">編輯</button>
       <button type="button" class="danger hidden" id="delClassBtn" onclick="delClass()">刪除本班已交</button>
       <a class="ghost" href="index.html">學生評估頁</a>
