@@ -741,6 +741,7 @@
   ];
   const ITEMS = [
     { id: "stars", subject: "pre1", emoji: "⭐", title: "小志小蓮食星星", blurb: "拖曳上、下、左、右，幫助機械人取得星星。適合五至六歲準小一。", noScore: true },
+    { id: "living", subject: "p2-sci", emoji: "🌿", title: "第一學段實作評估", blurb: "睇十張真實相片，揀生物或非生物。最後一題是挑戰題。" },
     { id: "jump", subject: "p2-sci", emoji: "🦘", title: "小小發明家跳跳關", blurb: "小小發明家跳跳關，溫習上學期科學課題。" },
     { id: "p2jump", subject: "p2-sci", emoji: "⭐", title: "二年班科學志蓮跳跳小遊戲", blurb: "跳跳小遊戲。左右移動、跳躍、蹲低，食星星答題。", noScore: true },
     { id: "mungbean", subject: "p2-sci", emoji: "🌱", title: "第三課 動手種植物", blurb: "種綠豆，綠豆幼苗會對光的方向作出反應嗎？" },
@@ -2804,6 +2805,7 @@
     if (it.id === "grip") { showDash(); return; }
     if (it.id === "beanlog") { showBeanDash(); return; }
     if (it.id === "times") { showTimesDash(); return; }
+    if (it.id === "living") { location.href = "../living/teacher.html"; return; }
     if (it.id === "mungbean") { showPlantDash(); return; }
     if (it.id === "jp" || it.id === "fr" || it.id === "ko") { showLangDash(it.id); return; }
     if (it.id === "jump" || it.id === "engineer") { showJumpDash(it.id); return; }
