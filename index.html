@@ -268,20 +268,8 @@
         play: "https://cheungsiredu.github.io/education/living/",
         qr: "qrs/living.png",
         scoresUrl: "https://docs.google.com/spreadsheets/d/18Hr-LwnjE80Ja3JgD706x5T8qqIw-5GwLFNcp2dTM2o/edit",
-        scoresLabel: "打開成績表（Google 試算表）"
-      },
-      {
-        id: "living-scores",
-        subject: "p2-sci",
-        type: "game",
-        emoji: "📊",
-        blurb: "老師開啟成績表。學生交分即時見到。",
-        title: "第一學段實作成績（生物和非生物）",
-        description: "二年級科學第一學段實作評估成績。學生交分後即時寫入 Google 試算表，分頁 2A班／2B班／2C班。",
-        play: "https://docs.google.com/spreadsheets/d/18Hr-LwnjE80Ja3JgD706x5T8qqIw-5GwLFNcp2dTM2o/edit",
-        playLabel: "打開成績表",
-        qr: "qrs/living-scores.png",
-        noScore: true
+        scoresLabel: "打開成績表（Google 試算表）",
+        scoresQr: "qrs/living-scores.png"
       },
       {
         id: "jump",
@@ -912,7 +900,8 @@
           <p class="url-line">${it.play}</p>
           ${it.scoresUrl ? `<p class="label-bit">成績表</p>
           <a class="btn btn-dl" href="${it.scoresUrl}" target="_blank" rel="noopener">${it.scoresLabel || "打開成績表"}</a>
-          <p class="url-line">${it.scoresUrl}</p>` : ""}
+          <p class="url-line">${it.scoresUrl}</p>
+          ${it.scoresQr ? `<div class="qrbox"><img src="${it.scoresQr}" alt="二維碼：成績表"><p>老師掃描即可開啟成績表。</p></div>` : ""}` : ""}
           ${it.download ? `<a class="btn btn-dl" href="${it.download}" download="${it.downloadName || ""}">${it.downloadLabel || "下載遊戲檔案"}</a>` : ""}
           <p class="label-bit">二維碼</p>
           <div class="qrbox${it.qrPoster ? " poster" : ""}">
