@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="生物和非生物" />
+  <meta name="theme-color" content="#1b5e20" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>二年級科學　生物和非生物</title>
+  <style>
+    :root {
+      --green: #2e7d32;
+      --green-dark: #1b5e20;
+      --leaf: #66bb6a;
+      --ink: #1d2b1f;
+      --card: #fffef6;
+      --living: #2e7d32;
+      --nonliving: #ef6c00;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; }
+    html, body {
+      margin: 0; min-height: 100%;
+      font-family: "PingFang TC", "Noto Sans TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(#8fd3f0, #c8f0c0);
+      touch-action: manipulation;
+      user-select: none;
+    }
+    body { padding: max(10px, var(--safe-t)) 12px max(16px, var(--safe-b)); }
+    button, select, input { font: inherit; }
+    .hidden { display: none !important; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .card {
+      background: var(--card);
+      border: 6px solid var(--green);
+      border-radius: 28px;
+      padding: 16px 16px 18px;
+      box-shadow: 0 10px 0 var(--green-dark);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(24px, 6.4vw, 34px);
+      text-align: center;
+      color: var(--green-dark);
+      line-height: 1.25;
+    }
+    .sub {
+      text-align: center;
+      margin: 0 0 12px;
+      font-weight: 700;
+      color: #3d5c40;
+      font-size: clamp(16px, 4.2vw, 20px);
+    }
+    .chars { display: flex; gap: 16px; justify-content: center; margin: 4px 0 12px; }
+    .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .how {
+      background: #fff;
+      border: 4px solid #c5dcc6;
+      border-radius: 20px;
+      padding: 12px 14px;
+      margin: 0 0 14px;
+      font-size: clamp(16px, 4.2vw, 20px);
+      font-weight: 700;
+      line-height: 1.45;
+      color: var(--green-dark);
+    }
+    .ids { display: flex; gap: 10px; margin: 0 0 8px; }
+    .ids label { flex: 1; font-size: clamp(16px, 4vw, 20px); font-weight: 900; color: var(--green-dark); }
+    .ids input, .ids select {
+      width: 100%; margin-top: 6px; font-weight: 700;
+      font-size: clamp(20px, 5vw, 26px);
+      padding: 12px; border: 3px solid #c5dcc6; border-radius: 12px;
+      background: #fff; min-height: 56px; color: var(--ink);
+    }
+    .ids select { padding-right: 36px; }
+    .ids input:focus, .ids select:focus { outline: 0; border-color: var(--green); background: #e8f5e9; }
+    .name-chip {
+      text-align: center; font-weight: 900; min-height: 28px;
+      margin: 4px 0 12px; color: var(--green-dark);
+      font-size: clamp(18px, 4.6vw, 22px);
+    }
+    .primary {
+      width: 100%; border: 0; background: var(--green); color: #fff; font-weight: 900;
+      font-size: 22px; padding: 14px; border-radius: 16px; cursor: pointer;
+      box-shadow: 0 6px 0 var(--green-dark);
+    }
+    .primary:active { transform: translateY(2px); box-shadow: 0 4px 0 var(--green-dark); }
+    .primary:disabled { background: #9aaa9a; box-shadow: none; cursor: not-allowed; transform: none; }
+    .ghost {
+      width: 100%; margin-top: 8px; border: 4px solid var(--green); background: #fff;
+      color: var(--green-dark); font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
+    }
+
+    #play { display: flex; flex-direction: column; gap: 10px; }
+    .hud {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .chip {
+      background: #fffef6; border: 4px solid var(--green); border-radius: 16px;
+      padding: 8px 12px; font-weight: 900; font-size: clamp(15px, 4vw, 18px);
+      color: var(--green-dark);
+    }
+    .photo-box {
+      background: #e8f5e9; border: 5px solid var(--green-dark); border-radius: 22px;
+      overflow: hidden; min-height: 220px; max-height: 46vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .photo-box img {
+      width: 100%; height: 46vh; max-height: 420px; min-height: 220px;
+      object-fit: contain; background: #e8f5e9;
+    }
+    .q {
+      text-align: center; font-weight: 900; font-size: clamp(20px, 5.2vw, 26px);
+      color: var(--green-dark); margin: 2px 0 0;
+    }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .choice {
+      border: 0; border-radius: 20px; color: #fff; font-weight: 900;
+      font-size: clamp(22px, 6vw, 30px); min-height: 88px; cursor: pointer;
+      box-shadow: 0 6px 0 rgba(0,0,0,.25);
+    }
+    .choice.living { background: var(--living); }
+    .choice.nonliving { background: var(--nonliving); box-shadow: 0 6px 0 #e65100; }
+    .choice:active { transform: translateY(2px); }
+    .choice.picked { outline: 4px solid #fff59d; }
+    .navs { display: flex; gap: 8px; }
+    .navs button { flex: 1; }
+
+    .score-big {
+      text-align: center; font-size: clamp(40px, 12vw, 64px); font-weight: 900;
+      color: var(--green-dark); line-height: 1.1; margin: 8px 0;
+    }
+    .score-msg { text-align: center; font-weight: 800; font-size: clamp(18px, 4.6vw, 22px); margin: 0 0 12px; }
+    .review {
+      max-height: 38vh; overflow: auto; -webkit-overflow-scrolling: touch;
+      border: 3px solid #c5dcc6; border-radius: 16px; background: #fff;
+    }
+    .review-row {
+      display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center;
+      padding: 8px; border-bottom: 1px solid #e6efe6;
+      font-weight: 700;
+    }
+    .review-row img { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; }
+    .ok { color: #1b5e20; }
+    .bad { color: #c62828; }
+    .save-note { text-align: center; font-size: 14px; font-weight: 700; color: #3d5c40; margin: 8px 0 0; min-height: 20px; }
+    .teacher-btn {
+      width: 100%; margin-top: 10px; border: 4px solid #1565c0; background: #fff;
+      color: #0d47a1; font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
+    }
+    .del-btn {
+      width: 100%; margin-top: 10px; border: 4px solid #c62828; background: #fff;
+      color: #c62828; font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
+    }
+    .del-btn:disabled { border-color: #ef9a9a; color: #ef9a9a; }
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; z-index: 40;
+    }
+    .modal .box {
+      background: var(--card); border: 5px solid var(--green); border-radius: 22px;
+      padding: 18px; width: min(420px, 100%); box-shadow: 0 8px 0 var(--green-dark);
+    }
+    .modal h2 { text-align: center; margin: 0 0 8px; color: var(--green-dark); }
+    .modal .hint { text-align: center; font-weight: 700; color: #3d5c40; margin: 0 0 12px; }
+    .modal label { display: block; font-weight: 900; color: var(--green-dark); }
+    .modal input {
+      width: 100%; margin-top: 6px; font-weight: 700; font-size: 24px; letter-spacing: 4px;
+      padding: 12px; border: 3px solid #c5dcc6; border-radius: 12px; min-height: 56px;
+      text-align: center;
+    }
+    .modal .err { min-height: 22px; text-align: center; color: #c62828; font-weight: 800; margin: 8px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section id="start" class="card">
+      <h1>生物和非生物</h1>
+      <p class="sub">二年級科學　第一學段實作評估</p>
+      <div class="chars">
+        <img src="assets/boy.png" alt="" />
+        <img src="assets/girl.png" alt="" />
+      </div>
+      <div class="how">
+        一共 10 題。先看相片，再選「生物」或「非生物」。
+      </div>
+      <div class="ids">
+        <label>班別
+          <select id="klass">
+            <option value="">請選擇</option>
+            <option value="2A">2A班</option>
+            <option value="2B">2B班</option>
+            <option value="2C">2C班</option>
+          </select>
+        </label>
+        <label>學號
+          <input id="stuno" type="number" inputmode="numeric" min="1" max="40" placeholder="例如 5" />
+        </label>
+      </div>
+      <div class="name-chip" id="nameChip">請選擇班別和學號</div>
+      <button class="primary" id="startBtn" disabled>開始評估</button>
+      <button class="del-btn" id="delBtn" type="button" disabled>刪除成績，再做一次</button>
+      <button class="teacher-btn" id="teacherBtn" type="button">老師檢查成績</button>
+    </section>
+
+    <section id="play" class="hidden">
+      <div class="hud">
+        <div class="chip" id="whoChip"></div>
+        <div class="chip" id="progChip">第 1 / 10 題</div>
+      </div>
+      <div class="photo-box"><img id="photo" alt="評估相片" /></div>
+      <p class="q">這是生物還是非生物？</p>
+      <div class="choices">
+        <button class="choice living" data-ans="生物">生物</button>
+        <button class="choice nonliving" data-ans="非生物">非生物</button>
+      </div>
+      <div class="navs">
+        <button class="ghost" id="prevBtn" type="button">上一題</button>
+        <button class="ghost" id="nextBtn" type="button">下一題</button>
+      </div>
+    </section>
+
+    <section id="done" class="card hidden">
+      <h1>評估完成</h1>
+      <p class="sub" id="doneWho"></p>
+      <div class="score-big" id="scoreBig">9 / 10</div>
+      <p class="score-msg" id="scoreMsg"></p>
+      <div class="review" id="review"></div>
+      <p class="save-note" id="saveNote">正在把分數記入老師的成績表…</p>
+      <button class="primary" id="againBtn" style="margin-top:12px">返回開始頁</button>
+      <button class="del-btn" id="delBtnDone" type="button">刪除成績，再做一次</button>
+      <button class="teacher-btn" id="teacherBtnDone" type="button">老師檢查成績</button>
+    </section>
+  </div>
+
+  <div class="modal hidden" id="teacherModal">
+    <div class="box">
+      <h2 id="pinTitle">老師檢查成績</h2>
+      <p class="hint" id="pinHint">請輸入密碼，然後可以查看各班分數。</p>
+      <label>密碼
+        <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+      </label>
+      <div class="err" id="pinErr"></div>
+      <button class="primary" id="pinGo" type="button" style="margin-top:12px">進入</button>
+      <button class="ghost" id="pinCancel" type="button">取消</button>
+    </div>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+      { id: 1, src: "photos/01-dog.jpg", name: "小狗", ans: "生物" },
+      { id: 2, src: "photos/02-rock.jpg", name: "石頭", ans: "非生物" },
+      { id: 3, src: "photos/03-cat.jpg", name: "小貓", ans: "生物" },
+      { id: 4, src: "photos/04-chair.jpg", name: "椅子", ans: "非生物" },
+      { id: 5, src: "photos/05-bird.jpg", name: "雀鳥", ans: "生物" },
+      { id: 6, src: "photos/06-car.jpg", name: "汽車", ans: "非生物" },
+      { id: 7, src: "photos/07-tree.jpg", name: "大樹", ans: "生物" },
+      { id: 8, src: "photos/08-pencil.jpg", name: "鉛筆", ans: "非生物" },
+      { id: 9, src: "photos/09-flower.jpg", name: "花朵", ans: "生物" },
+      { id: 10, src: "photos/10-clock.jpg", name: "時鐘", ans: "非生物" }
+    ];
+
+    const TEACHER_PIN = "22463959";
+    const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
+    const SCORE_TOKEN = "chilin-edu-2026";
+    const ACTIVITY = "生物和非生物";
+    const ROSTER = {};
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      class: "",
+      no: "",
+      name: "",
+      i: 0,
+      picks: Array(QUESTIONS.length).fill("")
+    };
+
+    function loadRoster(list) {
+      (list || []).forEach(function (s) {
+        ROSTER[s.class + "|" + String(s.no)] = s.name;
+      });
+    }
+
+    fetch("roster.json").then(function (r) { return r.json(); }).then(function (d) {
+      loadRoster(d.students);
+      refreshId();
+    }).catch(function () {});
+
+    function identity() {
+      const klass = ($("klass").value || "").trim();
+      const no = String($("stuno").value || "").trim();
+      const ok = (klass === "2A" || klass === "2B" || klass === "2C") && /^\d{1,2}$/.test(no) && Number(no) >= 1;
+      const name = ok ? (ROSTER[klass + "|" + String(Number(no))] || "") : "";
+      return { ok: ok, class: klass, no: ok ? String(Number(no)) : "", name: name };
+    }
+
+    function refreshId() {
+      const id = identity();
+      $("startBtn").disabled = !id.ok;
+      $("delBtn").disabled = !id.ok;
+      if (!id.ok) $("nameChip").textContent = "請選擇班別和學號";
+      else if (id.name) $("nameChip").textContent = id.class + "班　" + id.no + "號　" + id.name;
+      else $("nameChip").textContent = id.class + "班　" + id.no + "號　（未在名單內）";
+    }
+
+    $("klass").addEventListener("change", refreshId);
+    $("stuno").addEventListener("input", refreshId);
+
+    $("startBtn").addEventListener("click", function () {
+      const id = identity();
+      if (!id.ok) return;
+      beginQuiz(id);
+    });
+
+    function showQ() {
+      const q = QUESTIONS[state.i];
+      $("progChip").textContent = "第 " + (state.i + 1) + " / " + QUESTIONS.length + " 題";
+      $("photo").src = q.src;
+      $("photo").alt = "第 " + (state.i + 1) + " 題相片";
+      document.querySelectorAll(".choice").forEach(function (btn) {
+        btn.classList.toggle("picked", state.picks[state.i] === btn.getAttribute("data-ans"));
+      });
+      $("prevBtn").disabled = state.i === 0;
+      $("nextBtn").textContent = state.i === QUESTIONS.length - 1 ? "交卷" : "下一題";
+      $("nextBtn").disabled = !state.picks[state.i];
+    }
+
+    document.querySelectorAll(".choice").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.picks[state.i] = btn.getAttribute("data-ans");
+        if (state.i < QUESTIONS.length - 1) {
+          state.i += 1;
+          showQ();
+        } else {
+          showQ();
+          finish();
+        }
+      });
+    });
+
+    $("prevBtn").addEventListener("click", function () {
+      if (state.i > 0) { state.i -= 1; showQ(); }
+    });
+    $("nextBtn").addEventListener("click", function () {
+      if (!state.picks[state.i]) return;
+      if (state.i < QUESTIONS.length - 1) { state.i += 1; showQ(); }
+      else finish();
+    });
+
+    function mark() {
+      let score = 0;
+      const detail = QUESTIONS.map(function (q, i) {
+        const pick = state.picks[i] || "";
+        const ok = pick === q.ans;
+        if (ok) score += 1;
+        return { id: q.id, name: q.name, src: q.src, ans: q.ans, pick: pick, ok: ok };
+      });
+      return { score: score, total: QUESTIONS.length, detail: detail };
+    }
+
+    function finish() {
+      const m = mark();
+      $("play").classList.add("hidden");
+      $("done").classList.remove("hidden");
+      $("doneWho").textContent = state.class + "班　" + state.no + "號" + (state.name ? "　" + state.name : "");
+      $("scoreBig").textContent = m.score + " / " + m.total;
+      $("scoreMsg").textContent = m.score === m.total
+        ? "全部答對，很棒！"
+        : "你答對了 " + m.score + " 題，共 " + m.total + " 題。";
+      $("review").innerHTML = m.detail.map(function (d, i) {
+        return '<div class="review-row">'
+          + '<img src="' + d.src + '" alt="">'
+          + '<div>第' + (i + 1) + '題　' + d.name + '<br><span style="font-size:13px">你選：' + (d.pick || "未選") + '</span></div>'
+          + '<div class="' + (d.ok ? "ok" : "bad") + '">' + (d.ok ? "✓ 正確" : "✗ 答案：" + d.ans) + "</div>"
+          + "</div>";
+      }).join("");
+      $("saveNote").textContent = "正在把分數記入老師的成績表…";
+      submitScore(m);
+    }
+
+    function submitScore(m) {
+      const payload = {
+        class: state.class,
+        no: state.no,
+        name: state.name,
+        score: m.score,
+        total: m.total,
+        text: m.score + "/" + m.total,
+        answers: m.detail.map(function (d) {
+          return { id: d.id, name: d.name, pick: d.pick, ans: d.ans, ok: d.ok };
+        })
+      };
+      try {
+        localStorage.setItem("p2-living-" + state.class + "-" + state.no, JSON.stringify(payload));
+      } catch (e) {}
+      postSheet({
+        class: payload.class,
+        no: payload.no,
+        level: "實作評估",
+        result: payload.text,
+        stars: String(payload.score),
+        hero: payload.name || "",
+        seconds: ""
+      });
+      fetch("/api/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.ok) $("saveNote").textContent = "已記入成績：" + payload.class + "班　" + payload.no + "號　" + payload.text;
+        else $("saveNote").textContent = "已交卷：" + payload.class + "班　" + payload.no + "號　" + payload.text;
+      }).catch(function () {
+        $("saveNote").textContent = "已交卷：" + payload.class + "班　" + payload.no + "號　" + payload.text;
+      });
+    }
+
+    $("againBtn").addEventListener("click", function () {
+      $("done").classList.add("hidden");
+      $("start").classList.remove("hidden");
+      refreshId();
+    });
+
+    let pinMode = "scores";
+
+    function whoLabel(id) {
+      return id.class + "班　" + id.no + "號" + (id.name ? "　" + id.name : "");
+    }
+
+    function openPin(mode) {
+      pinMode = mode || "scores";
+      $("pin").value = "";
+      $("pinErr").textContent = "";
+      if (pinMode === "scores") {
+        $("pinTitle").textContent = "老師檢查成績";
+        $("pinHint").textContent = "請輸入密碼，然後可以查看各班分數。";
+        $("pinGo").textContent = "進入";
+      } else {
+        const id = pinMode === "deleteRedo"
+          ? { class: state.class, no: state.no, name: state.name }
+          : identity();
+        $("pinTitle").textContent = "刪除成績，再做一次";
+        $("pinHint").textContent = "輸入密碼後會刪除 " + whoLabel(id) + " 的成績，然後可以立刻再做。";
+        $("pinGo").textContent = "刪除成績";
+      }
+      $("teacherModal").classList.remove("hidden");
+      setTimeout(function () { $("pin").focus(); }, 50);
+    }
+    function closePin() {
+      $("pin").value = "";
+      $("pinErr").textContent = "";
+      $("teacherModal").classList.add("hidden");
+    }
+    function postSheet(extra) {
+      try {
+        fetch(SCORE_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            token: SCORE_TOKEN,
+            activity: ACTIVITY,
+            class: extra.class,
+            no: extra.no,
+            level: extra.level || "",
+            result: extra.result || "",
+            stars: extra.stars || "",
+            hero: extra.hero || "",
+            seconds: extra.seconds || ""
+          })
+        }).catch(function () {});
+      } catch (e) {}
+    }
+    function beginQuiz(id) {
+      state.class = id.class;
+      state.no = id.no;
+      state.name = id.name;
+      state.i = 0;
+      state.picks = Array(QUESTIONS.length).fill("");
+      $("start").classList.add("hidden");
+      $("done").classList.add("hidden");
+      $("play").classList.remove("hidden");
+      $("whoChip").textContent = id.class + " " + id.no + "號" + (id.name ? " " + id.name : "");
+      showQ();
+    }
+    function afterDelete(id, thenRedo) {
+      try { localStorage.removeItem("p2-living-" + id.class + "-" + id.no); } catch (e) {}
+      if (thenRedo) beginQuiz(id);
+      else $("nameChip").textContent = whoLabel(id) + "　已刪除，可以再開始評估";
+    }
+    function deleteScore(id, thenRedo) {
+      postSheet({
+        class: id.class,
+        no: id.no,
+        level: "ALL",
+        result: "DELETE",
+        stars: "DEL"
+      });
+      fetch("/api/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: TEACHER_PIN, class: id.class, no: id.no })
+      }).then(function (r) { return r.json(); }).then(function () {
+        afterDelete(id, thenRedo);
+      }).catch(function () {
+        afterDelete(id, thenRedo);
+      });
+    }
+    function tryPin() {
+      if ($("pin").value !== TEACHER_PIN) {
+        $("pinErr").textContent = "密碼不正確";
+        $("pin").value = "";
+        $("pin").focus();
+        return;
+      }
+      try { sessionStorage.setItem("p2-living-teacher", "1"); } catch (e) {}
+      const mode = pinMode;
+      closePin();
+      if (mode === "scores") {
+        location.href = "teacher.html";
+        return;
+      }
+      const id = mode === "deleteRedo"
+        ? { class: state.class, no: state.no, name: state.name }
+        : identity();
+      if (!id.class || !id.no) {
+        $("nameChip").textContent = "請先選擇班別和學號";
+        return;
+      }
+      deleteScore(id, mode === "deleteRedo");
+    }
+    $("teacherBtn").addEventListener("click", function () { openPin("scores"); });
+    $("teacherBtnDone").addEventListener("click", function () { openPin("scores"); });
+    $("delBtn").addEventListener("click", function () {
+      if (!identity().ok) return;
+      openPin("deleteStart");
+    });
+    $("delBtnDone").addEventListener("click", function () { openPin("deleteRedo"); });
+    $("pinGo").addEventListener("click", tryPin);
+    $("pinCancel").addEventListener("click", closePin);
+    $("pin").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); tryPin(); }
+    });
+  </script>
+</body>
+</html>
