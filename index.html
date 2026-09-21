@@ -981,7 +981,7 @@
         if (local) applyLayout(JSON.parse(local));
       } catch (_) {}
       try {
-        const res = await fetch(GH_RAW + "card-order.json?t=" + Date.now(), { cache: "no-store" });
+        const res = await fetch("card-order.json?t=" + Date.now(), { cache: "no-store" });
         if (res.ok) applyLayout(await res.json());
       } catch (_) {}
       route();
