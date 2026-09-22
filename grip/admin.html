@@ -924,6 +924,11 @@
     if (c.v === null || c.v === undefined) return c.f || "";
     return c.v;
   }
+  function gvizTs(v) {
+    const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+    if (!m) return 0;
+    return new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)).getTime();
+  }
   function ymdFromGviz(v, formatted) {
     const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)/);
     if (m) {
@@ -2321,7 +2326,7 @@
     const imgId = parseImgurId(src) || parseImgurId(photo) || parseImgurId(note) ||
       parseImgurId(raw.result) || parseImgurId(raw.hero) || parseImgurId(raw.stars);
     const rebuilt = imgurFull(imgId);
-    const http = [src, photo, note, rebuilt].find(isGoodPhotoUrl) || rebuilt;
+    const http = [src, photo, rebuilt].find(isGoodPhotoUrl) || rebuilt;
     return {
       klass, no: no === "NaN" ? "" : no,
       day, stage: String(raw.stage || "").trim(),
@@ -2349,7 +2354,7 @@
     if (id) return imgurFull(id);
     return isGoodPhotoUrl(url) ? String(url) : "";
   }
-  function beanHasPhoto(r) { return !!(r && (beanThumb(r) || r.thumb || r.photo)); }
+  function beanHasPhoto(r) { return !!(r && beanThumb(r)); }
   function fillBeanImages() {}
   function loadLocalBeanPhotos() {
     return new Promise(function (resolve) {
@@ -2465,7 +2470,8 @@
         klass, no, day,
         stage: iStage >= 0 ? gvizCell(row, iStage) : "",
         note: iNote >= 0 ? gvizCell(row, iNote) : "",
-        photo: url
+        photo: url,
+        ts: gvizTs(gvizCell(row, idx("時間")))
       }));
     });
     return out;
@@ -2494,7 +2500,11 @@
         const id = parseImgurId(result) || parseImgurId(hero) || parseImgurId(stars);
         const url = id ? imgurFull(id) : result;
         if (!klass || !no || no === "NaN" || !isGoodPhotoUrl(url)) return;
-        out.push(beanNorm({ klass, no, day, photo: url, src: url, result: result, hero: hero, stars: stars }));
+        out.push(beanNorm({
+          klass, no, day, photo: url, src: url,
+          result: result, hero: hero, stars: stars,
+          ts: gvizTs(gvizCell(row, idx("時間")))
+        }));
       });
       return out;
     } catch (e) { return []; }
@@ -2521,13 +2531,20 @@
       state.beanRecords.forEach(r => { byKey[r.klass + "\t" + r.no + "\t" + r.day] = r; });
       (list || []).forEach(p => {
         const k = p.klass + "\t" + p.no + "\t" + p.day;
-        if (byKey[k]) {
-          if (!byKey[k].src && p.src) byKey[k].src = p.src;
-          if (!byKey[k].photo && p.photo) byKey[k].photo = p.photo;
-        } else {
+        const cur = byKey[k];
+        if (!cur) {
           state.beanRecords.push(p);
           byKey[k] = p;
+          return;
         }
+        const newer = (p.ts || 0) >= (cur.ts || 0);
+        if (p.src && (newer || !beanThumb(cur))) {
+          cur.src = p.src;
+          cur.photo = p.photo || p.src;
+          if (newer) cur.ts = p.ts || cur.ts;
+        }
+        if (!cur.stage && p.stage) cur.stage = p.stage;
+        if (!cur.note && p.note) cur.note = p.note;
       });
     }
     try { mergeBean(await fetchBeanPublicUrls()); } catch (e3) {}
@@ -2545,7 +2562,9 @@
       `<button class="chip${state.beanFilter === c ? " on" : ""}" type="button" data-bclass="${c}">${c === "all" ? "全部班別" : c}</button>`
     ).join("");
     const days = {};
-    live.forEach(r => { if (r.day) days[r.day] = true; });
+    beanLive(state.beanRecords).filter(r =>
+      state.beanFilter === "all" ? beanClassOk(r.klass) : r.klass === state.beanFilter
+    ).forEach(r => { if (r.day) days[r.day] = true; });
     const dayList = Object.keys(days).sort((a, b) => {
       const na = parseInt(String(a).replace(/[^\d]/g, ""), 10) || 0;
       const nb = parseInt(String(b).replace(/[^\d]/g, ""), 10) || 0;
@@ -2576,7 +2595,7 @@
     const name = beanName(r);
     const note = String(r.note || "").replace(/📷https?:\/\/\S+/g, "").trim();
     $("beanLight").innerHTML = `
-      <img src="${esc(src)}" alt="">
+      <img src="${esc(src)}" alt="" referrerpolicy="no-referrer">
       <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span>
       ${state.editing ? `<br><button class="danger" type="button" id="lightDel" style="margin-top:10px">刪除這張相片</button>` : ""}</div>`;
     $("beanLight").classList.remove("hidden");
@@ -2623,11 +2642,13 @@
     photos.forEach(function (r, i) {
       const card = cards[i];
       if (!card) return;
-      makePreviewSrc(r.thumb || r.src || r.photo).then(function (src) {
+      const rawSrc = (r.src && /^https?:\/\//i.test(r.src)) ? r.src : (beanThumb(r) || r.photo || "");
+      makePreviewSrc(rawSrc).then(function (src) {
         if (!src) return;
         const img = document.createElement("img");
         img.alt = "";
         img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
         img.src = src;
         img.style.width = "100%";
         img.style.aspectRatio = "1";
