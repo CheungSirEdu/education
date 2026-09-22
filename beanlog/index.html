@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-10b -->
+  <!-- published 2026-09-22 shared-wall -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="家中種綠豆" />
@@ -178,6 +178,23 @@
     }
     .gallery img { width: 100%; height: 64px; object-fit: cover; display: block; }
     .gallery span { display: block; font-size: 12px; padding: 4px 0 6px; }
+    .wall {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px;
+    }
+    .wall figure {
+      margin: 0; background: #fff; border: 3px solid #c5dcc6; border-radius: 14px; overflow: hidden;
+    }
+    .wall img {
+      width: 100%; height: 132px; object-fit: cover; display: block; background: #e8f5e9;
+    }
+    .wall figcaption {
+      display: block; font-size: 13px; font-weight: 800; text-align: center;
+      padding: 6px 4px 8px; color: var(--green-dark); line-height: 1.35;
+    }
+    @media (min-width: 700px) {
+      .wall { grid-template-columns: repeat(3, 1fr); }
+      .wall img { height: 160px; }
+    }
     @media (min-width: 820px) {
       .photo img, .photo video { height: 360px; }
     }
@@ -235,6 +252,10 @@ img.zhang-sir-mark {
       </div>
       <div class="how">把綠豆種在杯中的棉花上，放在家中有陽光的地方。<br>每日拍攝一張相片，選擇生長情況，亦可用語音記錄。</div>
       <button class="primary" id="startBtn" disabled>開始觀察</button>
+      <h2>全班相片</h2>
+      <p class="hint">2A、2B、2C 同學儲存的相片會顯示在這裡。掃碼或者撳「立即遊玩」，都是這一頁，每部電話都見到同一批相片。</p>
+      <div class="wall" id="classWall"><p class="hint" style="grid-column:1/-1">正在讀取全班相片…</p></div>
+      <button class="ghost" id="wallRefresh" type="button">重新整理全班相片</button>
       <a class="ghost" id="adminBtn" href="https://cheungsiredu.github.io/education/grip/admin.html?from=beanlog#/i/beanlog" style="display:flex;align-items:center;justify-content:center;text-decoration:none">成績後台</a>
     </div>
   </section>
@@ -279,6 +300,10 @@ img.zhang-sir-mark {
 
       <h2>已紀錄的日子</h2>
       <div class="gallery" id="gallery"></div>
+      <h2>全班相片</h2>
+      <p class="hint">這是全班共用的相片。掃碼同「立即遊玩」都讀取這裡，所以每部電話見到同一批。</p>
+      <div class="wall" id="classWallApp"></div>
+      <button class="ghost" id="wallRefreshApp" type="button">重新整理全班相片</button>
     </div>
   </section>
 
@@ -308,8 +333,9 @@ img.zhang-sir-mark {
   <script>
     const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
     const SCORE_TOKEN = "chilin-edu-2026";
+    const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
     const TEACHER_PIN = "22463959";
-    const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w/edit?gid=1274157422#gid=1274157422";
+    const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit?gid=1274157422#gid=1274157422";
     const ACTIVITY = "家中種綠豆";
     const MAX_DAY = 20;
     const STAGES = [
@@ -332,6 +358,8 @@ img.zhang-sir-mark {
       photo: "",
       publicUrl: "",
       recs: {},
+      wall: [],
+      pending: null,
       stream: null,
       listening: false
     };
@@ -384,6 +412,227 @@ img.zhang-sir-mark {
       });
     }
     function recKey() { return state.class + "|" + state.no; }
+
+    function esc(s) {
+      return String(s || "").replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function scriptJsonp(src, cb, ms) {
+      return new Promise(function (resolve, reject) {
+        const s = document.createElement("script");
+        const timer = setTimeout(function () { cleanup(); reject(new Error("timeout")); }, ms || 12000);
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+          if (s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = function (data) { cleanup(); resolve(data); };
+        s.onerror = function () { cleanup(); reject(new Error("network")); };
+        s.src = src;
+        document.head.appendChild(s);
+      });
+    }
+    function gvizCell(row, i) {
+      const c = row && row.c && row.c[i];
+      if (!c) return "";
+      if (c.v === null || c.v === undefined) return c.f || "";
+      return c.v;
+    }
+    function gvizTs(v) {
+      const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+      if (!m) return 0;
+      return new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)).getTime();
+    }
+    function cleanNote(note) {
+      return String(note || "")
+        .replace(/\n?IMG:[A-Za-z0-9]+/gi, "")
+        .replace(/📷https?:\/\/\S+/g, "")
+        .trim();
+    }
+    function imgurIdFromText(s) {
+      const m = String(s || "").match(/(?:IMG:|im:|imgur\.com\/)([A-Za-z0-9]{5,8})/i);
+      return m ? m[1] : "";
+    }
+    function dayNumOf(day) {
+      const n = parseInt(String(day || "").replace(/[^\d]/g, ""), 10);
+      return n >= 1 && n <= MAX_DAY ? n : 0;
+    }
+    function wallKey(r) { return r.klass + "\t" + r.no + "\t" + r.dayNum; }
+    async function fetchGviz(sheetName) {
+      const cb = "beanwall_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+      const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+      const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+        "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(sheetName) +
+        "&headers=1&t=" + Date.now();
+      const data = await scriptJsonp(src, cb, 12000);
+      if (!data || data.status === "error" || !data.table) return null;
+      return data.table;
+    }
+    function colIndex(table, name) {
+      const cols = (table.cols || []).map(function (c) { return String(c.label || c.id || ""); });
+      return cols.indexOf(name);
+    }
+    function putWall(map, item) {
+      if (!item.klass || !item.no || !item.dayNum || !item.id) return;
+      const k = wallKey(item);
+      const cur = map[k];
+      if (!cur || item.ts >= cur.ts) {
+        map[k] = Object.assign({}, cur || {}, item, {
+          stage: item.stage || (cur && cur.stage) || "",
+          note: item.note || (cur && cur.note) || "",
+          url: "https://i.imgur.com/" + item.id + ".jpg"
+        });
+      } else if (cur) {
+        if (!cur.stage && item.stage) cur.stage = item.stage;
+        if (!cur.note && item.note) cur.note = item.note;
+      }
+    }
+    function rowsToWall(table, spec) {
+      const out = [];
+      if (!table) return out;
+      const iClass = colIndex(table, spec.klass);
+      const iNo = colIndex(table, spec.no);
+      const iDay = colIndex(table, spec.day);
+      const iTime = colIndex(table, "時間");
+      const iStage = spec.stage ? colIndex(table, spec.stage) : -1;
+      const iNote = spec.note ? colIndex(table, spec.note) : -1;
+      (table.rows || []).forEach(function (row) {
+        const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        const no = String(parseInt(String(gvizCell(row, iNo) || "").replace(/[^\d]/g, ""), 10));
+        const dayRaw = String(gvizCell(row, iDay) || "").trim();
+        const dayNum = dayNumOf(dayRaw);
+        const stage = iStage >= 0 ? String(gvizCell(row, iStage) || "").trim() : "";
+        const note = iNote >= 0 ? String(gvizCell(row, iNote) || "").trim() : "";
+        const bits = spec.ids.map(function (name) {
+          const i = colIndex(table, name);
+          return i >= 0 ? gvizCell(row, i) : "";
+        });
+        const id = imgurIdFromText(bits.concat([note]).join(" "));
+        if (!klass || no === "NaN" || !dayNum || !id) return;
+        out.push({
+          klass: klass,
+          no: no,
+          dayNum: dayNum,
+          day: "第" + dayNum + "日",
+          stage: stage,
+          note: note,
+          id: id,
+          ts: gvizTs(gvizCell(row, iTime))
+        });
+      });
+      return out;
+    }
+    function sortedWall(list) {
+      const order = ["2A", "2B", "2C", "1A", "1B", "4A", "4B", "4C"];
+      return list.slice().sort(function (a, b) {
+        const ca = order.indexOf(a.klass);
+        const cb = order.indexOf(b.klass);
+        const ra = ca < 0 ? 99 : ca;
+        const rb = cb < 0 ? 99 : cb;
+        if (ra !== rb) return ra - rb;
+        if (Number(a.no) !== Number(b.no)) return Number(a.no) - Number(b.no);
+        return a.dayNum - b.dayNum;
+      });
+    }
+    function upsertPending() {
+      const p = state.pending;
+      if (!p) return;
+      const i = state.wall.findIndex(function (r) { return wallKey(r) === wallKey(p); });
+      if (i < 0) state.wall.push(p);
+      else if (state.wall[i].id !== p.id && p.ts >= (state.wall[i].ts || 0)) {
+        state.wall[i] = Object.assign({}, state.wall[i], p);
+      } else state.pending = null;
+    }
+    function renderClassWall() {
+      const items = sortedWall(state.wall || []);
+      const html = items.length
+        ? items.map(function (r) {
+          const stage = r.stage ? "<br>" + esc(r.stage) : "";
+          return "<figure><img alt=\"\" referrerpolicy=\"no-referrer\" src=\"" + esc(r.url) + "\">" +
+            "<figcaption>" + esc(r.klass) + "　" + esc(r.no) + "號　" + esc(r.day) + stage + "</figcaption></figure>";
+        }).join("")
+        : "<p class=\"hint\" style=\"grid-column:1/-1\">暫時未有全班相片。同學儲存之後，這裡會見到。</p>";
+      ["classWall", "classWallApp"].forEach(function (id) {
+        const box = $(id);
+        if (box) box.innerHTML = html;
+      });
+    }
+    function wallMessage(text) {
+      const html = "<p class=\"hint\" style=\"grid-column:1/-1\">" + esc(text) + "</p>";
+      ["classWall", "classWallApp"].forEach(function (id) {
+        const box = $(id);
+        if (box) box.innerHTML = html;
+      });
+    }
+    async function loadClassWall() {
+      try {
+        let main = null;
+        let pub = null;
+        try { main = await fetchGviz("家中種綠豆"); } catch (e1) {}
+        try { pub = await fetchGviz("綠豆相片網址"); } catch (e2) {}
+        if (!main && !pub) throw new Error("empty");
+        const map = {};
+        rowsToWall(main, {
+          klass: "班別", no: "學號", day: "第幾日", stage: "生長情況", note: "觀察", ids: ["觀察", "相片連結"]
+        }).forEach(function (item) { putWall(map, item); });
+        rowsToWall(pub, {
+          klass: "班別", no: "學號", day: "關卡", stage: "", note: "", ids: ["結果", "星星", "角色"]
+        }).forEach(function (item) { putWall(map, item); });
+        state.wall = Object.keys(map).map(function (k) { return map[k]; });
+        upsertPending();
+        applyCloudToRecs();
+        renderClassWall();
+        if (!$("app").classList.contains("hidden") && state.class) {
+          const rec = state.recs[state.day] || {};
+          const shot = String(state.photo || "");
+          if (shot.indexOf("data:image") !== 0) {
+            state.photo = rec.photo || "";
+            if (!state.stage) state.stage = rec.stage || "";
+            showPhoto();
+            renderDays();
+            renderGallery();
+          }
+        }
+      } catch (e) {
+        if (!(state.wall || []).length) wallMessage("暫時未能讀取全班相片。請檢查網絡，再按重新整理。");
+      }
+    }
+    function applyCloudToRecs() {
+      if (!state.class || !state.no) return;
+      const no = String(parseInt(state.no, 10));
+      (state.wall || []).forEach(function (r) {
+        if (r.klass !== state.class || r.no !== no || !r.url) return;
+        const cur = state.recs[r.dayNum] || {};
+        const localPhoto = String(cur.photo || "");
+        const keepLocal = localPhoto.indexOf("data:image") === 0;
+        state.recs[r.dayNum] = {
+          day: r.dayNum,
+          stage: cur.stage || r.stage || "",
+          note: cur.note || cleanNote(r.note),
+          photo: keepLocal ? localPhoto : r.url,
+          thumb: cur.thumb || "",
+          at: cur.at || r.ts || Date.now()
+        };
+      });
+    }
+    function rememberJustSaved() {
+      const id = imgurIdFromText(state.publicUrl);
+      if (!id || !state.class || !state.no) return;
+      state.pending = {
+        klass: state.class,
+        no: String(parseInt(state.no, 10)),
+        dayNum: state.day,
+        day: "第" + state.day + "日",
+        stage: state.stage,
+        note: $("note").value.trim(),
+        id: id,
+        url: "https://i.imgur.com/" + id + ".jpg",
+        ts: Date.now()
+      };
+      upsertPending();
+      renderClassWall();
+    }
 
     function toWritten(raw) {
       let t = String(raw || "").trim();
@@ -644,6 +893,7 @@ img.zhang-sir-mark {
       } catch (e) {
         state.recs = {};
       }
+      applyCloudToRecs();
     }
 
     async function persistLocal() {
@@ -715,7 +965,7 @@ img.zhang-sir-mark {
         level: "第" + state.day + "日",
         result: state.stage,
         note: note,
-        photo: state.photo
+        photo: String(state.photo || "").indexOf("data:image") === 0 ? state.photo : ""
       }, extra || {});
       postScore(body);
     }
@@ -896,30 +1146,43 @@ img.zhang-sir-mark {
       toast("正在交給老師…");
       await persistLocal();
       try {
-        state.publicUrl = await uploadPublicPhoto(state.photo);
+        if (String(state.photo || "").indexOf("data:image") === 0) {
+          state.publicUrl = await uploadPublicPhoto(state.photo);
+        } else if (!imgurIdFromText(state.publicUrl)) {
+          state.publicUrl = imgurIdFromText(state.photo) ? state.photo : "";
+        }
       } catch (e) {
-        state.publicUrl = "";
+        state.publicUrl = state.publicUrl || "";
       }
       sendTeacher();
       sendPublicUrl(state.publicUrl);
+      rememberJustSaved();
       renderDays();
       renderGallery();
+      loadClassWall();
       $("btnSave").textContent = "儲存並取代舊紀錄";
       $("btnSave").disabled = false;
-      toast(state.publicUrl ? "已儲存，老師後台可以睇到預覽。" : "已儲存。若後台未見預覽，請再儲存一次。");
+      toast(state.publicUrl ? "已儲存。其他電話打開同一頁，都可以見到這張相片。" : "已儲存在這部電話。若其他電話未見相片，請再儲存一次。");
     };
 
     $("startBtn").onclick = async function () {
       const id = identityOk();
       if (!id.ok) return;
       state.class = id.class;
-      state.no = id.no;
-      $("who").textContent = id.class + "　學號 " + id.no;
+      state.no = String(parseInt(id.no, 10));
+      $("who").textContent = state.class + "　學號 " + state.no;
       $("start").classList.add("hidden");
       $("app").classList.remove("hidden");
+      await loadClassWall();
       await loadRecs();
-      pickDay(1);
+      const days = Object.keys(state.recs).map(Number).filter(function (n) {
+        return state.recs[n] && state.recs[n].photo;
+      }).sort(function (a, b) { return a - b; });
+      pickDay(days[0] || 1);
     };
+    $("wallRefresh").onclick = function () { loadClassWall(); };
+    $("wallRefreshApp").onclick = function () { loadClassWall(); };
+    loadClassWall();
     $("logout").onclick = function () {
       stopLive();
       $("app").classList.add("hidden");
@@ -927,6 +1190,9 @@ img.zhang-sir-mark {
     };
 
     renderStages();
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") loadClassWall();
+    });
   </script>
 </body>
 </html>
