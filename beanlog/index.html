@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <!-- published 2026-09-22 shared-wall -->
+  <!-- published 2026-09-28 photo-hd-1920 -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="家中種綠豆" />
@@ -690,8 +690,10 @@ img.zhang-sir-mark {
       return t;
     }
 
+    const PHOTO_EDGE = 1920;
+
     function fitCanvas(w, h, max) {
-      max = max || 1600;
+      max = max || PHOTO_EDGE;
       if (w > max || h > max) {
         if (w > h) { h = Math.round(h * max / w); w = max; }
         else { w = Math.round(w * max / h); h = max; }
@@ -700,11 +702,25 @@ img.zhang-sir-mark {
     }
 
     function drawToJpeg(source, w, h, max, quality) {
-      const size = fitCanvas(w, h, max || 640);
+      const size = fitCanvas(w, h, max || PHOTO_EDGE);
       const c = document.createElement("canvas");
       c.width = size.w; c.height = size.h;
-      c.getContext("2d").drawImage(source, 0, 0, size.w, size.h);
-      return c.toDataURL("image/jpeg", quality || 0.82);
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      try { ctx.imageSmoothingQuality = "high"; } catch (e) {}
+      ctx.drawImage(source, 0, 0, size.w, size.h);
+      return c.toDataURL("image/jpeg", quality == null ? 0.86 : quality);
+    }
+
+    async function photoForSave(dataUrl) {
+      const steps = [[1920, 0.86], [1920, 0.78], [1600, 0.8], [1600, 0.72], [1280, 0.75]];
+      let pic = dataUrl;
+      for (let i = 0; i < steps.length; i++) {
+        const len = (String(pic || "").split(",")[1] || "").length;
+        if (len > 0 && len < 1000000) return pic;
+        pic = await makeThumb(dataUrl, steps[i][0], steps[i][1]);
+      }
+      return pic || dataUrl;
     }
 
     function makeThumb(dataUrl, max, quality) {
@@ -923,10 +939,7 @@ img.zhang-sir-mark {
     }
 
     async function uploadPublicPhoto(dataUrl) {
-      let pic = dataUrl;
-      const rawLen = (String(dataUrl || "").split(",")[1] || "").length;
-      if (rawLen > 1400000) pic = await makeThumb(dataUrl, 1280, 0.75);
-      const b64 = String(pic || "").split(",")[1] || "";
+      const b64 = String(dataUrl || "").split(",")[1] || "";
       if (!b64) return "";
       const ctrl = new AbortController();
       const timer = setTimeout(function () { ctrl.abort(); }, 25000);
@@ -1152,6 +1165,9 @@ img.zhang-sir-mark {
       }
       $("btnSave").disabled = true;
       toast("正在交給老師…");
+      if (String(state.photo || "").indexOf("data:image") === 0) {
+        state.photo = await photoForSave(state.photo);
+      }
       await persistLocal();
       try {
         if (String(state.photo || "").indexOf("data:image") === 0) {
