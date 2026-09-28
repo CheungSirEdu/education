@@ -34,6 +34,7 @@ let mic = null;
 let mediaRec = null;
 let micTimer = null;
 let micStopWait = null;
+let micGen = 0;
 
 const VOICE_LABEL = "語音輸入你的意見";
 const app = document.getElementById("app");
@@ -141,32 +142,74 @@ function finishListening() {
   });
 }
 
+function joinVoice(prefix, spoken) {
+  const base = (prefix || "").replace(/\s+/g, " ").trim();
+  const next = (spoken || "").replace(/\s+/g, " ").trim();
+  if (!base) return next;
+  if (!next) return base;
+  if (next === base || next.startsWith(base)) return next;
+  const boundary = /[A-Za-z0-9]$/.test(base) && /^[A-Za-z0-9]/.test(next);
+  return base + (boundary ? " " : "") + next;
+}
+
+function voicePrefix(slot) {
+  const typed = document.getElementById("typed-" + slot);
+  if (typed && !typed.classList.contains("hidden")) {
+    return typed.value.replace(/\s+/g, " ").trim();
+  }
+  const node = document.getElementById("said-" + slot);
+  const saved = ((node && node.dataset.text) || "").replace(/\s+/g, " ").trim();
+  if (saved) return saved;
+  if (heardSlot === slot && heard) return heard.replace(/\s+/g, " ").trim();
+  if (typed) return typed.value.replace(/\s+/g, " ").trim();
+  return "";
+}
+
+function paintVoice(slot, text, listening) {
+  const typed = document.getElementById("typed-" + slot);
+  if (typed && !typed.classList.contains("hidden")) return;
+  const node = document.getElementById("said-" + slot);
+  const bar = document.getElementById("entry-bar-" + slot);
+  const shown = text || "";
+  if (node) node.dataset.text = shown;
+  if (typed) typed.value = shown;
+  if (bar) {
+    const placeholder = bar.dataset.placeholder || "輸入你的意見";
+    bar.textContent = shown || (listening ? "正在聆聽…" : placeholder);
+  }
+}
+
 function startMic(qid, slot) {
+  micGen += 1;
+  const gen = micGen;
   stopMic();
   micSlot = slot || "first";
-  heard = "";
+  const prefix = voicePrefix(micSlot);
+  heard = prefix;
   heardSlot = micSlot;
-  const box = document.getElementById("said-" + micSlot);
-  const live = document.getElementById("live-" + micSlot);
+  showTypeSlot = "";
+  const typed = document.getElementById("typed-" + micSlot);
+  if (typed) {
+    typed.blur();
+    typed.classList.add("hidden");
+  }
   const btn = document.getElementById("entry-bar-" + micSlot);
-  if (box) {
-    box.textContent = "";
-    box.dataset.text = "";
-  }
   if (btn) {
+    btn.classList.remove("hidden");
     btn.classList.add("on");
-    btn.textContent = "正在聆聽…";
   }
+  paintVoice(micSlot, prefix, true);
   const send = document.getElementById("send-" + micSlot);
   if (send) send.textContent = "完成並查看回饋";
   let seconds = 0;
   micTimer = setInterval(() => {
+    if (gen !== micGen) return;
     seconds += 1;
     const node = document.getElementById("live-" + micSlot);
-    if (node && seconds < 30) node.textContent = "正在聆聽。說完請按「完成並查看回饋」。";
+    if (node && seconds < 30) node.textContent = "正在聆聽。停了可以再按語音輸入，繼續說。";
     if (seconds >= 30) {
       const live = document.getElementById("live-" + micSlot);
-      if (live) live.textContent = "已聽完。請按「完成並查看回饋」。";
+      if (live) live.textContent = heard ? "這一段已聽完。再按語音輸入，繼續說。" : "";
       const button = document.getElementById("send-" + micSlot);
       if (button) button.textContent = "完成並查看回饋";
       finishListening();
@@ -181,6 +224,9 @@ function startMic(qid, slot) {
     recg.interimResults = true;
     recg.continuous = true;
     recg.onresult = (event) => {
+      if (gen !== micGen) return;
+      const typing = document.getElementById("typed-" + micSlot);
+      if (typing && !typing.classList.contains("hidden")) return;
       let finalText = "";
       let mid = "";
       for (let i = 0; i < event.results.length; i += 1) {
@@ -188,14 +234,9 @@ function startMic(qid, slot) {
         if (event.results[i].isFinal) finalText += text;
         else mid += text;
       }
-      heard = (finalText || mid).trim();
+      heard = joinVoice(prefix, finalText + mid);
       heardSlot = micSlot;
-      const node = document.getElementById("said-" + micSlot);
-      const bar = document.getElementById("entry-bar-" + micSlot);
-      if (node) {
-        node.dataset.text = heard;
-      }
-      if (bar) bar.textContent = heard || "正在聆聽…";
+      paintVoice(micSlot, heard, true);
     };
     recg.onerror = (event) => {
       if (event.error === "not-allowed") {
@@ -204,14 +245,13 @@ function startMic(qid, slot) {
       }
     };
     recg.onend = () => {
+      if (gen !== micGen) return;
       if (mic === recg) mic = null;
       const button = document.getElementById("entry-bar-" + micSlot);
-      if (button) {
-        button.classList.remove("on");
-        button.textContent = heard || "輸入你的意見";
-      }
+      if (button) button.classList.remove("on");
+      paintVoice(micSlot, heardSlot === micSlot ? heard : prefix, false);
       const live = document.getElementById("live-" + micSlot);
-      if (live) live.textContent = heard ? "已聽完。請按「完成並查看回饋」。" : "";
+      if (live) live.textContent = heard ? "這一段已聽完。再按語音輸入，繼續說。" : "";
       if (micStopWait) {
         const done = micStopWait;
         micStopWait = null;
@@ -233,6 +273,10 @@ function startMic(qid, slot) {
     return;
   }
   navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    if (gen !== micGen) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
     const mime = window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
     mediaRec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
     const chunks = [];
@@ -241,6 +285,7 @@ function startMic(qid, slot) {
     };
     mediaRec.onstop = async () => {
       stream.getTracks().forEach((track) => track.stop());
+      if (gen !== micGen) return;
       mediaRec = null;
       const blob = new Blob(chunks, { type: mime || "audio/mp4" });
       await uploadAudio(blob, qid);
@@ -251,7 +296,8 @@ function startMic(qid, slot) {
       }
     };
     mediaRec.start();
-    if (live) live.textContent = "正在聆聽…";
+    const live = document.getElementById("live-" + micSlot);
+    if (live) live.textContent = "正在聆聽。停了可以再按語音輸入，繼續說。";
   }).catch(() => {
     err = "尚未允許使用麥克風。可以改用文字輸入。";
     render();
@@ -267,12 +313,11 @@ async function uploadAudio(blob, qid) {
   const res = await fetch(await bikeUrl("/api/transcribe"), { method: "POST", headers: authHeaders(), body });
   const data = await res.json().catch(() => ({}));
   const node = document.getElementById("said-" + (micSlot || "first"));
-  const bar = document.getElementById("entry-bar-" + (micSlot || "first"));
   if (data.text && node) {
-    heard = data.text;
-    node.dataset.text = data.text;
+    heard = joinVoice(voicePrefix(micSlot || "first"), data.text);
+    heardSlot = micSlot || "first";
     node.dataset.audio = data.path || "";
-    if (bar) bar.textContent = data.text;
+    paintVoice(heardSlot, heard, false);
   } else if (node) {
     node.dataset.audio = data.path || "";
     node.textContent = "錄音已保存。老師可以收聽。你也可以用文字再輸入一次。";
@@ -410,7 +455,7 @@ function feedbackBubble(item) {
 function barBlock(slot, draft, open, placeholder) {
   return `
     <div class="entry">
-      <button type="button" class="entry-bar ${open ? "hidden" : ""}" id="entry-bar-${slot}">${esc(draft || placeholder)}</button>
+      <button type="button" class="entry-bar ${open ? "hidden" : ""}" id="entry-bar-${slot}" data-placeholder="${esc(placeholder)}">${esc(draft || placeholder)}</button>
       <textarea id="typed-${slot}" class="entry-bar ${open ? "" : "hidden"}" placeholder="${esc(placeholder)}">${esc(draft)}</textarea>
       <div class="entry-menu" id="entry-menu-${slot}">
         <button type="button" id="pick-voice-${slot}">${VOICE_LABEL}</button>
@@ -459,27 +504,30 @@ function bindOneBar(stage, qid, slot) {
   const menu = document.getElementById("entry-menu-" + slot);
   const typed = document.getElementById("typed-" + slot);
   if (!bar) return;
+  if (typed) {
+    typed.addEventListener("input", () => {
+      heardSlot = slot;
+      heard = typed.value.replace(/\s+/g, " ").trim();
+      const node = document.getElementById("said-" + slot);
+      if (node) node.dataset.text = typed.value;
+    });
+  }
   bar.onclick = () => {
-    if (mic || (mediaRec && mediaRec.state === "recording")) {
-      stopMic();
-      return;
-    }
+    if (mic || (mediaRec && mediaRec.state === "recording")) stopMic();
     showTypeSlot = slot;
     heardSlot = slot;
+    const draft = voicePrefix(slot);
+    heard = draft;
     bar.classList.add("hidden");
     if (typed) {
+      typed.value = draft;
       typed.classList.remove("hidden");
       typed.focus();
     }
   };
   const pickVoice = document.getElementById("pick-voice-" + slot);
   if (pickVoice) {
-    pickVoice.onclick = () => {
-      showTypeSlot = "";
-      if (typed) typed.classList.add("hidden");
-      bar.classList.remove("hidden");
-      startMic(qid, slot);
-    };
+    pickVoice.onclick = () => startMic(qid, slot);
   }
   const send = document.getElementById("send-" + slot);
   if (send) send.onclick = () => submitAnswer(stage, qid, slot);
