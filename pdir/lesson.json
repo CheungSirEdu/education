@@ -1,0 +1,427 @@
+{
+  "title": "砌單車工程室",
+  "kicker": "小小工程師 · 為一、二年級學踩單車",
+  "storyTitle": "一個真實的任務",
+  "story": [
+    "弟弟妹妹想學踩單車，單車還沒有裝好。",
+    "大哥哥和大姐姐為了他們，默默把單車安裝好。",
+    "裝好之後，才扶着他們在學校學踩。",
+    "車要行得穩、停得住、坐得舒適。小小工程師建立的不只是單車，而是一顆為人着想的心。"
+  ],
+  "grades": [
+    {
+      "name": "一年級",
+      "classes": [
+        "1A",
+        "1B"
+      ]
+    },
+    {
+      "name": "二年級",
+      "classes": [
+        "2A",
+        "2B",
+        "2C"
+      ]
+    },
+    {
+      "name": "三年級",
+      "classes": [
+        "3A",
+        "3B",
+        "3C"
+      ]
+    },
+    {
+      "name": "四年級",
+      "classes": [
+        "4A",
+        "4B",
+        "4C"
+      ]
+    },
+    {
+      "name": "五年級",
+      "classes": [
+        "5A",
+        "5B",
+        "5C",
+        "5D"
+      ]
+    },
+    {
+      "name": "六年級",
+      "classes": [
+        "6A",
+        "6B",
+        "6C",
+        "6D"
+      ]
+    }
+  ],
+  "classes": [
+    "1A",
+    "1B",
+    "2A",
+    "2B",
+    "2C",
+    "3A",
+    "3B",
+    "3C",
+    "4A",
+    "4B",
+    "4C",
+    "5A",
+    "5B",
+    "5C",
+    "5D",
+    "6A",
+    "6B",
+    "6C",
+    "6D"
+  ],
+  "problem": "你現在是小小工程師。你組裝這輛單車，是為了讓一、二年級的同學學踩單車。",
+  "hero": "media/frame.jpg",
+  "planItems": [
+    {
+      "id": "pedal",
+      "name": "腳踏",
+      "images": [
+        "media/pedals.jpg"
+      ],
+      "questions": [
+        {
+          "id": "pedal-use",
+          "ask": "你覺得它有什麼用？"
+        },
+        {
+          "id": "pedal-where",
+          "ask": "這件腳踏應該安裝在哪裡？",
+          "image": "media/pedal-part.jpg",
+          "answer": "C",
+          "choices": [
+            {
+              "id": "A",
+              "image": "media/pedal-opt-saddle.jpg?v=3"
+            },
+            {
+              "id": "B",
+              "image": "media/pedal-opt-wheel.jpg?v=3"
+            },
+            {
+              "id": "C",
+              "image": "media/pedal-opt-crank.jpg?v=3"
+            },
+            {
+              "id": "D",
+              "image": "media/pedal-opt-stem.jpg?v=3"
+            }
+          ]
+        },
+        {
+          "id": "pedal-science",
+          "ask": "踩下去之後，力怎樣令單車向前行？",
+          "image": "media/pedal-part.jpg",
+          "steps": [
+            {
+              "ask": "踩下去之後，力怎樣令單車向前行？",
+              "answer": "B",
+              "choices": [
+                {
+                  "id": "A",
+                  "text": "只會發出聲音"
+                },
+                {
+                  "id": "B",
+                  "text": "帶動鏈條"
+                },
+                {
+                  "id": "C",
+                  "text": "推動座墊"
+                },
+                {
+                  "id": "D",
+                  "text": "夾緊煞車"
+                }
+              ]
+            },
+            {
+              "ask": "科學原理：腳的動能會轉成什麼動能？",
+              "answer": "C",
+              "choices": [
+                {
+                  "id": "A",
+                  "text": "座墊上下彈的動能"
+                },
+                {
+                  "id": "B",
+                  "text": "車頭左右擺的動能"
+                },
+                {
+                  "id": "C",
+                  "text": "單車向前行的動能"
+                },
+                {
+                  "id": "D",
+                  "text": "鈴鐺搖動的動能"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "brake",
+      "name": "煞車鉗",
+      "images": [
+        "media/brake.jpg",
+        "media/brake-close.jpg"
+      ],
+      "questions": [
+        {
+          "id": "brake-use",
+          "ask": "你覺得它有什麼用？"
+        },
+        {
+          "id": "brake-where",
+          "ask": "這件東西應該安裝在哪裡？"
+        },
+        {
+          "id": "brake-science",
+          "ask": "這個裝置怎樣令單車慢下來或停下？"
+        }
+      ]
+    },
+    {
+      "id": "stem",
+      "name": "車頭",
+      "images": [
+        "media/stem.jpg"
+      ],
+      "questions": [
+        {
+          "id": "stem-use",
+          "ask": "你會用什麼工具去固定這一個位置？",
+          "photo": true,
+          "optional": true,
+          "photoAsk": "請把鏡頭對準六角匙，拍一張相。大小不必剛剛好，但要見到整支六角匙。"
+        },
+        {
+          "id": "stem-where",
+          "ask": "這件東西應該安裝在哪裡？"
+        },
+        {
+          "id": "stem-science",
+          "ask": "想轉彎的時候，前輪要怎樣？",
+          "answer": "B",
+          "choices": [
+            {
+              "id": "A",
+              "text": "停住不動"
+            },
+            {
+              "id": "B",
+              "text": "跟着把手一起轉"
+            },
+            {
+              "id": "C",
+              "text": "只用手按住"
+            },
+            {
+              "id": "D",
+              "text": "自己轉"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "doSteps": [
+    {
+      "id": "saddle",
+      "title": "固定座墊",
+      "images": [
+        "media/saddle.jpg"
+      ],
+      "tips": [
+        "座墊裝在座管上，用螺絲固定。",
+        "坐上去時，腳尖要能觸到地面。",
+        "扭實之後，雙手托住也拉不起來。"
+      ],
+      "safety": "座墊太高，下車時會站不穩。",
+      "noteAsk": "你會怎樣把座墊固定在合適的高度？",
+      "photo": true,
+      "photoAsk": "請對準剛裝好的座墊拍一張相。鏡頭要見到座墊裝在座管上。"
+    },
+    {
+      "id": "wheel",
+      "title": "固定車輪並打氣",
+      "images": [
+        "media/wheel.jpg",
+        "media/pump.jpg"
+      ],
+      "tips": [
+        "車輪放進車架或前叉正中，兩邊螺絲一樣緊。",
+        "打氣前先把氣嘴接好。",
+        "轉動車輪，確認不會擦到車架。"
+      ],
+      "safety": "手指不要靠近轉動中的車輪。氣嘴不要對着人。",
+      "noteAsk": "你會怎樣把車輪固定，並知道氣是否足夠？",
+      "photo": true,
+      "photoAsk": "請對準固定好的車輪拍一張相。鏡頭要見到車輪裝正，以及打了氣的輪胎。"
+    },
+    {
+      "id": "pedal",
+      "title": "上緊腳踏",
+      "images": [
+        "media/pedals.jpg"
+      ],
+      "tips": [
+        "腳踏裝在曲柄兩邊。",
+        "有寫 R 的是右邊，順時針扭緊。",
+        "左邊的方向相反，才扭得實。裝完拉一拉，不要鬆。"
+      ],
+      "safety": "腳踏鬆了，一踩就會脫落。",
+      "noteAsk": "左右腳踏怎樣上實？",
+      "answer": "B",
+      "choices": [
+        {
+          "id": "A",
+          "text": "兩邊都順時針扭"
+        },
+        {
+          "id": "B",
+          "text": "右邊順時針，左邊反方向"
+        },
+        {
+          "id": "C",
+          "text": "兩邊都只用手按"
+        },
+        {
+          "id": "D",
+          "text": "只扭緊右邊"
+        }
+      ],
+      "photo": true,
+      "photoAsk": "請對準上緊的腳踏拍一張相。鏡頭要見到腳踏裝在曲柄上。"
+    },
+    {
+      "id": "stem",
+      "title": "固定車頭",
+      "images": [
+        "media/stem.jpg",
+        "media/hexkey.jpg"
+      ],
+      "tips": [
+        "車頭這條連着車架前面。",
+        "上面有一顆要用六角匙扭的螺絲。",
+        "對正把手和前輪之後，把這顆螺絲扭實。"
+      ],
+      "safety": "只扭緊一邊，行駛時把手會鬆脫。",
+      "photo": true,
+      "photoAsk": "請對準裝好的車頭拍一張相。鏡頭要見到把手和前輪對正在同一個方向。",
+      "noteAsk": "用六角匙固定車頭，要怎樣做？",
+      "answer": "B",
+      "choices": [
+        {
+          "id": "A",
+          "text": "只用手按住"
+        },
+        {
+          "id": "B",
+          "text": "對正後，把螺絲扭實"
+        },
+        {
+          "id": "C",
+          "text": "把六角匙留在螺絲上"
+        },
+        {
+          "id": "D",
+          "text": "只扭緊一邊"
+        }
+      ]
+    },
+    {
+      "id": "brake",
+      "title": "固定前煞車",
+      "images": [
+        "media/brake.jpg",
+        "media/brake-close.jpg"
+      ],
+      "video": "media/brake.mp4",
+      "poster": "media/brake-poster.jpg",
+      "tips": [
+        "前煞車裝在車頭、前輪上方。",
+        "兩邊都要有煞車皮，對準車輪。",
+        "用六角匙或扳手固定，一按掣要能夠夾住車輪。"
+      ],
+      "safety": "尚未能停下，不要騎出去。測試時老師要在旁。",
+      "photo": true,
+      "photoAsk": "請對準裝好的前煞車拍一張相。鏡頭要見到煞車皮對着車輪。",
+      "noteAsk": "固定前煞車，要用什麼工具？",
+      "answer": "B",
+      "choices": [
+        {
+          "id": "A",
+          "text": "打氣筒"
+        },
+        {
+          "id": "B",
+          "text": "六角匙或扳手"
+        },
+        {
+          "id": "C",
+          "text": "錘"
+        },
+        {
+          "id": "D",
+          "text": "螺絲批"
+        }
+      ]
+    }
+  ],
+  "improve": [
+    {
+      "id": "debug",
+      "ask": "你踩了幾步之後，發現什麼問題要再修理？",
+      "images": [
+        "media/frame.jpg"
+      ]
+    }
+  ],
+  "review": [
+    {
+      "id": "review-again",
+      "ask": "最難安裝的是哪一個部分？",
+      "answer": "",
+      "choices": [
+        {
+          "id": "A",
+          "text": "固定車頭"
+        },
+        {
+          "id": "B",
+          "text": "煞車部分"
+        },
+        {
+          "id": "C",
+          "text": "上緊腳踏"
+        },
+        {
+          "id": "D",
+          "text": "固定車輪並打氣"
+        },
+        {
+          "id": "E",
+          "text": "固定座墊"
+        }
+      ]
+    },
+    {
+      "id": "review-teach",
+      "ask": "如果要教其他人安裝這輛單車，你應該怎樣教？",
+      "frame": "我會先教＿＿＿，然後＿＿＿，因為＿＿＿。"
+    }
+  ]
+}

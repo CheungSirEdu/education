@@ -19,6 +19,7 @@
       "pe"
     ],
     "sci": [
+      "pdir",
       "p2-sci",
       "p4-sci",
       "kits"
@@ -45,6 +46,9 @@
     "p4-sci": [
       "drift",
       "engineer"
+    ],
+    "pdir": [
+      "pdir"
     ],
     "kits": [
       "kits"

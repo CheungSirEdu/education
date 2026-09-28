@@ -19,6 +19,7 @@
       "pe"
     ],
     "sci": [
+      "pdir",
       "p2-sci",
       "p4-sci",
       "kits"

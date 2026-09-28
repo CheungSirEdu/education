@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>砌單車 · 投影</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <main class="board" id="board"></main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const qid = params.get("q") || "";
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    fetch("lesson.json", { cache: "no-store" }).then((r) => r.json()).then((lesson) => {
+      let ask = lesson.problem;
+      let kicker = "P 計劃 · 界定問題";
+      const planQuestions = [];
+      (lesson.planItems || []).forEach((item) => (item.questions || []).forEach((q) => planQuestions.push(q)));
+      const found = planQuestions.concat(lesson.doSteps || []).concat(lesson.improve || []).concat(lesson.review || []).find((q) => q.id === qid);
+      if (found) {
+        ask = found.ask || found.noteAsk;
+        if (planQuestions.some((q) => q.id === qid)) kicker = "P 計劃 · 估計用途、位置和原理";
+        else if ((lesson.doSteps || []).some((q) => q.id === qid)) kicker = "D 動手 · 怎樣固定";
+        else if ((lesson.improve || []).some((q) => q.id === qid)) kicker = "I 改良 · 試踩之後執漏";
+        else kicker = "R 回顧 · 下次與教別人";
+      } else if (qid === "plan" && planQuestions[0]) {
+        ask = planQuestions[0].ask;
+        kicker = "P 計劃 · 估計用途、位置和原理";
+      }
+      document.getElementById("board").innerHTML =
+        `<p class="kicker">${esc(kicker)}</p><h1>${esc(ask)}</h1>` +
+        `<p>聽完同學說，再一起補充。平板上的回饋是幫助每位學生下次組裝得更清楚。</p>`;
+    });
+  </script>
+</body>
+</html>
