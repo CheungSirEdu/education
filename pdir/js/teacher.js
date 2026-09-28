@@ -799,7 +799,8 @@ function tallyHtml(title, choices, counts, spec) {
   const few = rest.length
     ? `少部分同學選了${rest.map(([id, count]) => `${labelOf(id)}（${count}人）`).join("、")}`
     : "沒有人選其他答案";
-  return `<div class="answer"><div class="q">${esc(title)}</div>
+  const titleHtml = title ? `<div class="q">${esc(title)}</div>` : "";
+  return `<div class="answer">${titleHtml}
     <div class="digest">
       <article class="span2"><b>歸納</b><p><b>${esc(head)}</b></p><p>${esc(few)}</p></article>
     </div>
@@ -815,44 +816,6 @@ function countLetters(choices, letterOf) {
     counts[letter] = (counts[letter] || 0) + 1;
   });
   return counts;
-}
-
-function planChoiceTallies(question) {
-  const blocks = [];
-  if ((question.choices || []).length && !(question.steps || []).length) {
-    const counts = countLetters(question.choices, (rec) => (((rec.plan || {}).items || {})[question.id] || {}).choice);
-    blocks.push(tallyHtml(question.ask, question.choices, counts, tallySpec("plan", question.id, 0, counts)));
-  }
-  (question.steps || []).forEach((step, index) => {
-    if (!(step.choices || []).length) return;
-    const counts = countLetters(step.choices, (rec) => {
-      const bag = ((rec.plan || {}).items || {})[question.id] || {};
-      return index === 0 ? bag.choice : bag.choice2;
-    });
-    blocks.push(tallyHtml(step.ask || question.ask, step.choices, counts, tallySpec("plan", question.id, index + 1, counts)));
-  });
-  return blocks.join("");
-}
-
-function answersForSlide(slide) {
-  const rows = [];
-  records.forEach((rec) => {
-    const who = `${rec.class} ${rec.no}號${rec.name ? " " + rec.name : ""}`;
-    if (slide.kind === "plan") {
-      const bag = ((rec.plan || {}).items || {})[slide.question.id] || {};
-      (bag.attempts || []).forEach((item) => rows.push({ who, text: item.text, feedback: item.feedback, source: item.source }));
-      if (bag.photoFeedback) rows.push({ who, text: "交了一張相片", feedback: bag.photoFeedback, source: bag.photoSource, photo: bag.photo });
-    } else if (slide.kind === "do") {
-      const bag = (rec.do || {})[slide.step.id] || {};
-      if (bag.photo || bag.photoFeedback) rows.push({ who, text: "交了一張安裝相片", feedback: bag.photoFeedback, source: bag.photoSource, photo: bag.photo });
-      (bag.attempts || []).forEach((item) => rows.push({ who, text: item.text, feedback: item.feedback, source: item.source }));
-    } else if (slide.kind === "improve" || slide.kind === "review") {
-      const group = slide.kind === "improve" ? rec.improve : rec.review;
-      const bag = (group || {})[slide.item.id] || {};
-      (bag.attempts || []).forEach((item) => rows.push({ who, text: item.text, feedback: item.feedback, source: item.source }));
-    }
-  });
-  return rows;
 }
 
 function jumpBar(slides) {
@@ -901,26 +864,6 @@ function doFaceQuestions(step) {
   return `${step.noteAsk ? `<h2>${esc(step.noteAsk)}</h2>` : ""}`;
 }
 
-function doFollowIndex(stepId, feedback) {
-  const text = feedback || "";
-  if (stepId === "saddle") {
-    if (/拉|托住/.test(text)) return 2;
-    if (/腳尖|地面|觸到/.test(text)) return 1;
-    return 1;
-  }
-  if (stepId === "debug") {
-    if (/再踩|只看一眼/.test(text)) return 2;
-    if (/修理動作|扭緊|打氣|調低/.test(text)) return 1;
-    return 0;
-  }
-  if (stepId === "wheel") {
-    if (/氣|輪胎|扁|擦/.test(text)) return 2;
-    if (/螺絲|一邊/.test(text)) return 1;
-    return 1;
-  }
-  return 1;
-}
-
 function answerCards(rows) {
   return rows.map((row) => `
     <div class="answer">
@@ -936,53 +879,341 @@ function repliesDrawer(key, rows) {
   return `<details class="replies" data-reply="${esc(key)}" ${openReplyKeys.has(key) ? "open" : ""}><summary>學生回覆（${count} 位）</summary>${answerCards(rows)}</details>`;
 }
 
-function doThreeBlock(kind, id) {
-  const prompts = DO_THREE[id];
-  if (!prompts) return "";
-  const buckets = prompts.map(() => []);
+function whoOf(rec) {
+  return `${rec.class} ${rec.no}號${rec.name ? " " + rec.name : ""}`;
+}
+
+function choiceAnswerText(choice) {
+  if (!choice) return "";
+  if (choice.text) return `${choice.id}. ${choice.text}`;
+  const place = choiceLabel(choice);
+  return choice.id ? `${choice.id}. ${place}` : place;
+}
+
+function textOnly(rows) {
+  return (rows || []).filter((row) => {
+    const text = (row.text || "").trim();
+    return text && text !== "交了一張相片" && text !== "交了一張安裝相片";
+  });
+}
+
+function openSummary(kind, qid, rows) {
+  const spoken = textOnly(rows);
+  if (!spoken.length) return "";
+  const fake = kind === "plan"
+    ? { kind, question: { id: qid } }
+    : kind === "do"
+      ? { kind, step: { id: qid } }
+      : { kind, item: { id: qid } };
+  return openBox(openSpec(fake, spoken));
+}
+
+function blocksHtml(blocks) {
+  return blocks.map((block, index) => {
+    const rows = block.rows || [];
+    const drawer = repliesDrawer(block.key, rows);
+    const summary = block.summary || "";
+    const mark = blocks.length > 1 ? `${index + 1}. ` : "";
+    const empty = !drawer && !summary ? `<p class="hint">尚未有學生作答</p>` : "";
+    return `<div class="part-q ${index % 2 ? "dark" : ""} ${block.current ? "on" : ""}">
+      <div class="q">${mark}${esc(block.ask)}</div>
+      ${block.hint ? `<p class="hint">${esc(block.hint)}</p>` : ""}
+      ${summary}
+      ${drawer}
+      ${empty}
+    </div>`;
+  }).join("");
+}
+
+function stageAttempts(rec, stage, id) {
+  const group = stage === "do" ? (rec.do || {}) : stage === "improve" ? (rec.improve || {}) : (rec.review || {});
+  return ((group || {})[id] || {}).attempts || [];
+}
+
+function indexedRows(stage, id, index) {
+  const rows = [];
   records.forEach((rec) => {
-    const group = kind === "improve" ? rec.improve : rec.do;
-    const attempts = ((group || {})[id] || {}).attempts || [];
-    const who = `${rec.class} ${rec.no}號${rec.name ? " " + rec.name : ""}`;
-    attempts.forEach((att, index) => {
-      const at = index === 0 ? 0 : doFollowIndex(id, (attempts[index - 1] || {}).feedback);
-      buckets[at].push({ who, text: att.text || "", feedback: att.feedback || "", source: att.source || "" });
+    const item = stageAttempts(rec, stage, id)[index];
+    if (!item || !(item.text || "").trim() || item.text === "完成") return;
+    rows.push({ who: whoOf(rec), text: item.text, feedback: item.feedback || "", source: item.source || "" });
+  });
+  return rows;
+}
+
+function allAttemptRows(stage, id) {
+  const rows = [];
+  records.forEach((rec) => {
+    const who = whoOf(rec);
+    stageAttempts(rec, stage, id).forEach((item) => {
+      if (!item || !(item.text || "").trim() || item.text === "完成") return;
+      rows.push({ who, text: item.text, feedback: item.feedback || "", source: item.source || "" });
     });
   });
-  const fake = kind === "improve" ? { kind, item: { id } } : { kind, step: { id } };
-  return prompts.map((ask, index) => {
-    const bucket = buckets[index];
-    const summary = bucket.length
-      ? openBox(openSpec(fake, bucket))
-      : `<p class="hint">尚未有學生作答</p>`;
-    return `<div class="part-q ${index % 2 ? "dark" : ""}">
-      <div class="q">${index + 1}. ${esc(ask)}</div>
-      ${summary}
-      ${repliesDrawer(`${id}-${index}`, bucket)}
-    </div>`;
-  }).join("");
+  return rows;
 }
 
-function questionSummary(question) {
-  const hasChoice = (question.choices || []).length || (question.steps || []).some((step) => (step.choices || []).length);
-  if (hasChoice) return planChoiceTallies(question);
-  const fake = { kind: "plan", question };
-  const rows = answersForSlide(fake);
-  const head = `<div class="q">${esc(question.ask)}</div>`;
-  if (!rows.length) return `${head}<p class="hint">尚未有學生作答</p>`;
-  return head + openBox(openSpec(fake, rows));
+function planChoiceRows(question, stepNo) {
+  const rounds = question.steps || [];
+  const round = rounds[stepNo - 1] || question;
+  const field = stepNo === 2 ? "choice2" : "choice";
+  const rows = [];
+  records.forEach((rec) => {
+    const bag = ((rec.plan || {}).items || {})[question.id] || {};
+    let letter = bag[field] || "";
+    const hit = [...(bag.attempts || [])].reverse().find((item) => (item.step || 1) === stepNo && String(item.text || "").indexOf("選擇 ") === 0);
+    if (!letter && hit) letter = String(hit.text || "").replace(/^選擇\s*/, "").trim();
+    if (!letter) return;
+    const choice = (round.choices || []).find((item) => item.id === letter);
+    rows.push({
+      who: whoOf(rec),
+      text: choiceAnswerText(choice) || letter,
+      feedback: (hit && hit.feedback) || "",
+      source: (hit && hit.source) || "coach",
+    });
+  });
+  return rows;
 }
 
-function partAnswerBlock(slide, peopleHtml) {
-  const questions = (slide.item && slide.item.questions) || [];
-  if (questions.length < 2) return "";
-  return questions.map((question, index) => {
+function planOpenRows(question) {
+  const rows = [];
+  records.forEach((rec) => {
+    const bag = ((rec.plan || {}).items || {})[question.id] || {};
+    const who = whoOf(rec);
+    (bag.attempts || []).forEach((item) => {
+      if (String(item.text || "").indexOf("選擇 ") === 0) return;
+      if (!(item.text || "").trim()) return;
+      rows.push({ who, text: item.text, feedback: item.feedback, source: item.source });
+    });
+    if (bag.photo || bag.photoFeedback) {
+      rows.push({ who, text: "交了一張相片", feedback: bag.photoFeedback, source: bag.photoSource, photo: bag.photo });
+    }
+  });
+  return rows;
+}
+
+function planBlocks(slide) {
+  const questions = (slide.item && slide.item.questions) || [slide.question];
+  const blocks = [];
+  questions.forEach((question) => {
     const current = question.id === slide.question.id;
-    return `<div class="part-q ${index % 2 ? "dark" : ""} ${current ? "on" : ""}">
-      ${questionSummary(question)}
-      ${current ? peopleHtml : ""}
-    </div>`;
-  }).join("");
+    const steps = question.steps || [];
+    if (steps.length) {
+      steps.forEach((step, index) => {
+        const counts = countLetters(step.choices, (rec) => {
+          const bag = ((rec.plan || {}).items || {})[question.id] || {};
+          return index === 0 ? bag.choice : bag.choice2;
+        });
+        blocks.push({
+          key: `${question.id}-${index + 1}`,
+          ask: step.ask || question.ask,
+          current,
+          summary: tallyHtml("", step.choices, counts, tallySpec("plan", question.id, index + 1, counts)),
+          rows: planChoiceRows(question, index + 1),
+        });
+      });
+      return;
+    }
+    if ((question.choices || []).length) {
+      const counts = countLetters(question.choices, (rec) => (((rec.plan || {}).items || {})[question.id] || {}).choice);
+      blocks.push({
+        key: question.id,
+        ask: question.ask,
+        current,
+        summary: tallyHtml("", question.choices, counts, tallySpec("plan", question.id, 0, counts)),
+        rows: planChoiceRows(question, 1),
+      });
+      return;
+    }
+    const rows = planOpenRows(question);
+    blocks.push({
+      key: question.id,
+      ask: question.ask,
+      hint: question.photoAsk || "",
+      current,
+      summary: openSummary("plan", question.id, rows),
+      rows,
+    });
+  });
+  return blocks;
+}
+
+function spokenBlocks(stage, id, prompts) {
+  return prompts.map((ask, index) => {
+    const rows = indexedRows(stage, id, index);
+    return {
+      key: `${id}-${index}`,
+      ask,
+      summary: openSummary(stage, id, rows),
+      rows,
+    };
+  });
+}
+
+function doBlocks(step) {
+  const blocks = [];
+  if (step.photo || step.photoAsk) {
+    const rows = [];
+    records.forEach((rec) => {
+      const bag = (rec.do || {})[step.id] || {};
+      if (!bag.photo && !bag.photoFeedback) return;
+      rows.push({
+        who: whoOf(rec),
+        text: "交了一張安裝相片",
+        feedback: bag.photoFeedback,
+        source: bag.photoSource,
+        photo: bag.photo,
+      });
+    });
+    blocks.push({ key: step.id + "-photo", ask: step.photoAsk || "請拍一張安裝相片。", rows });
+  }
+  const prompts = DO_THREE[step.id];
+  if (prompts) return blocks.concat(spokenBlocks("do", step.id, prompts));
+  if ((step.choices || []).length) {
+    const counts = countLetters(step.choices, (rec) => ((rec.do || {})[step.id] || {}).choice);
+    const rows = [];
+    records.forEach((rec) => {
+      const bag = (rec.do || {})[step.id] || {};
+      if (!bag.choice) return;
+      const choice = (step.choices || []).find((item) => item.id === bag.choice);
+      rows.push({
+        who: whoOf(rec),
+        text: choiceAnswerText(choice) || bag.choice,
+        feedback: bag.choiceFeedback || "",
+        source: "coach",
+      });
+    });
+    blocks.push({
+      key: step.id + "-choice",
+      ask: step.noteAsk || step.title,
+      summary: tallyHtml("", step.choices, counts, tallySpec("do", step.id, 0, counts)),
+      rows,
+    });
+    return blocks;
+  }
+  if (step.noteAsk) {
+    const rows = allAttemptRows("do", step.id);
+    blocks.push({
+      key: step.id,
+      ask: step.noteAsk,
+      summary: openSummary("do", step.id, rows),
+      rows,
+    });
+  }
+  return blocks;
+}
+
+function improveBlocks(item) {
+  const prompts = DO_THREE[item.id];
+  if (prompts) return spokenBlocks("improve", item.id, prompts);
+  const rows = allAttemptRows("improve", item.id);
+  return [{
+    key: item.id,
+    ask: item.ask,
+    summary: openSummary("improve", item.id, rows),
+    rows,
+  }];
+}
+
+function questionFromFeedback(feedback) {
+  const matches = String(feedback || "").match(/[^。！？?]*[？?]/g);
+  if (!matches || !matches.length) return "";
+  return matches.map((line) => line.trim()).filter(Boolean).join("");
+}
+
+function reviewBlocks(item) {
+  if ((item.choices || []).length) {
+    const byText = {};
+    item.choices.forEach((choice) => { byText[choice.text] = choice.id; });
+    const counts = {};
+    const choiceRows = [];
+    const whyRows = [];
+    records.forEach((rec) => {
+      const attempts = stageAttempts(rec, "review", item.id);
+      const who = whoOf(rec);
+      const picked = attempts.find((row) => byText[row.text]);
+      if (picked) {
+        const id = byText[picked.text];
+        counts[id] = (counts[id] || 0) + 1;
+        const choice = item.choices.find((row) => row.id === id);
+        choiceRows.push({
+          who,
+          text: choiceAnswerText(choice) || picked.text,
+          feedback: picked.feedback,
+          source: picked.source,
+        });
+      }
+      attempts.forEach((row) => {
+        if (!row.text || byText[row.text] || row.text === "完成") return;
+        whyRows.push({ who, text: row.text, feedback: row.feedback, source: row.source });
+      });
+    });
+    return [
+      {
+        key: item.id + "-pick",
+        ask: item.ask,
+        summary: tallyHtml("", item.choices, counts, tallySpec("review", item.id, 0, counts)),
+        rows: choiceRows,
+      },
+      {
+        key: item.id + "-why",
+        ask: "為什麼你覺得這個部分最難？",
+        summary: openSummary("review", item.id, whyRows),
+        rows: whyRows,
+      },
+    ];
+  }
+  if (item.id === "review-teach") {
+    const first = indexedRows("review", item.id, 0);
+    const third = indexedRows("review", item.id, 2);
+    const followGroups = new Map();
+    records.forEach((rec) => {
+      const attempts = stageAttempts(rec, "review", item.id);
+      const answer = attempts[1];
+      if (!answer || !(answer.text || "").trim() || answer.text === "完成") return;
+      const ask = questionFromFeedback((attempts[0] || {}).feedback) || "跟進問題";
+      const bag = followGroups.get(ask) || [];
+      bag.push({ who: whoOf(rec), text: answer.text, feedback: answer.feedback || "", source: answer.source || "" });
+      followGroups.set(ask, bag);
+    });
+    const blocks = [{
+      key: item.id + "-1",
+      ask: item.ask,
+      summary: openSummary("review", item.id, first),
+      rows: first,
+    }];
+    let n = 0;
+    followGroups.forEach((rows, ask) => {
+      blocks.push({
+        key: item.id + "-f" + n,
+        ask,
+        summary: openSummary("review", item.id, rows),
+        rows,
+      });
+      n += 1;
+    });
+    blocks.push({
+      key: item.id + "-why",
+      ask: "你為什麼先教這一件？",
+      summary: openSummary("review", item.id, third),
+      rows: third,
+    });
+    return blocks;
+  }
+  const rows = allAttemptRows("review", item.id);
+  return [{
+    key: item.id,
+    ask: item.ask,
+    summary: openSummary("review", item.id, rows),
+    rows,
+  }];
+}
+
+function askBlocks(slide) {
+  if (slide.kind === "plan") return planBlocks(slide);
+  if (slide.kind === "do") return doBlocks(slide.step);
+  if (slide.kind === "improve") return improveBlocks(slide.item);
+  if (slide.kind === "review") return reviewBlocks(slide.item);
+  return [];
 }
 
 function slideHtml() {
@@ -995,45 +1226,7 @@ function slideHtml() {
   const totalPlan = planSlides.length;
   if (slideIndex >= slides.length) slideIndex = 0;
   const slide = slides[slideIndex];
-  const choiceBlock = slide.kind === "plan" && ((slide.question.choices || []).length || (slide.question.steps || []).some((step) => (step.choices || []).length))
-    ? planChoiceTallies(slide.question)
-    : slide.kind === "do" && (slide.step.choices || []).length
-      ? (() => {
-          const counts = countLetters(slide.step.choices, (rec) => ((rec.do || {})[slide.step.id] || {}).choice);
-          return tallyHtml(slide.step.noteAsk || slide.step.title, slide.step.choices, counts, tallySpec("do", slide.step.id, 0, counts));
-        })()
-      : slide.kind === "review" && (slide.item.choices || []).length
-        ? (() => {
-            const byText = {};
-            (slide.item.choices || []).forEach((choice) => { byText[choice.text] = choice.id; });
-            const counts = {};
-            records.forEach((rec) => {
-              const attempts = (((rec.review || {})[slide.item.id] || {}).attempts) || [];
-              const picked = attempts.find((item) => byText[item.text]);
-              if (!picked) return;
-              const id = byText[picked.text];
-              counts[id] = (counts[id] || 0) + 1;
-            });
-            return tallyHtml(slide.item.ask, slide.item.choices, counts, tallySpec("review", slide.item.id, 0, counts));
-          })()
-        : "";
-  const rows = (slide.kind === "mission" || slide.kind === "summary") ? [] : answersForSlide(slide).filter((row) => {
-    if (slide.kind === "plan" && ((slide.question.choices || []).length || (slide.question.steps || []).some((step) => (step.choices || []).length))) {
-      return !!row.photo;
-    }
-    if (slide.kind === "review" && (slide.item.choices || []).length) {
-      return !((slide.item.choices || []).some((choice) => choice.text === row.text));
-    }
-    if (slide.kind === "do" && (slide.step.choices || []).length) {
-      return row.text !== "交了一張安裝相片" ? true : !!row.photo;
-    }
-    return true;
-  });
-  const people = repliesDrawer("page", rows);
-  const bundled = slide.kind === "plan" && ((slide.item.questions || []).length > 1);
-  const threeId = slide.kind === "do" ? slide.step.id : slide.kind === "improve" ? slide.item.id : "";
-  const three = Boolean(DO_THREE[threeId]);
-  const onePage = choiceBlock || (rows.length ? openBox(openSpec(slide, rows)) : "");
+  const blocks = (slide.kind === "mission" || slide.kind === "summary") ? [] : askBlocks(slide);
   return `
     ${jumpBar(slides)}
     <div class="card">
@@ -1050,7 +1243,7 @@ function slideHtml() {
       </section>` : slide.kind === "summary" ? `${digestHtml()}${analysisHtml()}` : `
       <section class="banner">
         <b>這一頁的學生回答</b>
-        ${three ? `${answerCards(rows.filter((row) => row.photo))}${doThreeBlock(slide.kind, threeId)}` : bundled ? partAnswerBlock(slide, people) : `${onePage}${people || (!choiceBlock ? `<p class="hint">這一頁尚未有學生回答</p>` : "")}`}
+        ${blocks.length ? blocksHtml(blocks) : `<p class="hint">這一頁尚未有學生回答</p>`}
       </section>`}`;
 }
 

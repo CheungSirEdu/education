@@ -571,6 +571,14 @@ textarea.entry-bar { resize: vertical; }
   border: 2px solid #c9ddd4;
   background: #f4faf7;
 }
+.part-q > .q {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.part-q.on {
+  box-shadow: inset 0 0 0 3px #1d4f86;
+}
 .part-q.dark {
   background: #16332d;
   border-color: #16332d;
