@@ -464,12 +464,14 @@
       padding: 16px; cursor: zoom-out;
     }
     #beanLight img {
-      max-width: min(96vw, 920px); max-height: 78vh; object-fit: contain;
+      max-width: min(96vw, 1400px); max-height: 78vh; object-fit: contain;
       border-radius: 16px; background: #111; box-shadow: 0 10px 40px rgba(0,0,0,.4);
     }
     #beanLight .cap {
       color: #fff; font-weight: 800; text-align: center; margin-top: 12px; line-height: 1.5;
     }
+    #beanLight .actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+    #beanLight .actions button { width: auto; min-height: 44px; padding: 8px 16px; margin: 0; }
     @media (max-width: 560px) {
       header.hub { padding-right: 58px; }
     }
@@ -540,6 +542,7 @@
         <a href="#/">返回目錄</a>
         <a id="beanPlay" href="../beanlog/">學生輸入頁</a>
         <button type="button" id="beanReload">重新整理</button>
+        <button type="button" id="beanDownload">下載相片</button>
         <button type="button" id="beanCsv">匯出 Excel</button>
         <button type="button" id="beanEdit">編輯</button>
         <button type="button" id="beanLock">離開後台</button>
@@ -2354,6 +2357,19 @@
     if (id) return imgurFull(id);
     return isGoodPhotoUrl(url) ? String(url) : "";
   }
+  function beanClearUrl(r) {
+    if (r && r.driveId) return "https://lh3.googleusercontent.com/d/" + r.driveId + "=s0";
+    return beanFullUrl((r && (r.src || r.photo || r.note)) || "");
+  }
+  function beanCardUrl(r) {
+    if (r && r.driveId) return "https://lh3.googleusercontent.com/d/" + r.driveId + "=w800";
+    if (r && r.src && /^https?:\/\//i.test(r.src)) return r.src;
+    return beanThumb(r) || "";
+  }
+  function beanFileName(r) {
+    const day = String((r && r.day) || "").replace(/\s+/g, "");
+    return String((r && r.klass) || "") + "-" + String((r && r.no) || "") + "號-" + day + ".jpg";
+  }
   function beanHasPhoto(r) { return !!(r && beanThumb(r)); }
   function fillBeanImages() {}
   function loadLocalBeanPhotos() {
@@ -2402,7 +2418,10 @@
   function makePreviewSrc(src) {
     return new Promise(function (resolve) {
       if (!src) return resolve("");
-      if (/^https?:\/\//i.test(src)) return resolve(beanPreviewUrl(src));
+      if (/^https?:\/\//i.test(src)) {
+        if (src.indexOf("googleusercontent.com") >= 0) return resolve(src);
+        return resolve(beanPreviewUrl(src));
+      }
       if (src.indexOf("data:image") !== 0) return resolve("");
       if (src.length < 12000) return resolve(src);
       const img = new Image();
@@ -2519,6 +2538,230 @@
     const data = await scriptJsonp(SCORE_URL + "?" + q.toString(), cb);
     return data;
   }
+  function crc32(u8) {
+    if (!crc32.table) {
+      const t = new Uint32Array(256);
+      for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        t[i] = c >>> 0;
+      }
+      crc32.table = t;
+    }
+    let c = 0xffffffff;
+    for (let i = 0; i < u8.length; i++) c = crc32.table[(c ^ u8[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+  function buildZip(files) {
+    const enc = new TextEncoder();
+    const parts = [];
+    const central = [];
+    let offset = 0;
+    files.forEach(f => {
+      const name = enc.encode(f.name);
+      const crc = crc32(f.data);
+      const local = new DataView(new ArrayBuffer(30));
+      local.setUint32(0, 0x04034b50, true);
+      local.setUint16(4, 20, true);
+      local.setUint16(6, 0x0800, true);
+      local.setUint16(8, 0, true);
+      local.setUint32(14, crc, true);
+      local.setUint32(18, f.data.length, true);
+      local.setUint32(22, f.data.length, true);
+      local.setUint16(26, name.length, true);
+      const cen = new DataView(new ArrayBuffer(46));
+      cen.setUint32(0, 0x02014b50, true);
+      cen.setUint16(4, 20, true);
+      cen.setUint16(6, 20, true);
+      cen.setUint16(8, 0x0800, true);
+      cen.setUint32(16, crc, true);
+      cen.setUint32(20, f.data.length, true);
+      cen.setUint32(24, f.data.length, true);
+      cen.setUint16(28, name.length, true);
+      cen.setUint32(42, offset, true);
+      parts.push(new Uint8Array(local.buffer), name, f.data);
+      central.push(new Uint8Array(cen.buffer), name);
+      offset += 30 + name.length + f.data.length;
+    });
+    let centralSize = 0;
+    central.forEach(p => { centralSize += p.length; });
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true);
+    eocd.setUint16(8, files.length, true);
+    eocd.setUint16(10, files.length, true);
+    eocd.setUint32(12, centralSize, true);
+    eocd.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, new Uint8Array(eocd.buffer)], { type: "application/zip" });
+  }
+  function saveBlob(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  async function downloadBeanFile(r) {
+    const url = beanClearUrl(r);
+    if (!url) { toast("這張相片未能下載"); return; }
+    toast("正在下載清晰相片…");
+    try {
+      const res = await fetch(url, { referrerPolicy: "no-referrer" });
+      if (!res.ok) throw new Error("fetch");
+      saveBlob(await res.blob(), beanFileName(r));
+      toast("已下載 " + beanFileName(r));
+    } catch (e) {
+      toast("未能下載這張相片");
+    }
+  }
+  async function downloadBeanPhotos() {
+    const list = beanLive(state.beanRecords).filter(beanMatch).filter(r => beanClearUrl(r));
+    if (!list.length) { toast("這個範圍未有相片"); return; }
+    const btn = $("beanDownload");
+    if (btn) btn.disabled = true;
+    $("beanStatus").textContent = "正在下載 " + list.length + " 張清晰相片…";
+    const files = [];
+    const used = {};
+    const names = list.map(r => {
+      let name = beanFileName(r);
+      if (used[name]) name = name.replace(/\.jpg$/i, "-" + (++used[name]) + ".jpg");
+      else used[name] = 1;
+      return name;
+    });
+    let done = 0;
+    async function one(r, name) {
+      try {
+        const res = await fetch(beanClearUrl(r), { referrerPolicy: "no-referrer" });
+        if (!res.ok) return;
+        files.push({ name: name, data: new Uint8Array(await res.arrayBuffer()) });
+      } catch (e) {}
+      done += 1;
+      $("beanStatus").textContent = "正在下載清晰相片… " + done + " / " + list.length;
+    }
+    let cursor = 0;
+    async function worker() {
+      while (cursor < list.length) {
+        const i = cursor++;
+        await one(list[i], names[i]);
+      }
+    }
+    try {
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      if (!files.length) { toast("未能下載相片"); return; }
+      saveBlob(buildZip(files), "家中種綠豆相片.zip");
+      toast("已下載 " + files.length + " 張相片");
+      $("beanStatus").textContent = "已下載 " + files.length + " 張清晰相片";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function unzipNamed(buf, names) {
+    const u8 = new Uint8Array(buf);
+    const view = new DataView(buf);
+    let eocd = -1;
+    const scan = Math.max(0, u8.length - 22 - 65536);
+    for (let i = u8.length - 22; i >= scan; i--) {
+      if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("zip");
+    const count = view.getUint16(eocd + 10, true);
+    let p = view.getUint32(eocd + 16, true);
+    const want = {};
+    names.forEach(n => { want[n] = true; });
+    const found = [];
+    for (let n = 0; n < count; n++) {
+      if (view.getUint32(p, true) !== 0x02014b50) break;
+      const method = view.getUint16(p + 10, true);
+      const compSize = view.getUint32(p + 20, true);
+      const nameLen = view.getUint16(p + 28, true);
+      const extraLen = view.getUint16(p + 30, true);
+      const commentLen = view.getUint16(p + 32, true);
+      const localOff = view.getUint32(p + 42, true);
+      const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen));
+      p += 46 + nameLen + extraLen + commentLen;
+      if (!want[name]) continue;
+      found.push({ name, method, compSize, localOff });
+    }
+    const out = {};
+    for (const item of found) {
+      const localNameLen = view.getUint16(item.localOff + 26, true);
+      const localExtra = view.getUint16(item.localOff + 28, true);
+      const start = item.localOff + 30 + localNameLen + localExtra;
+      const comp = u8.subarray(start, start + item.compSize);
+      if (item.method === 0) out[item.name] = new TextDecoder().decode(comp);
+      else if (item.method === 8) {
+        const stream = new Blob([comp]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+        out[item.name] = new TextDecoder().decode(await new Response(stream).arrayBuffer());
+      }
+    }
+    return out;
+  }
+  function xmlText(xml) {
+    return new DOMParser().parseFromString(xml, "text/xml");
+  }
+  async function attachDriveIds(records) {
+    const buf = await fetch("https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=xlsx&t=" + Date.now(), { cache: "no-store" }).then(r => {
+      if (!r.ok) throw new Error("sheet");
+      return r.arrayBuffer();
+    });
+    const base = await unzipNamed(buf, ["xl/workbook.xml", "xl/_rels/workbook.xml.rels"]);
+    const book = xmlText(base["xl/workbook.xml"]);
+    const bookRels = xmlText(base["xl/_rels/workbook.xml.rels"]);
+    let rid = "";
+    [...book.getElementsByTagName("sheet")].forEach(s => {
+      if (s.getAttribute("name") === "家中種綠豆") rid = s.getAttribute("r:id") || "";
+    });
+    if (!rid) return;
+    let target = "";
+    [...bookRels.getElementsByTagName("Relationship")].forEach(rel => {
+      if (rel.getAttribute("Id") === rid) target = rel.getAttribute("Target") || "";
+    });
+    if (!target) return;
+    const sheetPath = target.indexOf("xl/") === 0 ? target : ("xl/" + target.replace(/^\//, ""));
+    const relPath = sheetPath.replace(/worksheets\//, "worksheets/_rels/") + ".rels";
+    const packed = await unzipNamed(buf, [sheetPath, relPath, "xl/sharedStrings.xml"]);
+    const strings = [...xmlText(packed["xl/sharedStrings.xml"] || "<si/>").getElementsByTagName("si")].map(si =>
+      [...si.getElementsByTagName("t")].map(t => t.textContent || "").join("")
+    );
+    const sheet = xmlText(packed[sheetPath] || "<sheetData/>");
+    const rows = {};
+    [...sheet.getElementsByTagName("c")].forEach(c => {
+      const ref = c.getAttribute("r") || "";
+      const m = ref.match(/^([A-Z]+)(\d+)$/);
+      if (!m) return;
+      const v = c.getElementsByTagName("v")[0];
+      let val = v ? v.textContent || "" : "";
+      if (c.getAttribute("t") === "s") val = strings[Number(val)] || "";
+      (rows[m[2]] = rows[m[2]] || {})[m[1]] = val;
+    });
+    const links = {};
+    [...xmlText(packed[relPath] || "<Relationships/>").getElementsByTagName("Relationship")].forEach(rel => {
+      links[rel.getAttribute("Id")] = rel.getAttribute("Target") || "";
+    });
+    const byKey = {};
+    const header = rows["1"] || {};
+    const col = (label) => Object.keys(header).find(k => header[k] === label) || "";
+    const cClass = col("班別") || "B";
+    const cNo = col("學號") || "C";
+    const cDay = col("第幾日") || "D";
+    [...sheet.getElementsByTagName("hyperlink")].forEach(h => {
+      const ref = h.getAttribute("ref") || "";
+      const id = h.getAttribute("r:id") || "";
+      const rowNo = (ref.match(/\d+$/) || [])[0];
+      const url = links[id] || "";
+      const file = (url.match(/\/d\/([A-Za-z0-9_-]+)/) || [])[1];
+      const row = rows[rowNo] || {};
+      const klass = String(row[cClass] || "").trim().toUpperCase();
+      const no = String(parseInt(String(row[cNo] || "").trim(), 10));
+      const day = String(row[cDay] || "").trim();
+      if (file && klass && no !== "NaN" && day) byKey[klass + "\t" + no + "\t" + day] = file;
+    });
+    (records || []).forEach(r => {
+      const id = byKey[r.klass + "\t" + r.no + "\t" + r.day];
+      if (id) r.driveId = id;
+    });
+  }
   async function loadBean() {
     $("beanStatus").textContent = "正在讀取相片…";
     try {
@@ -2555,6 +2798,15 @@
       ? ("已更新　" + total + " 筆紀錄，" + n + " 張預覽")
       : "暫時未有紀錄。儲存後請撳重新整理。";
     renderBean();
+    try {
+      $("beanStatus").textContent = "正在讀取清晰相片…";
+      await attachDriveIds(state.beanRecords);
+      const clear = state.beanRecords.filter(r => r.driveId).length;
+      $("beanStatus").textContent = total
+        ? ("已更新　" + total + " 筆紀錄。撳相片可以放大，亦可下載清晰相片。" + (clear ? "　清晰原相 " + clear + " 張" : ""))
+        : "暫時未有紀錄。儲存後請撳重新整理。";
+      renderBean();
+    } catch (e5) {}
   }
   function renderBeanChips() {
     const cls = ["all"].concat(BEAN_CLASSES);
@@ -2591,15 +2843,25 @@
   function openBeanLight(r) {
     const src = r.photo && String(r.photo).indexOf("data:image") === 0
       ? r.photo
-      : beanFullUrl(r.src || beanThumb(r));
+      : beanClearUrl(r);
     const name = beanName(r);
-    const note = String(r.note || "").replace(/📷https?:\/\/\S+/g, "").trim();
+    const note = String(r.note || "").replace(/IMG:[A-Za-z0-9]+/g, "").replace(/📷https?:\/\/\S+/g, "").trim();
     $("beanLight").innerHTML = `
       <img src="${esc(src)}" alt="" referrerpolicy="no-referrer">
-      <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span>
-      ${state.editing ? `<br><button class="danger" type="button" id="lightDel" style="margin-top:10px">刪除這張相片</button>` : ""}</div>`;
+      <div class="cap">${esc(name)}　${esc(r.klass)}　${esc(r.no)}號<br>${esc(r.day)}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>
+      <div class="actions">
+        <button type="button" id="lightSave" style="background:#2f7d32;color:#fff">下載這張相片</button>
+        ${state.editing ? `<button class="danger" type="button" id="lightDel">刪除這張相片</button>` : ""}
+      </div>`;
     $("beanLight").classList.remove("hidden");
     $("beanLight")._rec = r;
+    const img = $("beanLight").querySelector("img");
+    if (img) img.onerror = function () {
+      const alt = beanFullUrl(r.src || r.photo || r.note);
+      if (alt && img.getAttribute("src") !== alt) img.src = alt;
+    };
+    const save = $("lightSave");
+    if (save) save.onclick = function (ev) { ev.stopPropagation(); downloadBeanFile(r); };
     const del = $("lightDel");
     if (del) del.onclick = function (ev) { ev.stopPropagation(); deleteBeanPhoto(r); };
   }
@@ -2642,8 +2904,7 @@
     photos.forEach(function (r, i) {
       const card = cards[i];
       if (!card) return;
-      const rawSrc = (r.src && /^https?:\/\//i.test(r.src)) ? r.src : (beanThumb(r) || r.photo || "");
-      makePreviewSrc(rawSrc).then(function (src) {
+      makePreviewSrc(beanCardUrl(r)).then(function (src) {
         if (!src) return;
         const img = document.createElement("img");
         img.alt = "";
@@ -2931,9 +3192,10 @@
       if (r) openBeanLight(r);
     };
     $("beanLight").onclick = (e) => {
-      if (e.target.closest("#lightDel")) return;
+      if (e.target.closest("#lightDel") || e.target.closest("#lightSave") || e.target.closest(".actions")) return;
       $("beanLight").classList.add("hidden");
     };
+    $("beanDownload").onclick = () => downloadBeanPhotos();
     $("editBtn").onclick = toggleEdit;
     $("dashEdit").onclick = toggleEdit;
     $("beanEdit").onclick = toggleEdit;

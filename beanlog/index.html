@@ -549,7 +549,8 @@ img.zhang-sir-mark {
       const html = items.length
         ? items.map(function (r) {
           const stage = r.stage ? "<br>" + esc(r.stage) : "";
-          return "<figure><img alt=\"\" referrerpolicy=\"no-referrer\" src=\"" + esc(r.url) + "\">" +
+          const shown = r.id ? ("https://i.imgur.com/" + r.id + "l.jpg") : r.url;
+          return "<figure><img alt=\"\" referrerpolicy=\"no-referrer\" src=\"" + esc(shown) + "\">" +
             "<figcaption>" + esc(r.klass) + "　" + esc(r.no) + "號　" + esc(r.day) + stage + "</figcaption></figure>";
         }).join("")
         : "<p class=\"hint\" style=\"grid-column:1/-1\">暫時未有全班相片。同學儲存之後，這裡會見到。</p>";
@@ -690,7 +691,7 @@ img.zhang-sir-mark {
     }
 
     function fitCanvas(w, h, max) {
-      max = max || 640;
+      max = max || 1600;
       if (w > max || h > max) {
         if (w > h) { h = Math.round(h * max / w); w = max; }
         else { w = Math.round(w * max / h); h = max; }
@@ -703,7 +704,7 @@ img.zhang-sir-mark {
       const c = document.createElement("canvas");
       c.width = size.w; c.height = size.h;
       c.getContext("2d").drawImage(source, 0, 0, size.w, size.h);
-      return c.toDataURL("image/jpeg", quality || 0.62);
+      return c.toDataURL("image/jpeg", quality || 0.82);
     }
 
     function makeThumb(dataUrl, max, quality) {
@@ -922,11 +923,13 @@ img.zhang-sir-mark {
     }
 
     async function uploadPublicPhoto(dataUrl) {
-      const thumb = await makeThumb(dataUrl, 240, 0.5);
-      const b64 = String(thumb || "").split(",")[1] || "";
+      let pic = dataUrl;
+      const rawLen = (String(dataUrl || "").split(",")[1] || "").length;
+      if (rawLen > 1400000) pic = await makeThumb(dataUrl, 1280, 0.75);
+      const b64 = String(pic || "").split(",")[1] || "";
       if (!b64) return "";
       const ctrl = new AbortController();
-      const timer = setTimeout(function () { ctrl.abort(); }, 7000);
+      const timer = setTimeout(function () { ctrl.abort(); }, 25000);
       try {
         const res = await fetch("https://api.imgur.com/3/image", {
           method: "POST",
@@ -965,7 +968,12 @@ img.zhang-sir-mark {
         level: "第" + state.day + "日",
         result: state.stage,
         note: note,
-        photo: String(state.photo || "").indexOf("data:image") === 0 ? state.photo : ""
+        photo: (function () {
+          const pic = String(state.photo || "");
+          if (pic.indexOf("data:image") !== 0) return "";
+          const len = (pic.split(",")[1] || "").length;
+          return len > 0 && len < 1100000 ? pic : "";
+        })()
       }, extra || {});
       postScore(body);
     }
