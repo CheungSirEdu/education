@@ -94,8 +94,42 @@
     .games { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .links a { color: var(--green-dark); font-weight: 700; }
     .note { font-size: 14px; }
+    .play-layout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .frame-wrap {
+      width: min(100%, 420px);
+      height: min(78vh, 760px);
+      height: min(78dvh, 760px);
+      background: #121212;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .frame-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #121212;
+    }
+    .qr-box { text-align: center; max-width: 220px; }
+    .qr-box img {
+      width: 180px;
+      height: 180px;
+      background: #fff;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto 8px;
+    }
+    .qr-box p { font-weight: 700; }
     @media (max-width: 640px) {
       .games { grid-template-columns: 1fr; }
+      .frame-wrap { width: 100%; height: 86vh; height: 86dvh; }
+      .qr-box { max-width: none; }
     }
   </style>
 </head>
@@ -133,6 +167,21 @@
           <a id="ig" href="https://www.instagram.com/reel/DY8OoKtD-Ob/" target="_blank" rel="noopener">Instagram 短片</a><br>
           <a href="https://www.facebook.com/ohpamahk/posts/976777295061766" target="_blank" rel="noopener">Facebook 圖文帖文</a>
         </p>
+      </section>
+
+      <section class="card" id="play">
+        <h2>人工智能跑車遊戲</h2>
+        <p>短片下面可以即場玩「摩擦力　變幻天氣大挑戰」。電腦用左右箭咀轉向，空白鍵或 Z 發射。iPad 及電話用畫面下方三粒按鈕：左轉、發射、右轉。</p>
+        <div class="play-layout">
+          <div class="frame-wrap">
+            <iframe id="game-frame" title="摩擦力　變幻天氣大挑戰" allow="fullscreen"></iframe>
+          </div>
+          <div class="qr-box">
+            <img id="game-qr" alt="掃碼玩跑車遊戲" width="180" height="180">
+            <p>掃碼即玩。電腦、iPad、電話都可以。</p>
+            <a class="btn" id="game-link" href="https://cheungsiredu.github.io/education/drift/" target="_blank" rel="noopener">全螢幕玩</a>
+          </div>
+        </div>
       </section>
 
       <article class="card" id="article">
@@ -187,6 +236,14 @@
       });
       const reel = document.getElementById("reel");
       if (reel && !reel.getAttribute("src")) reel.src = "reel.mp4";
+      const frame = document.getElementById("game-frame");
+      if (frame && !frame.getAttribute("src")) {
+        const path = decodeURIComponent(location.pathname);
+        const game = path.includes("傳媒") ? "摩擦力挑戰/index.html?embed=1" : "../drift/?embed=1";
+        frame.src = game;
+      }
+      const qr = document.getElementById("game-qr");
+      if (qr && !qr.getAttribute("src")) qr.src = "game-qr.png";
     }
 
     document.getElementById("form").addEventListener("submit", async (ev) => {
