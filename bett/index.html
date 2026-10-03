@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+<script>document.documentElement.classList.add("js");</script>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -179,6 +180,40 @@
       .tl .what { font-size: 18px; }
       .tl .note { font-size: 13px; }
     }
+    .tl button.day {
+      display: block;
+      width: 100%;
+      margin: -28px 0 0;
+      padding: 28px 0 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    @media (min-width: 700px) {
+      .tl button.day { margin-top: -32px; padding-top: 32px; }
+    }
+    .tl button.day:focus-visible {
+      outline: 3px solid var(--green);
+      outline-offset: 2px;
+      border-radius: 12px;
+    }
+    .tl li.open .when { text-decoration: underline; text-underline-offset: 3px; }
+    .tl-hint {
+      margin: 12px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .js .day-panel { display: none; }
+    .js .day-panel.show { display: block; }
     #more { min-height: 8px; }
     footer {
       text-align: center; padding: 8px 16px 28px; color: var(--green-dark);
@@ -215,31 +250,53 @@ img.zhang-sir-mark {
       <h2>時間線</h2>
       <ol class="tl">
         <li data-date="2026-09-28">
-          <span class="when"><span class="y">2026年</span><span class="d">9月28日</span></span>
-          <span class="what">遞交學生<span class="mobbr"></span>作品給老師</span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-0928">
+            <span class="when"><span class="y">2026年</span><span class="d">9月28日</span></span>
+            <span class="what">遞交學生<span class="mobbr"></span>作品給老師</span>
+          </button>
         </li>
         <li data-date="2026-10-03">
-          <span class="when"><span class="y">2026年</span><span class="d">10月3日</span></span>
-          <span class="what">比賽</span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1003">
+            <span class="when"><span class="y">2026年</span><span class="d">10月3日</span></span>
+            <span class="what">比賽</span>
+          </button>
         </li>
         <li data-date="2026-10-08">
-          <span class="when"><span class="y">2026年</span><span class="d">10月8日</span></span>
-          <span class="what">公布成績</span>
-          <span class="note">香港電腦<span class="mobbr"></span>教育學會 <span class="mobbr"></span>Facebook</span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1008">
+            <span class="when"><span class="y">2026年</span><span class="d">10月8日</span></span>
+            <span class="what">公布成績</span>
+            <span class="note">香港電腦<span class="mobbr"></span>教育學會 <span class="mobbr"></span>Facebook</span>
+          </button>
         </li>
         <li data-until="2027-02-01">
-          <span class="when"><span class="y">2027年</span><span class="d">一月中</span></span>
-          <span class="what">前往英國</span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-uk">
+            <span class="when"><span class="y">2027年</span><span class="d">一月中</span></span>
+            <span class="what">前往英國</span>
+          </button>
         </li>
       </ol>
+      <p class="tl-hint">撳日期，睇當日內容。</p>
     </div>
-    <div class="item">
-      <h2>10月3日上午 8:40 集合</h2>
-      <p>香港聖公會何明華會督中學<br>九龍秀茂坪曉光街 82 號</p>
-      <p>請帶同模型，並預備電力充足的電池。老師會帶備電腦、簡報及 HDMI 線。</p>
+    <div class="day-panel" id="day-0928">
+      <div class="item">
+        <h2>沿着黑色線</h2>
+        <p>撳下面打開積木程式，下載到 micro:bit。</p>
+        <a class="btn" href="https://makecode.microbit.org/_0EAexqFqwffY">打開積木程式</a>
+      </div>
+      <div class="item">
+        <h2>家中教學</h2>
+        <p>畀家長睇嘅教學說明。</p>
+        <a class="btn" href="教學.docx" download="教學.docx">下載教學 Word</a>
+      </div>
     </div>
-    <div class="item" id="decks">
-      <h2>第一組簡報</h2>
+    <div class="day-panel" id="day-1003">
+      <div class="item">
+        <h2>10月3日上午 8:40 集合</h2>
+        <p>香港聖公會何明華會督中學<br>九龍秀茂坪曉光街 82 號</p>
+        <p>請帶同模型，並預備電力充足的電池。老師會帶備電腦、簡報及 HDMI 線。</p>
+      </div>
+      <div class="item" id="decks">
+        <h2>第一組簡報</h2>
       <p>陳彥彬、潘韻而、蔡知妍。講稿是一個大綱，學生可以作出適量修改。</p>
       <div class="actions">
         <a class="btn" href="簡報/BETTSHOW第一組簡報.pptx">打開簡報</a>
@@ -256,6 +313,19 @@ img.zhang-sir-mark {
         <a class="btn" href="簡報/BETTSHOW第二組講稿.docx">打開講稿</a>
         <a class="btn" href="簡報/BETTSHOW第二組簡報.pptx" download="BETTSHOW第二組簡報.pptx">用電腦下載簡報</a>
         <a class="btn" href="簡報/BETTSHOW第二組講稿.docx" download="BETTSHOW第二組講稿.docx">用電腦下載講稿</a>
+      </div>
+    </div>
+    </div>
+    <div class="day-panel" id="day-1008">
+      <div class="item">
+        <h2>公布成績</h2>
+        <p>結果於香港電腦教育學會 Facebook 公布。</p>
+      </div>
+    </div>
+    <div class="day-panel" id="day-uk">
+      <div class="item">
+        <h2>前往英國</h2>
+        <p>2027年一月中前往英國。</p>
       </div>
     </div>
     <div class="item">
@@ -370,16 +440,6 @@ img.zhang-sir-mark {
         </video>
       </div>
     </div>
-    <div class="item">
-      <h2>沿着黑色線</h2>
-      <p>撳下面打開積木程式，下載到 micro:bit。</p>
-      <a class="btn" href="https://makecode.microbit.org/_0EAexqFqwffY">打開積木程式</a>
-    </div>
-    <div class="item">
-      <h2>家中教學</h2>
-      <p>畀家長睇嘅教學說明。</p>
-      <a class="btn" href="教學.docx" download="教學.docx">下載教學 Word</a>
-    </div>
     <div id="more"></div>
   </main>
   <footer>
@@ -403,6 +463,24 @@ img.zhang-sir-mark {
         if (!date) return;
         if (date < today) li.classList.add("done");
         else if (date === today) li.classList.add("now");
+      });
+      document.querySelectorAll("#timeline button.day").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var panel = document.getElementById(btn.getAttribute("aria-controls"));
+          var open = btn.getAttribute("aria-expanded") === "true";
+          document.querySelectorAll("#timeline button.day").forEach(function (other) {
+            other.setAttribute("aria-expanded", "false");
+            other.parentElement.classList.remove("open");
+          });
+          document.querySelectorAll(".day-panel").forEach(function (p) {
+            p.classList.remove("show");
+          });
+          if (!open && panel) {
+            btn.setAttribute("aria-expanded", "true");
+            btn.parentElement.classList.add("open");
+            panel.classList.add("show");
+          }
+        });
       });
     })();
   </script>
