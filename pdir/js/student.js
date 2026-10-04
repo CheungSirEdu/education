@@ -68,11 +68,11 @@ function authHeaders() {
   return who ? { "X-Student-Token": who.token } : {};
 }
 
-const OFFLINE_NOTE = "課堂電腦暫時未連上。這部裝置可以繼續用，答案會在連上後自動送出。";
+const OFFLINE_NOTE = "課室暫時未連上。這部裝置可以繼續用，答案會在連上後自動送出。";
 
 function offlineMessage() {
   if (location.hostname.endsWith("github.io")) {
-    return "課堂電腦未開。請老師先雙擊「開始課堂」，開住黑色視窗。";
+    return "暫時連不到課室。請再試一次。";
   }
   return "連不到課室伺服器。請看老師的電腦是否仍開着黑色視窗。";
 }

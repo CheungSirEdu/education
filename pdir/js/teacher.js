@@ -37,7 +37,7 @@ async function tapi(path, body) {
     });
   } catch (e) {
     throw new Error(location.hostname.endsWith("github.io")
-      ? "課堂電腦未開。請老師先雙擊「開始課堂」，開住黑色視窗。"
+      ? "暫時連不到課室。請再試一次。"
       : "連不到課室伺服器");
   }
   const data = await res.json().catch(() => ({}));
