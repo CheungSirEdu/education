@@ -917,7 +917,7 @@ function deleteTools(row, wipe) {
   }));
   return `<div class="edit-tools">
     <button type="button" class="danger" data-del="question" data-who="${esc(row.who)}" data-spec="${spec}">只刪這題</button>
-    <button type="button" class="danger" data-del="student" data-who="${esc(row.who)}" data-spec="${spec}">刪除此生全部</button>
+    <button type="button" class="danger" data-del="student" data-who="${esc(row.who)}" data-spec="${spec}">刪除此學生所有回答</button>
   </div>`;
 }
 
