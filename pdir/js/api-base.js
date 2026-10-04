@@ -42,3 +42,24 @@ window.bikeUrl = async function (path) {
   if (path.charAt(0) === "/") return base + path;
   return path;
 };
+
+function bikeFetchTimeout(url, options, ms) {
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), ms || 12000) : null;
+  const opts = Object.assign({}, options || {});
+  if (ctrl) opts.signal = ctrl.signal;
+  return fetch(url, opts).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+window.bikeFetch = async function (path, options) {
+  if (window.bikeReady) await window.bikeReady;
+  const opts = options || {};
+  try {
+    const res = await bikeFetchTimeout(await window.bikeUrl(path), opts, 12000);
+    if (res.status < 500) return res;
+  } catch (e) { /* 通道可能剛換址 */ }
+  if (window.bikeRefresh) await window.bikeRefresh();
+  return bikeFetchTimeout(await window.bikeUrl(path), opts, 12000);
+};

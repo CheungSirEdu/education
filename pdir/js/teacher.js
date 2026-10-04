@@ -30,7 +30,7 @@ function esc(s) {
 async function tapi(path, body) {
   let res;
   try {
-    res = await fetch(await bikeUrl(path), {
+    res = await window.bikeFetch(path, {
       method: body ? "POST" : "GET",
       headers: { "Content-Type": "application/json", "X-Teacher-Pin": pin },
       body: body ? JSON.stringify(body) : undefined,
@@ -53,7 +53,7 @@ async function tapi(path, body) {
 async function blobUrl(path) {
   if (!path || path.startsWith("media/")) return path || "";
   if (blobs[path]) return blobs[path];
-  const res = await fetch(await bikeUrl("/" + path.replace(/^\//, "")), { headers: { "X-Teacher-Pin": pin } });
+  const res = await window.bikeFetch("/" + path.replace(/^\//, ""), { headers: { "X-Teacher-Pin": pin } });
   if (!res.ok) return "";
   const url = URL.createObjectURL(await res.blob());
   blobs[path] = url;
@@ -585,7 +585,7 @@ async function openStudent(id) {
 }
 
 async function downloadExcel() {
-  const res = await fetch(await bikeUrl("/api/teacher/export"), { headers: { "X-Teacher-Pin": pin } });
+  const res = await window.bikeFetch("/api/teacher/export", { headers: { "X-Teacher-Pin": pin } });
   if (!res.ok) {
     err = "未能匯出 Excel";
     render();

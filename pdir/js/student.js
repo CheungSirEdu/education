@@ -68,6 +68,8 @@ function authHeaders() {
   return who ? { "X-Student-Token": who.token } : {};
 }
 
+const OFFLINE_NOTE = "課堂電腦暫時未連上。這部裝置可以繼續用，答案會在連上後自動送出。";
+
 function offlineMessage() {
   if (location.hostname.endsWith("github.io")) {
     return "課堂電腦未開。請老師先雙擊「開始課堂」，開住黑色視窗。";
@@ -146,17 +148,45 @@ function applyLocalPlan(question, choice, step) {
   });
 }
 
-function applyLocalText(qid, text) {
-  const bag = ensurePlan({ id: qid });
-  bag.attempts = bag.attempts || [];
-  bag.attempts.push({
-    n: bag.attempts.length + 1,
+function applyLocalText(stage, qid, text) {
+  const row = {
+    n: 1,
     step: 1,
     text: text,
     feedback: "已記下。課堂電腦連上後會再給回饋。",
     source: "coach",
     at: new Date().toISOString(),
+  };
+  if (stage === "plan") {
+    const bag = ensurePlan({ id: qid });
+    bag.attempts = bag.attempts || [];
+    row.n = bag.attempts.length + 1;
+    bag.attempts.push(row);
+    return;
+  }
+  if (!rec[stage] || typeof rec[stage] !== "object") rec[stage] = {};
+  const bag = rec[stage][qid] || { attempts: [] };
+  bag.attempts = bag.attempts || [];
+  row.n = bag.attempts.length + 1;
+  bag.attempts.push(row);
+  rec[stage][qid] = bag;
+}
+
+function keepDoChoice(step, choice) {
+  if (!rec.do) rec.do = {};
+  const bag = rec.do[step.id] || { choice: "", attempts: [] };
+  bag.choice = choice;
+  const answer = step.answer || "";
+  const ok = !answer || choice === answer;
+  bag.attempts = bag.attempts || [];
+  bag.attempts.push({
+    n: bag.attempts.length + 1,
+    text: "選擇 " + choice,
+    feedback: answer ? (ok ? "你揀對了。" : "這個不是答案，請再選。") : "已記下你的選擇。",
+    source: "coach",
+    at: new Date().toISOString(),
   });
+  rec.do[step.id] = bag;
 }
 
 function enterPlanLocal(value) {
@@ -167,7 +197,7 @@ function enterPlanLocal(value) {
   screen = "plan";
   planIndex = 0;
   err = "";
-  linkNote = "已進入計劃。課堂電腦暫時未連上，這部裝置仍可先看計劃。";
+  linkNote = OFFLINE_NOTE;
   render();
   scheduleRejoin();
 }
@@ -202,8 +232,8 @@ async function tryRejoin() {
   if (!who) return;
   let changed = false;
   try {
+    if (window.bikeRefresh) await window.bikeRefresh();
     if (!who.token) {
-      if (window.bikeRefresh) await window.bikeRefresh();
       const res = await fetchWithTimeout(await bikeUrl("/api/join"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -225,13 +255,17 @@ async function tryRejoin() {
       changed = true;
     }
     if (await flushOutbox()) changed = true;
-    if (who.token && !outbox.length && rejoinTimer) {
-      clearInterval(rejoinTimer);
-      rejoinTimer = 0;
-      linkNote = "";
-      changed = true;
+    if (who.token && !outbox.length) {
+      if (linkNote) {
+        linkNote = "";
+        changed = true;
+      }
+      if (rejoinTimer) {
+        clearInterval(rejoinTimer);
+        rejoinTimer = 0;
+      }
     }
-  } catch (e) { /* 留在計劃頁，稍後再連 */ }
+  } catch (e) { /* 留在這一頁，稍後再連 */ }
   if (changed && !mic && !showTypeSlot) render();
 }
 
@@ -240,7 +274,7 @@ async function api(path, body) {
   const payload = body ? Object.assign({ class: who.class, no: who.no }, body) : null;
   let res;
   try {
-    res = await fetch(await bikeUrl(path), {
+    res = await window.bikeFetch(path, {
       method: payload ? "POST" : "GET",
       headers,
       body: payload ? JSON.stringify(payload) : undefined,
@@ -474,7 +508,7 @@ async function uploadAudio(blob, qid) {
   body.append("no", who.no);
   body.append("slot", "aud-" + qid);
   body.append("file", blob, "speech.webm");
-  const res = await fetch(await bikeUrl("/api/transcribe"), { method: "POST", headers: authHeaders(), body });
+  const res = await window.bikeFetch("/api/transcribe", { method: "POST", headers: authHeaders(), body });
   const data = await res.json().catch(() => ({}));
   const node = document.getElementById("said-" + (micSlot || "first"));
   if (data.text && node) {
@@ -524,7 +558,7 @@ async function uploadPhoto(file, slot) {
   body.append("no", who.no);
   body.append("slot", slot);
   body.append("file", image, "photo.jpg");
-  const res = await fetch(await bikeUrl("/api/upload"), { method: "POST", headers: authHeaders(), body });
+  const res = await window.bikeFetch("/api/upload", { method: "POST", headers: authHeaders(), body });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "相片未能上載");
   return data;
@@ -570,15 +604,15 @@ async function submitAnswer(stage, qid, slot) {
     linkNote = "";
     render();
   } catch (e) {
-    if (stage === "plan" && isOfflineError(e)) {
-      applyLocalText(qid, text);
+    if (isOfflineError(e)) {
+      applyLocalText(stage, qid, text);
       remember("/api/answer", { stage: stage, qid: qid, text: text, slot: slot, photo: "", audio: audio });
       pendingPhoto = "";
       heard = text;
       heardSlot = slot;
       showTypeSlot = slot;
       err = "";
-      linkNote = "已進入計劃。課堂電腦暫時未連上，答案會先留在這部裝置。";
+      linkNote = OFFLINE_NOTE;
       scheduleRejoin();
       render();
       return;
@@ -1423,7 +1457,7 @@ function bind() {
             applyLocalPlan(question, choice, stepNo);
             remember("/api/plan", { matchId: question.id, choice: choice, step: stepNo });
             err = "";
-            linkNote = "已進入計劃。課堂電腦暫時未連上，答案會先留在這部裝置。";
+            linkNote = OFFLINE_NOTE;
             scheduleRejoin();
           } else {
             err = e.message;
@@ -1436,12 +1470,21 @@ function bind() {
   if (step && (step.choices || []).length) {
     app.querySelectorAll("[data-pick]").forEach((button) => {
       button.onclick = async () => {
+        const choice = button.dataset.pick;
         try {
-          const data = await api("/api/do", { id: step.id, choice: button.dataset.pick });
+          const data = await api("/api/do", { id: step.id, choice: choice });
           rec = data.student;
           err = "";
+          linkNote = "";
         } catch (e) {
-          err = e.message;
+          if (isOfflineError(e)) {
+            keepDoChoice(step, choice);
+            remember("/api/do", { id: step.id, choice: choice });
+            linkNote = OFFLINE_NOTE;
+            scheduleRejoin();
+          } else {
+            err = e.message;
+          }
         }
         render();
       };
@@ -1464,8 +1507,16 @@ function bind() {
             const data = await api("/api/answer", { stage: "review", qid: item.id, text: choice.text, slot: "first" });
             rec = data.student;
             err = "";
+            linkNote = "";
           } catch (e) {
-            err = e.message;
+            if (isOfflineError(e)) {
+              applyLocalText("review", item.id, choice.text);
+              remember("/api/answer", { stage: "review", qid: item.id, text: choice.text, slot: "first" });
+              linkNote = OFFLINE_NOTE;
+              scheduleRejoin();
+            } else {
+              err = e.message;
+            }
           }
           render();
         };
@@ -1716,14 +1767,19 @@ async function join() {
 async function poll() {
   if (!who || mic || (mediaRec && mediaRec.state === "recording")) return;
   try {
-    const res = await fetch(await bikeUrl("/api/session"));
+    if (window.bikeRefresh) await window.bikeRefresh();
+    const res = await fetchWithTimeout(await bikeUrl("/api/session"), {}, 8000);
+    if (!res.ok) throw new Error("session");
     const data = await res.json();
     if (JSON.stringify(data.session) !== JSON.stringify(session)) {
       session = data.session;
       if (rank(stageOf(screen)) > allowedRank()) screen = STAGES[allowedRank()].id;
       render();
     }
-  } catch (e) { /* keep the current screen */ }
+    if (outbox.length || !who.token) scheduleRejoin();
+  } catch (e) {
+    scheduleRejoin();
+  }
 }
 
 async function boot() {
@@ -1770,7 +1826,7 @@ async function boot() {
       screen = sessionStorage.getItem("bike-screen") || "plan";
       if (["intro", "plan", "do", "improve", "review"].indexOf(screen) < 0) screen = "plan";
       planIndex = parseInt(sessionStorage.getItem("bike-plan") || "0", 10) || 0;
-      linkNote = "已進入計劃。課堂電腦暫時未連上，這部裝置仍可先看計劃。";
+      linkNote = OFFLINE_NOTE;
       scheduleRejoin();
     }
   }
