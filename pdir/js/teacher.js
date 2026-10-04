@@ -10,6 +10,7 @@ let digest = null;
 let records = [];
 let slideIndex = Number(sessionStorage.getItem("bike-teacher-slide") || 0);
 const openReplyKeys = new Set();
+let editMode = false;
 let notes = [];
 let err = "";
 let whySerial = 0;
@@ -292,6 +293,7 @@ function viewMain() {
         <p class="kicker">老師帶領工程設計循環</p>
         <p class="pdir"><span><b>Plan</b> 計劃</span><span><b>Do</b> 動手</span><span><b>Improve</b> 改良</span><span><b>Review</b> 回顧</span></p>
         <h1>砌單車工程室老師後台</h1>
+        <button type="button" class="edit-toggle${editMode ? " on" : ""}" id="edit-mode">${editMode ? "完成" : "編輯"}</button>
       </div>
       <img class="top-crew" src="media/header-engineers.png?v=2" alt="小志和小蓮化身工程師，一起砌單車">
     </header>
@@ -381,6 +383,14 @@ function bind() {
       if (node.open) openReplyKeys.add(key);
       else openReplyKeys.delete(key);
     });
+  });
+  const edit = document.getElementById("edit-mode");
+  if (edit) edit.onclick = () => {
+    editMode = !editMode;
+    render();
+  };
+  app.querySelectorAll("[data-del]").forEach((button) => {
+    button.onclick = () => removeAnswer(button);
   });
   const excel = document.getElementById("excel");
   if (excel) excel.onclick = downloadExcel;
@@ -864,23 +874,85 @@ function doFaceQuestions(step) {
   return `${step.noteAsk ? `<h2>${esc(step.noteAsk)}</h2>` : ""}`;
 }
 
-function answerCards(rows) {
-  return rows.map((row) => `
+function answerCards(rows, wipe) {
+  const shown = new Set();
+  return rows.map((row) => {
+    const id = `${row.cls || ""}-${row.no || ""}`;
+    const tools = row.cls && !shown.has(id) ? deleteTools(row, wipe) : "";
+    if (row.cls) shown.add(id);
+    return `
     <div class="answer">
       <div class="q">${esc(row.who)}</div>
+      ${tools}
       ${row.photo ? `<img data-file="${esc(row.photo)}" alt="學生相片" class="proof">` : ""}
       ${pairHtml(row.text, row.feedback, row.source)}
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
-function repliesDrawer(key, rows) {
+function repliesDrawer(key, rows, wipe) {
   if (!rows.length) return "";
   const count = new Set(rows.map((row) => row.who)).size;
-  return `<details class="replies" data-reply="${esc(key)}" ${openReplyKeys.has(key) ? "open" : ""}><summary>學生回覆（${count} 位）</summary>${answerCards(rows)}</details>`;
+  const open = editMode || openReplyKeys.has(key);
+  return `<details class="replies" data-reply="${esc(key)}" ${open ? "open" : ""}><summary>學生回覆（${count} 位）</summary>${answerCards(rows, wipe)}</details>`;
 }
 
 function whoOf(rec) {
   return `${rec.class} ${rec.no}號${rec.name ? " " + rec.name : ""}`;
+}
+
+function person(rec) {
+  return { who: whoOf(rec), cls: rec.class, no: String(rec.no) };
+}
+
+function deleteTools(row, wipe) {
+  if (!editMode || !wipe || !row.cls) return "";
+  const spec = esc(JSON.stringify({
+    class: row.cls,
+    no: String(row.no),
+    stage: wipe.stage,
+    qid: wipe.qid,
+    part: wipe.part,
+    index: Number(wipe.index || 0),
+  }));
+  return `<div class="edit-tools">
+    <button type="button" class="danger" data-del="question" data-who="${esc(row.who)}" data-spec="${spec}">只刪這題</button>
+    <button type="button" class="danger" data-del="student" data-who="${esc(row.who)}" data-spec="${spec}">刪除此生全部</button>
+  </div>`;
+}
+
+async function removeAnswer(button) {
+  let spec;
+  try { spec = JSON.parse(button.dataset.spec || ""); } catch (e) { return; }
+  const who = button.dataset.who || `${spec.class} ${spec.no}號`;
+  const whole = button.dataset.del === "student";
+  const ask = whole
+    ? `刪除 ${who} 的全部課室記錄？全部答案和相片都會刪走。`
+    : `刪除 ${who} 這一題的答案？其他題目會保留。`;
+  if (!window.confirm(ask)) return;
+  const body = whole
+    ? { class: spec.class, no: spec.no }
+    : {
+      class: spec.class,
+      no: spec.no,
+      scope: "question",
+      stage: spec.stage,
+      qid: spec.qid,
+      part: spec.part,
+      index: spec.index,
+    };
+  try {
+    await tapi("/api/teacher/delete", body);
+    whyCache.clear();
+    openCache.clear();
+    await refreshStudents();
+    await refreshDigest();
+    await refreshBoard();
+    render();
+  } catch (e) {
+    err = e.message;
+    render();
+  }
 }
 
 function choiceAnswerText(choice) {
@@ -911,7 +983,7 @@ function openSummary(kind, qid, rows) {
 function blocksHtml(blocks) {
   return blocks.map((block, index) => {
     const rows = block.rows || [];
-    const drawer = repliesDrawer(block.key, rows);
+    const drawer = repliesDrawer(block.key, rows, block.wipe);
     const summary = block.summary || "";
     const mark = blocks.length > 1 ? `${index + 1}. ` : "";
     const empty = !drawer && !summary ? `<p class="hint">尚未有學生作答</p>` : "";
@@ -935,7 +1007,7 @@ function indexedRows(stage, id, index) {
   records.forEach((rec) => {
     const item = stageAttempts(rec, stage, id)[index];
     if (!item || !(item.text || "").trim() || item.text === "完成") return;
-    rows.push({ who: whoOf(rec), text: item.text, feedback: item.feedback || "", source: item.source || "" });
+    rows.push({ ...person(rec), text: item.text, feedback: item.feedback || "", source: item.source || "" });
   });
   return rows;
 }
@@ -943,10 +1015,9 @@ function indexedRows(stage, id, index) {
 function allAttemptRows(stage, id) {
   const rows = [];
   records.forEach((rec) => {
-    const who = whoOf(rec);
     stageAttempts(rec, stage, id).forEach((item) => {
       if (!item || !(item.text || "").trim() || item.text === "完成") return;
-      rows.push({ who, text: item.text, feedback: item.feedback || "", source: item.source || "" });
+      rows.push({ ...person(rec), text: item.text, feedback: item.feedback || "", source: item.source || "" });
     });
   });
   return rows;
@@ -965,7 +1036,7 @@ function planChoiceRows(question, stepNo) {
     if (!letter) return;
     const choice = (round.choices || []).find((item) => item.id === letter);
     rows.push({
-      who: whoOf(rec),
+      ...person(rec),
       text: choiceAnswerText(choice) || letter,
       feedback: (hit && hit.feedback) || "",
       source: (hit && hit.source) || "coach",
@@ -978,14 +1049,13 @@ function planOpenRows(question) {
   const rows = [];
   records.forEach((rec) => {
     const bag = ((rec.plan || {}).items || {})[question.id] || {};
-    const who = whoOf(rec);
     (bag.attempts || []).forEach((item) => {
       if (String(item.text || "").indexOf("選擇 ") === 0) return;
       if (!(item.text || "").trim()) return;
-      rows.push({ who, text: item.text, feedback: item.feedback, source: item.source });
+      rows.push({ ...person(rec), text: item.text, feedback: item.feedback, source: item.source });
     });
     if (bag.photo || bag.photoFeedback) {
-      rows.push({ who, text: "交了一張相片", feedback: bag.photoFeedback, source: bag.photoSource, photo: bag.photo });
+      rows.push({ ...person(rec), text: "交了一張相片", feedback: bag.photoFeedback, source: bag.photoSource, photo: bag.photo });
     }
   });
   return rows;
@@ -1009,6 +1079,7 @@ function planBlocks(slide) {
           current,
           summary: tallyHtml("", step.choices, counts, tallySpec("plan", question.id, index + 1, counts)),
           rows: planChoiceRows(question, index + 1),
+          wipe: { stage: "plan", qid: question.id, part: "choice", index: index + 1 },
         });
       });
       return;
@@ -1021,6 +1092,7 @@ function planBlocks(slide) {
         current,
         summary: tallyHtml("", question.choices, counts, tallySpec("plan", question.id, 0, counts)),
         rows: planChoiceRows(question, 1),
+        wipe: { stage: "plan", qid: question.id, part: "choice", index: 1 },
       });
       return;
     }
@@ -1032,6 +1104,7 @@ function planBlocks(slide) {
       current,
       summary: openSummary("plan", question.id, rows),
       rows,
+      wipe: { stage: "plan", qid: question.id, part: "bag", index: 0 },
     });
   });
   return blocks;
@@ -1045,6 +1118,7 @@ function spokenBlocks(stage, id, prompts) {
       ask,
       summary: openSummary(stage, id, rows),
       rows,
+      wipe: { stage, qid: id, part: "slot", index },
     };
   });
 }
@@ -1057,14 +1131,19 @@ function doBlocks(step) {
       const bag = (rec.do || {})[step.id] || {};
       if (!bag.photo && !bag.photoFeedback) return;
       rows.push({
-        who: whoOf(rec),
+        ...person(rec),
         text: "交了一張安裝相片",
         feedback: bag.photoFeedback,
         source: bag.photoSource,
         photo: bag.photo,
       });
     });
-    blocks.push({ key: step.id + "-photo", ask: step.photoAsk || "請拍一張安裝相片。", rows });
+    blocks.push({
+      key: step.id + "-photo",
+      ask: step.photoAsk || "請拍一張安裝相片。",
+      rows,
+      wipe: { stage: "do", qid: step.id, part: "photo", index: 0 },
+    });
   }
   const prompts = DO_THREE[step.id];
   if (prompts) return blocks.concat(spokenBlocks("do", step.id, prompts));
@@ -1076,7 +1155,7 @@ function doBlocks(step) {
       if (!bag.choice) return;
       const choice = (step.choices || []).find((item) => item.id === bag.choice);
       rows.push({
-        who: whoOf(rec),
+        ...person(rec),
         text: choiceAnswerText(choice) || bag.choice,
         feedback: bag.choiceFeedback || "",
         source: "coach",
@@ -1087,6 +1166,7 @@ function doBlocks(step) {
       ask: step.noteAsk || step.title,
       summary: tallyHtml("", step.choices, counts, tallySpec("do", step.id, 0, counts)),
       rows,
+      wipe: { stage: "do", qid: step.id, part: "choice", index: 0 },
     });
     return blocks;
   }
@@ -1097,6 +1177,7 @@ function doBlocks(step) {
       ask: step.noteAsk,
       summary: openSummary("do", step.id, rows),
       rows,
+      wipe: { stage: "do", qid: step.id, part: "bag", index: 0 },
     });
   }
   return blocks;
@@ -1111,6 +1192,7 @@ function improveBlocks(item) {
     ask: item.ask,
     summary: openSummary("improve", item.id, rows),
     rows,
+    wipe: { stage: "improve", qid: item.id, part: "bag", index: 0 },
   }];
 }
 
@@ -1129,14 +1211,13 @@ function reviewBlocks(item) {
     const whyRows = [];
     records.forEach((rec) => {
       const attempts = stageAttempts(rec, "review", item.id);
-      const who = whoOf(rec);
       const picked = attempts.find((row) => byText[row.text]);
       if (picked) {
         const id = byText[picked.text];
         counts[id] = (counts[id] || 0) + 1;
         const choice = item.choices.find((row) => row.id === id);
         choiceRows.push({
-          who,
+          ...person(rec),
           text: choiceAnswerText(choice) || picked.text,
           feedback: picked.feedback,
           source: picked.source,
@@ -1144,7 +1225,7 @@ function reviewBlocks(item) {
       }
       attempts.forEach((row) => {
         if (!row.text || byText[row.text] || row.text === "完成") return;
-        whyRows.push({ who, text: row.text, feedback: row.feedback, source: row.source });
+        whyRows.push({ ...person(rec), text: row.text, feedback: row.feedback, source: row.source });
       });
     });
     return [
@@ -1153,12 +1234,14 @@ function reviewBlocks(item) {
         ask: item.ask,
         summary: tallyHtml("", item.choices, counts, tallySpec("review", item.id, 0, counts)),
         rows: choiceRows,
+        wipe: { stage: "review", qid: item.id, part: "pick", index: 0 },
       },
       {
         key: item.id + "-why",
         ask: "為什麼你覺得這個部分最難？",
         summary: openSummary("review", item.id, whyRows),
         rows: whyRows,
+        wipe: { stage: "review", qid: item.id, part: "why", index: 0 },
       },
     ];
   }
@@ -1172,7 +1255,7 @@ function reviewBlocks(item) {
       if (!answer || !(answer.text || "").trim() || answer.text === "完成") return;
       const ask = questionFromFeedback((attempts[0] || {}).feedback) || "跟進問題";
       const bag = followGroups.get(ask) || [];
-      bag.push({ who: whoOf(rec), text: answer.text, feedback: answer.feedback || "", source: answer.source || "" });
+      bag.push({ ...person(rec), text: answer.text, feedback: answer.feedback || "", source: answer.source || "" });
       followGroups.set(ask, bag);
     });
     const blocks = [{
@@ -1180,6 +1263,7 @@ function reviewBlocks(item) {
       ask: item.ask,
       summary: openSummary("review", item.id, first),
       rows: first,
+      wipe: { stage: "review", qid: item.id, part: "slot", index: 0 },
     }];
     let n = 0;
     followGroups.forEach((rows, ask) => {
@@ -1188,6 +1272,7 @@ function reviewBlocks(item) {
         ask,
         summary: openSummary("review", item.id, rows),
         rows,
+        wipe: { stage: "review", qid: item.id, part: "slot", index: 1 },
       });
       n += 1;
     });
@@ -1196,6 +1281,7 @@ function reviewBlocks(item) {
       ask: "你為什麼先教這一件？",
       summary: openSummary("review", item.id, third),
       rows: third,
+      wipe: { stage: "review", qid: item.id, part: "slot", index: 2 },
     });
     return blocks;
   }
@@ -1205,6 +1291,7 @@ function reviewBlocks(item) {
     ask: item.ask,
     summary: openSummary("review", item.id, rows),
     rows,
+    wipe: { stage: "review", qid: item.id, part: "bag", index: 0 },
   }];
 }
 

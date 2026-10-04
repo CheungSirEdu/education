@@ -535,6 +535,27 @@ textarea.entry-bar { resize: vertical; }
 .teacher .pdir b { color: #d6e8fb; }
 .teacher .pdir { color: #f4f8fc; }
 .teacher .top h1 { font-size: 24px; }
+.edit-toggle {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 4px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: transparent;
+  color: #f4f7f5;
+  font-weight: 650;
+  font-size: 16px;
+}
+.edit-toggle.on { background: #fff; color: #1d4f86; border-color: #fff; }
+.edit-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.edit-tools .danger {
+  flex: 0 1 auto;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 16px;
+}
+.part-q.dark .edit-tools .danger { color: var(--safety); background: #fff; }
 .banner {
   margin: 14px 16px 0;
   background: white;
