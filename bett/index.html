@@ -82,27 +82,39 @@
     }
     a.btn:active { transform: translateY(2px); box-shadow: 0 3px 0 var(--green-dark); }
     .actions { display: flex; flex-direction: column; gap: 10px; }
-    .tl {
-      list-style: none;
-      display: flex;
-      align-items: flex-start;
-      margin: 18px 0 2px;
+    #timeline.item {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
       padding: 0;
     }
-    .tl li {
+    .vtl {
       position: relative;
-      flex: 1 1 0;
-      min-width: 0;
-      margin: 0;
-      padding: 28px 3px 0;
-      text-align: center;
+      list-style: none;
+      margin: 4px 0 0;
+      padding: 8px 0 4px;
     }
-    .tl li::before {
+    .vtl::before {
       content: "";
       position: absolute;
+      z-index: 0;
+      top: 12px;
+      bottom: 12px;
+      left: 16px;
+      width: 4px;
+      border-radius: 4px;
+      background: #b7d7b8;
+    }
+    .vtl li {
+      position: relative;
+      margin: 0 0 28px;
+    }
+    .vtl li:last-child { margin-bottom: 0; }
+    .vtl .dot {
+      position: absolute;
       z-index: 1;
-      left: 50%;
-      top: 0;
+      left: 18px;
+      top: 22px;
       width: 18px;
       height: 18px;
       margin-left: -9px;
@@ -110,96 +122,109 @@
       background: #fff;
       border: 4px solid var(--green);
       box-sizing: border-box;
+      pointer-events: none;
     }
-    .tl li::after {
-      content: "";
-      position: absolute;
-      z-index: 0;
-      top: 7px;
-      left: 50%;
-      width: 100%;
-      height: 4px;
-      background: #b7d7b8;
-    }
-    .tl li:last-child::after { content: none; }
-    .tl li.done::before { background: var(--green); }
-    .tl li.now::before {
+    .vtl li.done .dot { background: var(--green); }
+    .vtl li.now .dot {
       background: var(--yellow);
       border-color: var(--green-dark);
       box-shadow: 0 0 0 4px rgba(244, 211, 94, .65);
     }
-    .tl .when,
-    .tl .what,
-    .tl .note {
-      display: block;
-      overflow-wrap: anywhere;
-      line-height: 1.35;
-    }
-    .tl .when {
-      font-size: 12px;
-      font-weight: 900;
-      color: var(--green-dark);
-    }
-    .mobbr { display: inline; }
-    .tl .what {
-      margin-top: 2px;
-      font-size: 14px;
-      font-weight: 900;
-    }
-    .tl .note {
-      margin-top: 2px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-    }
-    @media (max-width: 699px) {
-      .tl .y,
-      .tl .d,
-      .mobbr { display: block; }
-      .tl .what { font-size: 13px; }
-    }
-    @media (max-width: 360px) {
-      .tl .when { font-size: 11px; }
-      .tl .what { font-size: 12px; }
-      .tl .note { font-size: 10px; }
-    }
-    @media (min-width: 700px) {
-      .tl li { padding: 32px 8px 0; }
-      .tl .when { font-size: 15px; }
-      .tl .what { font-size: 18px; }
-      .tl .note { font-size: 13px; }
-    }
-    .tl button.day {
+    .vtl button.day {
       display: block;
       width: 100%;
-      margin: -28px 0 0;
-      padding: 28px 0 0;
+      margin: 0;
+      padding: 0;
       border: 0;
       background: transparent;
       color: inherit;
       font: inherit;
-      text-align: center;
+      text-align: left;
       cursor: pointer;
-      position: relative;
-      z-index: 2;
       -webkit-appearance: none;
       appearance: none;
     }
-    @media (min-width: 700px) {
-      .tl button.day { margin-top: -32px; padding-top: 32px; }
-    }
-    .tl button.day:focus-visible {
+    .vtl button.day:focus-visible .card {
       outline: 3px solid var(--green);
-      outline-offset: 2px;
-      border-radius: 12px;
+      outline-offset: 3px;
     }
-    .tl li.open .when { text-decoration: underline; text-underline-offset: 3px; }
+    .vtl .card {
+      position: relative;
+      display: block;
+      margin-left: 42px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px 16px 12px;
+      box-shadow: 4px 6px 11px -2px #adadad;
+    }
+    .vtl .card::before {
+      content: "";
+      position: absolute;
+      top: 18px;
+      right: 100%;
+      border: 8px solid transparent;
+      border-right-color: #fff;
+    }
+    .vtl li.open .card { box-shadow: 0 0 0 3px var(--green), 4px 6px 11px -2px #adadad; }
+    .vtl .what,
+    .vtl .note,
+    .vtl .when {
+      display: block;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+    .vtl .what {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--green-dark);
+    }
+    .vtl .note {
+      margin-top: 6px;
+      color: #484848;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .vtl .when {
+      margin-top: 10px;
+      color: #484848;
+      font-size: 24px;
+      font-weight: 900;
+    }
     .tl-hint {
-      margin: 12px 0 0;
+      margin: 16px 0 0;
       text-align: center;
       color: var(--muted);
       font-size: 14px;
       font-weight: 700;
+    }
+    @media (min-width: 64rem) {
+      .vtl::before { left: 50%; margin-left: -2px; }
+      .vtl li { margin-bottom: 72px; }
+      .vtl .dot {
+        left: 50%;
+        top: 26px;
+      }
+      .vtl .card { width: calc(50% - 40px); margin-left: 0; }
+      .vtl li:nth-child(even) .card { margin-left: auto; }
+      .vtl li:nth-child(odd) .card::before {
+        right: auto;
+        left: 100%;
+        border: 8px solid transparent;
+        border-left-color: #fff;
+      }
+      .vtl .when {
+        position: absolute;
+        top: 8px;
+        width: max-content;
+        margin: 0;
+        font-size: 26px;
+      }
+      .vtl li:nth-child(odd) .when { left: calc(100% + 64px); }
+      .vtl li:nth-child(even) .when {
+        right: calc(100% + 64px);
+        left: auto;
+        text-align: right;
+      }
     }
     .js .day-panel { display: none; }
     .js .day-panel.show { display: block; }
@@ -237,30 +262,42 @@ img.zhang-sir-mark {
   <main class="wrap">
     <div class="item" id="timeline">
       <h2>時間線</h2>
-      <ol class="tl">
+      <ol class="vtl">
         <li data-date="2026-09-28">
+          <span class="dot" aria-hidden="true"></span>
           <button type="button" class="day" aria-expanded="false" aria-controls="day-0928">
-            <span class="when"><span class="y">2026年</span><span class="d">9月28日</span></span>
-            <span class="what">遞交學生<span class="mobbr"></span>作品給老師</span>
+            <span class="card">
+              <span class="what">遞交學生作品給老師</span>
+              <span class="when">2026年9月28日</span>
+            </span>
           </button>
         </li>
         <li data-date="2026-10-03">
+          <span class="dot" aria-hidden="true"></span>
           <button type="button" class="day" aria-expanded="false" aria-controls="day-1003">
-            <span class="when"><span class="y">2026年</span><span class="d">10月3日</span></span>
-            <span class="what">比賽</span>
+            <span class="card">
+              <span class="what">比賽</span>
+              <span class="when">2026年10月3日</span>
+            </span>
           </button>
         </li>
         <li data-date="2026-10-08">
+          <span class="dot" aria-hidden="true"></span>
           <button type="button" class="day" aria-expanded="false" aria-controls="day-1008">
-            <span class="when"><span class="y">2026年</span><span class="d">10月8日</span></span>
-            <span class="what">公布成績</span>
-            <span class="note">香港電腦<span class="mobbr"></span>教育學會 <span class="mobbr"></span>Facebook</span>
+            <span class="card">
+              <span class="what">公布成績</span>
+              <span class="note">香港電腦教育學會 Facebook</span>
+              <span class="when">2026年10月8日</span>
+            </span>
           </button>
         </li>
         <li data-until="2027-02-01">
+          <span class="dot" aria-hidden="true"></span>
           <button type="button" class="day" aria-expanded="false" aria-controls="day-uk">
-            <span class="when"><span class="y">2027年</span><span class="d">1月中</span></span>
-            <span class="what">前往英國</span>
+            <span class="card">
+              <span class="what">前往英國</span>
+              <span class="when">2027年1月中</span>
+            </span>
           </button>
         </li>
       </ol>
