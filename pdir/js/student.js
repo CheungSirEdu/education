@@ -35,6 +35,10 @@ let mediaRec = null;
 let micTimer = null;
 let micStopWait = null;
 let micGen = 0;
+let linkNote = "";
+let entering = false;
+let rejoinTimer = 0;
+let outbox = [];
 
 const VOICE_LABEL = "語音輸入你的意見";
 const app = document.getElementById("app");
@@ -69,6 +73,166 @@ function offlineMessage() {
     return "課堂電腦未開。請老師先雙擊「開始課堂」，開住黑色視窗。";
   }
   return "連不到課室伺服器。請看老師的電腦是否仍開着黑色視窗。";
+}
+
+function blankRec(className, number) {
+  return {
+    class: className,
+    no: String(number),
+    name: "",
+    unlocked: "plan",
+    plan: { order: [], attempts: [], items: {} },
+    do: {},
+    improve: {},
+    review: {},
+  };
+}
+
+function isOfflineError(error) {
+  const message = String((error && error.message) || error || "");
+  if (error && (error.name === "AbortError" || error.name === "TypeError")) return true;
+  return /課室|課堂電腦|連不到|Failed to fetch|NetworkError|Load failed|網路|aborted|逾時|請再入一次/.test(message);
+}
+
+function fetchWithTimeout(url, options, ms) {
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
+  const opts = Object.assign({}, options || {});
+  if (ctrl) opts.signal = ctrl.signal;
+  return fetch(url, opts).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+function remember(path, body) {
+  outbox.push({ path: path, body: body });
+  try { sessionStorage.setItem("bike-outbox", JSON.stringify(outbox)); } catch (e) { /* 這次先留在記憶體 */ }
+}
+
+function restoreRec(person) {
+  if (!person) return null;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("bike-rec") || "null");
+    if (saved && saved.class === person.class && String(saved.no) === String(person.no)) return saved;
+  } catch (e) { /* 重新開一份 */ }
+  return null;
+}
+
+function ensurePlan(question) {
+  if (!rec.plan) rec.plan = { order: [], attempts: [], items: {} };
+  if (!rec.plan.items) rec.plan.items = {};
+  if (!rec.plan.items[question.id]) {
+    rec.plan.items[question.id] = { choice: "", choice2: "", attempts: [], photo: "" };
+  }
+  return rec.plan.items[question.id];
+}
+
+function applyLocalPlan(question, choice, step) {
+  const rounds = question.steps || [];
+  const spec = rounds.length ? rounds[Math.max(0, step - 1)] : question;
+  const answer = (spec && spec.answer) || "";
+  const ok = !answer || choice === answer;
+  const bag = ensurePlan(question);
+  if (step === 2) bag.choice2 = choice;
+  else bag.choice = choice;
+  bag.attempts = bag.attempts || [];
+  bag.attempts.push({
+    n: bag.attempts.length + 1,
+    step: step,
+    text: "選擇 " + choice,
+    feedback: answer ? (ok ? "你揀對了。" : "這個不是答案，請再選。") : "已記下你的選擇。",
+    source: "coach",
+    at: new Date().toISOString(),
+  });
+}
+
+function applyLocalText(qid, text) {
+  const bag = ensurePlan({ id: qid });
+  bag.attempts = bag.attempts || [];
+  bag.attempts.push({
+    n: bag.attempts.length + 1,
+    step: 1,
+    text: text,
+    feedback: "已記下。課堂電腦連上後會再給回饋。",
+    source: "coach",
+    at: new Date().toISOString(),
+  });
+}
+
+function enterPlanLocal(value) {
+  who = { class: cls, no: value, token: "", name: "" };
+  sessionStorage.setItem("bike-who", JSON.stringify(who));
+  rec = blankRec(cls, value);
+  session = { gate: "plan", selfPace: true };
+  screen = "plan";
+  planIndex = 0;
+  err = "";
+  linkNote = "已進入計劃。課堂電腦暫時未連上，這部裝置仍可先看計劃。";
+  render();
+  scheduleRejoin();
+}
+
+async function flushOutbox() {
+  if (!who || !who.token || !outbox.length) return false;
+  const pending = outbox.slice();
+  const left = [];
+  let changed = false;
+  for (let i = 0; i < pending.length; i += 1) {
+    try {
+      const data = await api(pending[i].path, pending[i].body);
+      if (data.student) rec = data.student;
+      changed = true;
+    } catch (e) {
+      left.push.apply(left, pending.slice(i));
+      break;
+    }
+  }
+  outbox = left;
+  try { sessionStorage.setItem("bike-outbox", JSON.stringify(outbox)); } catch (e) { /* 下次再送 */ }
+  return changed;
+}
+
+function scheduleRejoin() {
+  if (rejoinTimer) return;
+  rejoinTimer = setInterval(() => { tryRejoin(); }, 8000);
+  tryRejoin();
+}
+
+async function tryRejoin() {
+  if (!who) return;
+  let changed = false;
+  try {
+    if (!who.token) {
+      if (window.bikeRefresh) await window.bikeRefresh();
+      const res = await fetchWithTimeout(await bikeUrl("/api/join"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ class: who.class, no: String(who.no) }),
+      }, 8000);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return;
+      who = {
+        class: who.class,
+        no: String(who.no),
+        token: data.token,
+        name: (data.student && data.student.name) || "",
+      };
+      sessionStorage.setItem("bike-who", JSON.stringify(who));
+      session = data.session || session;
+      const localWork = Object.keys(((rec && rec.plan && rec.plan.items) || {})).length || outbox.length;
+      if (!localWork && data.student) rec = data.student;
+      linkNote = "";
+      changed = true;
+    }
+    if (await flushOutbox()) changed = true;
+    if (who.token && !outbox.length && rejoinTimer) {
+      clearInterval(rejoinTimer);
+      rejoinTimer = 0;
+      linkNote = "";
+      changed = true;
+    }
+  } catch (e) { /* 留在計劃頁，稍後再連 */ }
+  if (changed && !mic && !showTypeSlot) render();
 }
 
 async function api(path, body) {
@@ -403,8 +567,22 @@ async function submitAnswer(stage, qid, slot) {
     heard = text;
     heardSlot = slot;
     showTypeSlot = slot;
+    linkNote = "";
     render();
   } catch (e) {
+    if (stage === "plan" && isOfflineError(e)) {
+      applyLocalText(qid, text);
+      remember("/api/answer", { stage: stage, qid: qid, text: text, slot: slot, photo: "", audio: audio });
+      pendingPhoto = "";
+      heard = text;
+      heardSlot = slot;
+      showTypeSlot = slot;
+      err = "";
+      linkNote = "已進入計劃。課堂電腦暫時未連上，答案會先留在這部裝置。";
+      scheduleRejoin();
+      render();
+      return;
+    }
     err = e.message;
     render();
   }
@@ -560,6 +738,7 @@ function shell(inner) {
     ${rec ? rail() : ""}
     <main class="wrap">
       ${err ? `<div class="err" id="err">${esc(err)}</div>` : `<div class="err hidden" id="err"></div>`}
+      ${linkNote ? `<p class="link-note">${esc(linkNote)}</p>` : ""}
       ${inner}
     </main>`;
 }
@@ -1027,6 +1206,9 @@ function render() {
     if (who) {
       sessionStorage.setItem("bike-screen", screen);
       sessionStorage.setItem("bike-plan", String(planIndex));
+      if (rec) {
+        try { sessionStorage.setItem("bike-rec", JSON.stringify(rec)); } catch (e) { /* 畫面仍然保留 */ }
+      }
     }
     err = "";
   } catch (e) {
@@ -1225,16 +1407,27 @@ function bind() {
     app.querySelectorAll("[data-pick]").forEach((button) => {
       button.onclick = async () => {
         if (!question) return;
+        const stepNo = Number(button.dataset.step || 1);
+        const choice = button.dataset.pick;
         try {
           const data = await api("/api/plan", {
             matchId: question.id,
-            choice: button.dataset.pick,
-            step: Number(button.dataset.step || 1),
+            choice: choice,
+            step: stepNo,
           });
           rec = data.student;
           err = "";
+          linkNote = "";
         } catch (e) {
-          err = e.message;
+          if (isOfflineError(e)) {
+            applyLocalPlan(question, choice, stepNo);
+            remember("/api/plan", { matchId: question.id, choice: choice, step: stepNo });
+            err = "";
+            linkNote = "已進入計劃。課堂電腦暫時未連上，答案會先留在這部裝置。";
+            scheduleRejoin();
+          } else {
+            err = e.message;
+          }
         }
         render();
       };
@@ -1460,6 +1653,7 @@ function firstOpenStep() {
 }
 
 async function enterStudent() {
+  if (entering) return;
   const classPick = document.getElementById("class-pick");
   const numPick = document.getElementById("num-pick");
   cls = classPick ? classPick.value : "";
@@ -1473,32 +1667,49 @@ async function enterStudent() {
   }
   num = String(value);
   err = "";
-  await join();
+  entering = true;
+  const button = document.getElementById("enter");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "正在進入…";
+  }
+  try {
+    await join();
+  } finally {
+    entering = false;
+  }
 }
 
 async function join() {
   const value = String(parseInt(num, 10));
   try {
-    const res = await fetch(await bikeUrl("/api/join"), {
+    if (window.bikeRefresh) await window.bikeRefresh();
+    const res = await fetchWithTimeout(await bikeUrl("/api/join"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ class: cls, no: value }),
-    });
-    const data = await res.json();
+    }, 8000);
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "未能進入");
     who = { class: cls, no: value, token: data.token, name: data.student.name || "" };
     sessionStorage.setItem("bike-who", JSON.stringify(who));
     rec = data.student;
     session = data.session;
     confirmName = null;
+    linkNote = "";
     const resumed = Object.keys((rec.plan && rec.plan.items) || {}).length;
     screen = (STAGES[allowedRank()] || STAGES[0]).id;
     if (screen === "plan" && !resumed) planIndex = 0;
     if (screen === "plan" && resumed && sessionStorage.getItem("bike-plan") == null) planIndex = resumePlanIndex();
     render();
   } catch (e) {
-    err = e.message;
-    render();
+    const message = String((e && e.message) || "");
+    if (/請選|學號|班別/.test(message)) {
+      err = message;
+      render();
+      return;
+    }
+    enterPlanLocal(value);
   }
 }
 
@@ -1517,6 +1728,12 @@ async function poll() {
 
 async function boot() {
   if (window.bikeReady) await window.bikeReady;
+  try {
+    outbox = JSON.parse(sessionStorage.getItem("bike-outbox") || "[]");
+    if (!Array.isArray(outbox)) outbox = [];
+  } catch (e) {
+    outbox = [];
+  }
   try {
     lesson = await fetch("lesson.json", { cache: "no-store" }).then((res) => res.json());
   } catch (e) {
@@ -1537,9 +1754,24 @@ async function boot() {
       if (screen !== "intro" && screen !== "login" && rank(stageOf(screen)) > allowedRank()) {
         screen = STAGES[allowedRank()].id;
       }
+      linkNote = "";
+      if (outbox.length) scheduleRejoin();
     } catch (e) {
-      who = null;
-      screen = "login";
+      if (!who || !who.class || !who.no) {
+        who = null;
+        rec = null;
+        screen = "login";
+        render();
+        setInterval(poll, 8000);
+        return;
+      }
+      rec = restoreRec(who) || blankRec(who.class, who.no);
+      session = { gate: "plan", selfPace: true };
+      screen = sessionStorage.getItem("bike-screen") || "plan";
+      if (["intro", "plan", "do", "improve", "review"].indexOf(screen) < 0) screen = "plan";
+      planIndex = parseInt(sessionStorage.getItem("bike-plan") || "0", 10) || 0;
+      linkNote = "已進入計劃。課堂電腦暫時未連上，這部裝置仍可先看計劃。";
+      scheduleRejoin();
     }
   }
   render();

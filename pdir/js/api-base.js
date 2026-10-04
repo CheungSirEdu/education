@@ -17,6 +17,24 @@ window.bikeReady = (async function () {
   } catch (e) { /* 課堂網址稍後先至有 */ }
 })();
 
+window.bikeRefresh = async function () {
+  try {
+    const health = await fetch("/api/health", { cache: "no-store" });
+    const data = await health.json();
+    if (data && data.ok) {
+      window.BIKE_API = "";
+      return;
+    }
+  } catch (e) { /* 這一頁唔係課堂伺服器 */ }
+  try {
+    const res = await fetch("api-base.json?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const next = String((data && data.api) || "").replace(/\/$/, "");
+    if (next) window.BIKE_API = next;
+  } catch (e) { /* 沿用上次的課堂網址 */ }
+};
+
 window.bikeUrl = async function (path) {
   if (window.bikeReady) await window.bikeReady;
   const base = String(window.BIKE_API || "").replace(/\/$/, "");
