@@ -1023,13 +1023,13 @@ function viewPlan() {
     const pbag = planBag(question.id);
     body = question.photo ? `
       <p class="hint">${esc(item.name)}</p>
-      ${shotHtml(question.image ? [question.image] : item.images)}
+      ${planMedia(item, question)}
       <h2>${esc(question.ask)}</h2>
       ${photoBlock(question, pbag.photo, pbag)}
       <p class="hint">如果相機開不到，可以直接按下一項。</p>
     ` : `
       <p class="hint">${esc(item.name)}</p>
-      ${shotHtml(question.image ? [question.image] : item.images)}
+      ${planMedia(item, question)}
       ${steps.length ? `
         ${textRound(steps[0], 1, picked)}
         ${steps[1] && picked === steps[0].answer ? textRound(steps[1], 2, picked2) : ""}
@@ -1067,6 +1067,14 @@ function viewPlan() {
       </div>
     </div>
   `);
+}
+
+function planMedia(item, question) {
+  const images = question.image ? [question.image] : item.images;
+  const film = question.video
+    ? `<video class="plan-film" controls playsinline preload="metadata" poster="${esc(question.poster || "")}" src="${esc(question.video)}"></video>`
+    : "";
+  return film + shotHtml(images);
 }
 
 function shotHtml(images, video, poster) {

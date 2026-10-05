@@ -181,7 +181,9 @@
       "questions": [
         {
           "id": "brake-use",
-          "ask": "你覺得它有什麼用？"
+          "ask": "你覺得它有什麼用？",
+          "video": "media/brake.mp4",
+          "poster": "media/brake-poster.jpg"
         },
         {
           "id": "brake-where",

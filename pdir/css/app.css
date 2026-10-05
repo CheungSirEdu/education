@@ -237,6 +237,15 @@ img.taken {
   background: #10211d;
 }
 .shots video { object-fit: contain; height: 280px; }
+video.plan-film {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 720 / 406;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #10211d;
+  margin: 8px 0 4px;
+}
 .cap { color: var(--muted); font-size: 15px; margin-top: 6px; }
 
 .cycle { list-style: none; padding: 0; margin: 12px 0 0; }

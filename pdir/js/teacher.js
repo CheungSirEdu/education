@@ -706,12 +706,16 @@ function slideFace(slide, total) {
   if (slide.kind === "plan") {
     const images = slide.question.image ? [slide.question.image] : (slide.item.images || []);
     const shots = images.map((src) => `<img src="${esc(src)}" alt="">`).join("");
+    const film = slide.question.video
+      ? `<video class="plan-film" controls playsinline preload="metadata" poster="${esc(slide.question.poster || "")}" src="${esc(slide.question.video)}"></video>`
+      : "";
     return `
       <div class="teacher-line"><b>P 計劃</b><span>${slide.pageNo}/${slide.planTotal || total}</span></div>
       <p class="plan-motto">看清零件，想明原理，安裝才穩。</p>
       <p class="hint">${esc(slide.item.name)}</p>
       ${partQuestionLinks(slide)}
-      <div class="shots">${shots}</div>
+      ${film}
+      <div class="shots ${images.length > 1 ? "two" : ""}">${shots}</div>
       ${faceQuestions(slide.question)}`;
   }
   if (slide.kind === "do") {
