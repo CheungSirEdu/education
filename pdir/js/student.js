@@ -1113,7 +1113,7 @@ function viewDo() {
     <div class="card">
       <div class="teacher-line"><b>D 動手</b><span>${esc(step.tool)}</span></div>
       <h2>${doIndex + 1}. ${esc(step.title)}</h2>
-      ${shotHtml(step.images, step.video, step.poster)}
+      ${planMedia({ images: step.images }, { video: step.video, poster: step.poster })}
       ${tools}
       <p class="hint">安裝提示</p>
       <ul class="lines">${(step.tips || step.lines || []).map((line) => `<li>${esc(line)}</li>`).join("")}</ul>
@@ -1159,7 +1159,7 @@ function viewImprove() {
       <div class="teacher-line"><b>I 改良</b><span>試踩之後執漏</span></div>
       <p class="hint">踩上單車走幾步。未打氣、螺絲未扭實、煞不到車，或座墊太高太低，都要說出來再修。</p>
       <h2>${esc(item.ask)}</h2>
-      ${shotHtml(item.images, item.video, item.poster)}
+      ${planMedia(item, item)}
       ${photoBlock(item, ((attemptsOf("improve", item.id).slice(-1)[0]) || {}).photo || "")}
       ${composer("improve", item.id, item.ask)}
       <div class="row">

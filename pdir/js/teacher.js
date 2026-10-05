@@ -689,6 +689,18 @@ function staticChoices(question) {
   return `<div class="pick4">${choices.map((choice) => `<div class="pick"><img src="${esc(choice.image)}" alt="${esc(choice.id)}"><b>${esc(choice.id)}</b></div>`).join("")}</div>`;
 }
 
+function filmHtml(video, poster) {
+  if (!video) return "";
+  return `<video class="plan-film" controls playsinline preload="metadata" poster="${esc(poster || "")}" src="${esc(video)}"></video>`;
+}
+
+function shotsHtml(images) {
+  const list = images || [];
+  const shots = list.map((src) => `<img src="${esc(src)}" alt="">`).join("");
+  if (!shots) return "";
+  return `<div class="shots ${list.length > 1 ? "two" : ""}">${shots}</div>`;
+}
+
 function slideFace(slide, total) {
   if (slide.kind === "summary") {
     return `
@@ -705,26 +717,22 @@ function slideFace(slide, total) {
   }
   if (slide.kind === "plan") {
     const images = slide.question.image ? [slide.question.image] : (slide.item.images || []);
-    const shots = images.map((src) => `<img src="${esc(src)}" alt="">`).join("");
-    const film = slide.question.video
-      ? `<video class="plan-film" controls playsinline preload="metadata" poster="${esc(slide.question.poster || "")}" src="${esc(slide.question.video)}"></video>`
-      : "";
     return `
       <div class="teacher-line"><b>P 計劃</b><span>${slide.pageNo}/${slide.planTotal || total}</span></div>
       <p class="plan-motto">看清零件，想明原理，安裝才穩。</p>
       <p class="hint">${esc(slide.item.name)}</p>
       ${partQuestionLinks(slide)}
-      ${film}
-      <div class="shots ${images.length > 1 ? "two" : ""}">${shots}</div>
+      ${filmHtml(slide.question.video, slide.question.poster)}
+      ${shotsHtml(images)}
       ${faceQuestions(slide.question)}`;
   }
   if (slide.kind === "do") {
     const step = slide.step;
-    const shots = (step.images || []).map((src) => `<img src="${esc(src)}" alt="">`).join("");
     return `
       <div class="teacher-line"><b>D 動手</b><span>${slide.index + 1}/${(lesson.doSteps || []).length}</span></div>
       <h2>${slide.index + 1}. ${esc(step.title)}</h2>
-      <div class="shots">${shots}</div>
+      ${filmHtml(step.video, step.poster)}
+      ${shotsHtml(step.images)}
       ${(step.tips || []).length ? `<ul class="lines">${step.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}
       ${step.safety ? `<p class="hint">${esc(step.safety)}</p>` : ""}
       ${doFaceQuestions(step)}
@@ -735,6 +743,8 @@ function slideFace(slide, total) {
     return `
       <div class="teacher-line"><b>I 改良</b><span>試踩之後執漏</span></div>
       <p class="hint">踩上單車走幾步。未打氣、螺絲未扭實、煞不到車，或座墊太高太低，都要說出來再修。</p>
+      ${filmHtml(slide.item.video, slide.item.poster)}
+      ${shotsHtml(slide.item.images)}
       ${doFaceQuestions(slide.item)}`;
   }
   const reviewNo = (lesson.review || []).indexOf(slide.item) + 1;
