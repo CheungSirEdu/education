@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>食物鏈裡的平衡</title>
+<style>
+  :root {
+    --paper: #f3ecdf;
+    --ink: #243028;
+    --moss: #1e6b3a;
+    --leaf: #7cbc45;
+    --rabbit: #8a5a3a;
+    --wolf: #4e5963;
+    --line: #d9d0c0;
+    --card: #fffaf2;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 8% -10%, #fff6e4 0%, transparent 60%),
+      var(--paper);
+    font-family: "PingFang HK", "Heiti TC", "Noto Sans TC", sans-serif;
+    line-height: 1.55;
+    overflow-x: hidden;
+  }
+  .wrap {
+    width: min(980px, calc(100% - 20px));
+    margin: 0 auto;
+    padding: 22px 0 40px;
+  }
+  header h1 {
+    margin: 0;
+    font-family: "Songti TC", "STSong", serif;
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  header p.lead {
+    margin: 8px 0 0;
+    max-width: 40em;
+    font-size: 18px;
+  }
+  .chain {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    margin: 18px 0 14px;
+  }
+  .node {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 12px;
+  }
+  .node img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    object-position: center bottom;
+    flex: none;
+  }
+  .node strong { display: block; font-size: 20px; }
+  .node span { color: #5c675d; font-size: 14px; }
+  .node.live {
+    border-color: var(--moss);
+    box-shadow: 0 0 0 3px rgba(30, 107, 58, 0.16);
+  }
+  .arrow {
+    font-size: 22px;
+    color: #c4553a;
+    font-weight: 700;
+  }
+  .meadow-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .meadow-row .stage { flex: 1 1 auto; min-width: 0; }
+  .meadow-row button.go {
+    flex: 0 0 96px;
+    width: 96px;
+    align-self: stretch;
+    min-height: 0;
+    margin: 0;
+    border-radius: 22px;
+    padding: 12px 8px;
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: 0.14em;
+    writing-mode: vertical-rl;
+  }
+  .stage {
+    position: relative;
+    height: 520px;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid #c5d7a8;
+    background: linear-gradient(#9fd4ef 0%, #dff3c4 42%, #c6e48a 42%, #7eae45 100%);
+    box-shadow: inset 0 -30px 40px rgba(70, 110, 40, 0.08);
+  }
+  .sun {
+    position: absolute;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    right: 46px;
+    top: 26px;
+    background: #ffd56a;
+    box-shadow: 0 0 0 14px rgba(255, 213, 106, 0.35), 0 0 40px rgba(255, 196, 70, 0.45);
+  }
+  .cloud {
+    position: absolute;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 20px;
+    animation: drift 36s linear infinite;
+  }
+  .cloud:before, .cloud:after {
+    content: "";
+    position: absolute;
+    background: inherit;
+    border-radius: 50%;
+  }
+  .cloud:before { width: 28px; height: 28px; left: 12px; top: -14px; }
+  .cloud:after { width: 36px; height: 36px; left: 32px; top: -18px; }
+  .c1 { width: 92px; top: 34px; animation-duration: 38s; }
+  .c2 { width: 64px; top: 86px; height: 20px; animation-duration: 52s; animation-delay: -18s; }
+  @keyframes drift {
+    from { left: -20%; }
+    to { left: 108%; }
+  }
+  .hill {
+    position: absolute;
+    left: -10%;
+    right: -6%;
+    bottom: 168px;
+    height: 130px;
+    background: #d7ecab;
+    border-radius: 50% 50% 0 0;
+  }
+  .hill.far {
+    bottom: 210px;
+    height: 90px;
+    left: 20%;
+    right: -12%;
+    background: #e7f4c4;
+  }
+  .animals, .grasses {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 120px;
+  }
+  .wolves { bottom: 188px; height: 140px; }
+  .rabbits { bottom: 96px; height: 120px; }
+  .grasses { bottom: 8px; height: 100px; }
+  .item {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    transform-origin: center bottom;
+  }
+  body.ready .item {
+    transition: opacity .45s ease, transform .45s ease, left .55s ease;
+  }
+  .item img {
+    display: block;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 4px 0 rgba(70, 90, 40, 0.12));
+  }
+  .grasses .item img { width: clamp(34px, 7vw, 58px); height: clamp(64px, 14vw, 104px); }
+  .rabbits .item img { width: clamp(34px, 7.5vw, 84px); height: clamp(34px, 7.5vw, 84px); }
+  .wolves .item img { width: clamp(48px, 14vw, 140px); height: clamp(40px, 11vw, 112px); }
+  .item.off {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(14px) scale(.62);
+  }
+  .item.pop { animation: arrive .55s ease; }
+  @keyframes arrive {
+    from { opacity: 0; transform: translateX(-50%) translateY(18px) scale(.55); }
+    to { opacity: 1; transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .grasses .item:not(.off) img {
+      transform-origin: 50% 100%;
+      animation: sway 3.4s ease-in-out infinite;
+    }
+    .grasses .item:nth-child(2n):not(.off) img { animation-delay: -1.2s; }
+    .grasses .item:nth-child(3n):not(.off) img { animation-duration: 4.2s; }
+    .grasses.gust .item:not(.off) img { animation-duration: .55s; }
+    .rabbits .item:not(.off) img { animation: hop 2.6s ease-in-out infinite; }
+    .rabbits .item:nth-child(2n):not(.off) img { animation-delay: -.7s; }
+    .rabbits .item:nth-child(3n):not(.off) img { animation-duration: 3.2s; }
+    .rabbits.nibble .item:not(.off) img { animation: nod .42s ease-in-out 2; }
+    .rabbits.shy .item:not(.off) img { animation: shy .55s ease; }
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(6deg); }
+  }
+  @keyframes hop {
+    0%, 70%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-7px); }
+  }
+  @keyframes nod {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(8deg); }
+  }
+  @keyframes shy {
+    0%, 100% { transform: translateX(0); }
+    40% { transform: translateX(-10px); }
+  }
+  .story {
+    min-height: 3.2em;
+    margin: 14px 0;
+    padding: 12px 16px;
+    background: #fff;
+    border-left: 5px solid var(--moss);
+    border-radius: 10px;
+    font-size: 18px;
+  }
+  .controls {
+    display: grid;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 16px 16px 8px;
+  }
+  .slider label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .slider b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .tag.g { background: var(--moss); }
+  .tag.r { background: var(--rabbit); }
+  .tag.w { background: var(--wolf); }
+  input[type="range"] {
+    width: 100%;
+    min-width: 0;
+    margin: 8px 0 4px;
+    accent-color: var(--moss);
+    height: 36px;
+  }
+  #rabbit-range { accent-color: var(--rabbit); }
+  #wolf-range { accent-color: var(--wolf); }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 2px 0 10px;
+  }
+  button {
+    font: inherit;
+    font-size: 16px;
+    border-radius: 999px;
+    border: 1px solid var(--moss);
+    background: #fff;
+    color: var(--moss);
+    padding: 8px 14px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--moss); color: #fff; }
+  button.go {
+    flex: 1 1 100%;
+    font-size: 22px;
+    font-weight: 700;
+    min-height: 56px;
+    background: #c4553a;
+    border-color: #a8432c;
+    color: #fff;
+  }
+  button:hover { filter: brightness(1.05); }
+  .modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 22px;
+  }
+  .modes button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    border-width: 2px;
+    border-color: var(--line);
+    background: #fff;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .modes button small { font-size: 13px; font-weight: 600; color: #5c675d; }
+  .modes button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .modes button.on small { color: #efe6d4; }
+  .status { margin-top: 14px; }
+  .status-row { display: flex; gap: 12px; align-items: stretch; }
+  .dayno {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 7.2em;
+    padding: 8px 12px;
+    border-radius: 16px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; flex: 1; }
+  .meters .m { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 8px 12px 10px; }
+  .meters small { display: block; font-size: 14px; color: #5c675d; }
+  .meters b { display: block; font-size: 36px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .meters .g b { color: var(--moss); }
+  .meters .r b { color: var(--rabbit); }
+  .meters .w b { color: var(--wolf); }
+  .chartbox { margin-top: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 0 0 6px; font-size: 15px; }
+  .legend i { display: inline-block; width: 22px; height: 5px; margin-right: 6px; border-radius: 4px; vertical-align: middle; }
+  .legend .g i { background: var(--moss); }
+  .legend .r i { background: var(--rabbit); }
+  .legend .w i { background: var(--wolf); }
+  .legend .hint { color: #5c675d; }
+  .chartbox svg { width: 100%; height: 140px; display: block; }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+  }
+  .card h2 { margin: 0 0 8px; font-size: 20px; }
+  .card ol { margin: 0; padding-left: 1.2em; }
+  .card li + li { margin-top: 6px; }
+  .note {
+    margin-top: 14px;
+    color: #3d4a40;
+    font-size: 16px;
+  }
+  @media (max-width: 720px) {
+    .chain { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); justify-self: center; }
+    .node { padding: 8px 12px; }
+    .node img { width: 40px; height: 40px; }
+    .node strong { font-size: 18px; }
+    .node span { font-size: 15px; }
+    .stage { height: 340px; }
+    .meadow-row button.go { flex-basis: 68px; width: 68px; font-size: 22px; letter-spacing: 0.08em; }
+    .sun { width: 48px; height: 48px; right: 14px; top: 12px; }
+    .hill { bottom: 108px; height: 72px; }
+    .hill.far { bottom: 140px; height: 64px; }
+    .wolves { bottom: 118px; height: 96px; }
+    .rabbits { bottom: 58px; height: 78px; }
+    .grasses { bottom: 2px; height: 70px; }
+    .cards { grid-template-columns: 1fr; }
+    .status-row { flex-direction: column; }
+    .dayno { min-width: 0; font-size: 26px; }
+    .meters b { font-size: 30px; }
+    .chartbox svg { height: 120px; }
+    header p.lead, .story, .card, .note { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .item, .cloud, .grasses .item img, .rabbits .item img { transition: none; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>食物鏈裡的平衡</h1>
+      <p class="lead" id="lead">草、兔子和狼生活在一起。草被兔子吃，兔子被狼吃。一種生物變多或變少，另外兩種也會跟着改變。</p>
+    </header>
+
+    <section class="chain" aria-label="食物鏈">
+      <div class="node" id="node-grass"><img src="img/grass.png" alt=""><div><strong>草</strong><span>生產者，為兔子提供食物</span></div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="node" id="node-rabbit"><img src="img/rabbit.png" alt=""><div><strong>兔子</strong><span>吃草的初級消費者</span></div></div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="node" id="node-wolf"><img src="img/wolf.png" alt=""><div><strong>狼</strong><span>吃兔子的次級消費者</span></div></div>
+    </section>
+
+    <div class="meadow-row">
+      <div class="stage" id="stage">
+        <div class="sun" aria-hidden="true"></div>
+        <div class="cloud c1" aria-hidden="true"></div>
+        <div class="cloud c2" aria-hidden="true"></div>
+        <div class="hill far" aria-hidden="true"></div>
+        <div class="hill" aria-hidden="true"></div>
+        <div class="animals wolves" id="wolves" aria-hidden="true"></div>
+        <div class="animals rabbits" id="rabbits" aria-hidden="true"></div>
+        <div class="grasses" id="grasses" aria-hidden="true"></div>
+      </div>
+      <button type="button" class="go" id="btn-day" hidden>過一日</button>
+    </div>
+
+    <div class="status" id="status" hidden>
+      <div class="status-row">
+        <div class="dayno" id="day-label">第 0 日</div>
+        <div class="meters">
+          <div class="m g"><small>草</small><b id="show-g">12</b><small>叢</small></div>
+          <div class="m r"><small>兔仔</small><b id="show-r">7</b><small>隻</small></div>
+          <div class="m w"><small>狼</small><b id="show-w">3</b><small>隻</small></div>
+        </div>
+      </div>
+      <div class="chartbox">
+        <div class="legend">
+          <span class="g"><i></i>草</span>
+          <span class="r"><i></i>兔仔</span>
+          <span class="w"><i></i>狼</span>
+          <span class="hint">上面是多，下面是少</span>
+        </div>
+        <svg id="chart" viewBox="0 0 100 56" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+
+    <p class="story" id="story" aria-live="polite">現在是平衡狀態。試試把草的數量拉低，或者拉高。</p>
+
+    <section class="controls" aria-label="數量拉桿">
+      <div class="slider">
+        <label for="grass-range">草的數量 <span class="tag g">生產者</span> <b id="grass-num">12 叢</b></label>
+        <input id="grass-range" type="range" min="0" max="18" value="12">
+      </div>
+      <div class="slider">
+        <label for="rabbit-range">兔子的數量 <span class="tag r">吃草</span> <b id="rabbit-num">7 隻</b></label>
+        <input id="rabbit-range" type="range" min="0" max="12" value="7">
+      </div>
+      <div class="slider">
+        <label for="wolf-range">狼的數量 <span class="tag w">吃兔子</span> <b id="wolf-num">3 隻</b></label>
+        <input id="wolf-range" type="range" min="0" max="6" value="3">
+      </div>
+      <div class="actions">
+        <button type="button" class="primary" id="btn-rabbits" hidden>兔仔增加</button>
+        <button type="button" class="primary" id="btn-less">播放：草減少</button>
+        <button type="button" class="primary" id="btn-more">播放：草增加</button>
+        <button type="button" id="btn-balance">回到平衡</button>
+      </div>
+    </section>
+
+    <section class="cards" id="cards-now">
+      <article class="card">
+        <h2>草減少的時候</h2>
+        <ol>
+          <li>草變少，兔子找不到足夠食物。</li>
+          <li>兔子的數目下降。</li>
+          <li>兔子少了，狼難找獵物，狼也減少。</li>
+        </ol>
+      </article>
+      <article class="card">
+        <h2>草增加的時候</h2>
+        <ol>
+          <li>草變多，兔子食物充足。</li>
+          <li>兔子的數目上升。</li>
+          <li>兔子多了，狼更容易獵食，狼也增加。</li>
+        </ol>
+      </article>
+    </section>
+    <section class="cards" id="cards-live" hidden>
+      <article class="card">
+        <h2>兔仔多了之後</h2>
+        <ol>
+          <li>兔仔把草吃少。</li>
+          <li>獵物多了，狼也增加。</li>
+          <li>草少了，兔仔的食物不夠，兔仔又減少。</li>
+          <li>兔仔少了，狼也減少。草再長回來。</li>
+        </ol>
+      </article>
+      <article class="card">
+        <h2>動態平衡</h2>
+        <ol>
+          <li>數目會上升，也會下降。</li>
+          <li>不會只向一邊一直變。</li>
+          <li>吃與被吃互相牽制。</li>
+          <li>再按「過一日」，又回到平衡。</li>
+        </ol>
+      </article>
+    </section>
+    <p class="note" id="note">數量不會永遠上升或下降。兔子多了會把草吃回去，狼多了又會把兔子吃少。吃與被吃互相牽制，食物鏈便保持平衡。拉動兔子或狼的拉桿，也可以看見這條鏈倒過來影響。</p>
+    <div class="modes" role="tablist" aria-label="兩個版本">
+      <button type="button" id="mode-now" class="on" aria-pressed="true"><small>版本一</small>人類影響</button>
+      <button type="button" id="mode-live" aria-pressed="false"><small>版本二</small>動態平衡</button>
+    </div>
+  </div>
+
+<script>
+const MAX = { grass: 18, rabbit: 12, wolf: 6 };
+const START = { grass: 12, rabbit: 7, wolf: 3 };
+const pop = { grass: START.grass, rabbit: START.rabbit, wolf: START.wolf };
+let mode = "now";
+let seq = 0;
+let day = 0;
+let history = [];
+let writing = false;
+const dragFrom = { grass: null, rabbit: null, wolf: null };
+let wolfAlt = false;
+let eatToken = 0;
+
+const boxes = {
+  grass: document.getElementById("grasses"),
+  rabbit: document.getElementById("rabbits"),
+  wolf: document.getElementById("wolves")
+};
+const ranges = {
+  grass: document.getElementById("grass-range"),
+  rabbit: document.getElementById("rabbit-range"),
+  wolf: document.getElementById("wolf-range")
+};
+const nums = {
+  grass: document.getElementById("grass-num"),
+  rabbit: document.getElementById("rabbit-num"),
+  wolf: document.getElementById("wolf-num")
+};
+const units = { grass: "叢", rabbit: "隻", wolf: "隻" };
+const story = document.getElementById("story");
+const motionOK = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const LEAD_NOW = "草、兔子和狼生活在一起。草被兔子吃，兔子被狼吃。一種生物變多或變少，另外兩種也會跟着改變。";
+const LEAD_LIVE = "動態平衡：兔仔多了，會把草吃少，狼也變多。再過幾日，草不夠，兔仔和狼又少回來。每按一次「過一日」，只過一天。";
+const NOTE_NOW = "數量不會永遠上升或下降。兔子多了會把草吃回去，狼多了又會把兔子吃少。吃與被吃互相牽制，食物鏈便保持平衡。拉動兔子或狼的拉桿，也可以看見這條鏈倒過來影響。";
+const NOTE_LIVE = "這個版本不會自己跳。先改變數量，再按「過一日」。平衡是草 12 叢、兔仔 7 隻、狼 3 隻。在平衡時按「過一日」，數目不變。";
+const STORY_NOW = "現在是平衡狀態。試試把草的數量拉低，或者拉高。";
+const STORY_LIVE = "可以按「兔仔增加」，再一次一次按「過一日」，看看數目怎樣回到平衡。";
+
+function build() {
+  const count = { grass: MAX.grass, rabbit: MAX.rabbit, wolf: MAX.wolf };
+  for (const key of ["grass", "rabbit", "wolf"]) {
+    boxes[key].innerHTML = "";
+    for (let i = 0; i < count[key]; i++) {
+      const el = document.createElement("div");
+      el.className = "item off";
+      el.style.bottom = (i % 3) * 4 + "px";
+      const img = document.createElement("img");
+      img.alt = "";
+      img.draggable = false;
+      if (key === "grass") img.src = i % 2 === 0 ? "img/grass.png" : "img/grass2.png";
+      else if (key === "rabbit") img.src = "img/rabbit.png";
+      else img.src = "img/wolf.png";
+      el.appendChild(img);
+      boxes[key].appendChild(el);
+    }
+  }
+}
+
+function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+function rabbitsForGrass(g) { return clamp(Math.round(g * 0.58), 0, MAX.rabbit); }
+function wolvesForRabbits(r) { return clamp(Math.round(r * 0.42), 0, MAX.wolf); }
+function grassAfterRabbits(r) { return clamp(MAX.grass - r, 0, MAX.grass); }
+function rabbitsAfterWolves(w) { return clamp(Math.round(MAX.rabbit * (1 - w / (MAX.wolf + 2))), 0, MAX.rabbit); }
+function pressure(r) {
+  if (r <= 4) return 0;
+  if (r <= 6) return 1;
+  if (r <= 8) return 2;
+  if (r <= 10) return 3;
+  return 4;
+}
+function regrow(g) {
+  if (g < 8) return 4;
+  if (g < 12) return 3;
+  if (g === 12) return 2;
+  if (g <= 16) return 1;
+  return 0;
+}
+function stepDay(g, r, w) {
+  const g2 = clamp(g + regrow(g) - pressure(r), 0, MAX.grass);
+  let hunt = (w === 0 || r <= 2) ? 0 : 1;
+  if (w >= 5 && r >= 5) hunt = 2;
+  if (r > 7 && w >= 3) hunt = Math.max(hunt, 2);
+  let births = 0;
+  if (g2 >= 11 && r < 7) births = 2;
+  else if (g2 >= 11 && r < MAX.rabbit) births = 1;
+  const starve = (g2 <= 7 && r > 0) ? 1 : 0;
+  const r2 = clamp(r + births - starve - hunt, 0, MAX.rabbit);
+  let w2 = w;
+  if (r >= w + 6 && w < MAX.wolf) w2 = w + 1;
+  else if (w < 3 && r >= 7) w2 = w + 1;
+  else if (w > 0 && r < w * 2) w2 = w - 1;
+  return { grass: g2, rabbit: r2, wolf: w2 };
+}
+
+function render(animateKeys) {
+  for (const key of ["grass", "rabbit", "wolf"]) {
+    const items = boxes[key].children;
+    const count = pop[key];
+    const start = Math.floor((items.length - count) / 2);
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
+      const on = i >= start && i < start + count;
+      const wasOff = el.classList.contains("off");
+      el.classList.toggle("off", !on);
+      el.classList.remove("pop");
+      if (on && wasOff && animateKeys && animateKeys.has(key)) {
+        void el.offsetWidth;
+        el.classList.add("pop");
+      }
+    }
+    const shown = [...items].filter((el) => !el.classList.contains("off"));
+    shown.forEach((el, j) => {
+      const left = shown.length === 1 ? 50 : 8 + j * (84 / (shown.length - 1));
+      el.style.left = left + "%";
+    });
+    nums[key].textContent = pop[key] + " " + units[key];
+  }
+  writing = true;
+  ranges.grass.value = pop.grass;
+  ranges.rabbit.value = pop.rabbit;
+  ranges.wolf.value = pop.wolf;
+  writing = false;
+  paintStatus();
+}
+
+function highlight(key) {
+  for (const name of ["grass", "rabbit", "wolf"]) {
+    document.getElementById("node-" + name).classList.toggle("live", name === key);
+  }
+}
+
+function say(text) { story.textContent = text; }
+
+function paintStatus() {
+  document.getElementById("day-label").textContent = "第 " + day + " 日";
+  document.getElementById("show-g").textContent = String(pop.grass);
+  document.getElementById("show-r").textContent = String(pop.rabbit);
+  document.getElementById("show-w").textContent = String(pop.wolf);
+}
+
+function drawCharts() {
+  const svg = document.getElementById("chart");
+  const tops = MAX;
+  const colors = { grass: "#1e6b3a", rabbit: "#8a5a3a", wolf: "#4e5963" };
+  if (!history.length) { svg.innerHTML = ""; return; }
+  const n = Math.max(history.length - 1, 1);
+  let html = "";
+  for (const key of ["grass", "rabbit", "wolf"]) {
+    const pts = history.map((h, i) => {
+      const x = (i / n) * 100;
+      const y = 46 - (h[key] / tops[key]) * 38;
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    const last = pts.split(" ").pop().split(",");
+    html += '<polyline points="' + pts + '" fill="none" stroke="' + colors[key] + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+    html += '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.1" fill="' + colors[key] + '"/>';
+  }
+  svg.innerHTML = html;
+}
+
+function countsLine(s) {
+  return "草 " + s.grass + " 叢，兔仔 " + s.rabbit + " 隻，狼 " + s.wolf + " 隻";
+}
+
+function liveBits(before, now) {
+  const bits = [];
+  if (now.grass < before.grass) bits.push("草被兔仔吃少了");
+  if (now.grass > before.grass) bits.push("草又長了回來");
+  if (now.wolf > before.wolf) bits.push("獵物多了，狼也增加");
+  if (now.rabbit < before.rabbit) bits.push("兔仔減少了");
+  if (now.wolf < before.wolf) bits.push("狼也減少");
+  if (now.rabbit > before.rabbit) bits.push("兔仔又多起來");
+  return bits.length ? bits.join("，") : "數目慢慢變化";
+}
+
+function sameState(a, b) {
+  return a.grass === b.grass && a.rabbit === b.rabbit && a.wolf === b.wolf;
+}
+
+function sentence(before, now, moved) {
+  const head = "第 " + day + " 日：" + countsLine(now) + "。";
+  if (!moved) return head + "數目沒有改變，食物鏈保持平衡。";
+  return head + liveBits(before, now) + "。";
+}
+
+function nextDay() {
+  if (mode !== "live") return;
+  const before = snapshot();
+  const next = stepDay(before.grass, before.rabbit, before.wolf);
+  day += 1;
+  const moved = !sameState(before, next);
+  if (moved) {
+    pop.grass = next.grass;
+    pop.rabbit = next.rabbit;
+    pop.wolf = next.wolf;
+    history.push(snapshot());
+    if (history.length > 48) history.shift();
+    const changed = new Set();
+    if (next.grass !== before.grass) changed.add("grass");
+    if (next.rabbit !== before.rabbit) changed.add("rabbit");
+    if (next.wolf !== before.wolf) changed.add("wolf");
+    render(changed);
+    if (next.grass < before.grass) {
+      flash(boxes.grass, "gust");
+      nibble();
+    }
+    if (next.wolf > before.wolf) flash(boxes.rabbit, "shy");
+    if (next.wolf !== before.wolf) highlight("wolf");
+    else if (next.rabbit !== before.rabbit) highlight("rabbit");
+    else highlight("grass");
+  } else {
+    paintStatus();
+  }
+  drawCharts();
+  say(sentence(before, snapshot(), moved));
+}
+
+function resetBoard(line) {
+  pop.grass = START.grass;
+  pop.rabbit = START.rabbit;
+  pop.wolf = START.wolf;
+  day = 0;
+  history = [snapshot()];
+  dragFrom.grass = null;
+  dragFrom.rabbit = null;
+  dragFrom.wolf = null;
+  render(new Set(["grass", "rabbit", "wolf"]));
+  drawCharts();
+  highlight("grass");
+  say(line);
+}
+
+function setShock(kind, value, line) {
+  seq++;
+  pop[kind] = clamp(value, 0, MAX[kind]);
+  day = 0;
+  history = [snapshot()];
+  render(new Set([kind]));
+  drawCharts();
+  highlight(kind);
+  say(line);
+}
+
+function setMode(next) {
+  mode = next;
+  seq++;
+  const live = mode === "live";
+  document.getElementById("mode-now").classList.toggle("on", !live);
+  document.getElementById("mode-live").classList.toggle("on", live);
+  document.getElementById("mode-now").setAttribute("aria-pressed", live ? "false" : "true");
+  document.getElementById("mode-live").setAttribute("aria-pressed", live ? "true" : "false");
+  document.getElementById("btn-day").hidden = !live;
+  document.getElementById("btn-rabbits").hidden = !live;
+  document.getElementById("status").hidden = !live;
+  document.getElementById("cards-now").hidden = live;
+  document.getElementById("cards-live").hidden = !live;
+  document.getElementById("lead").textContent = live ? LEAD_LIVE : LEAD_NOW;
+  document.getElementById("note").textContent = live ? NOTE_LIVE : NOTE_NOW;
+  document.getElementById("btn-less").textContent = live ? "草減少" : "播放：草減少";
+  document.getElementById("btn-more").textContent = live ? "草增加" : "播放：草增加";
+  resetBoard(live ? STORY_LIVE : STORY_NOW);
+}
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function flash(el, cls) {
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 1000);
+}
+
+function nibble() {
+  const token = ++eatToken;
+  boxes.rabbit.querySelectorAll("img").forEach((img) => { img.src = "img/rabbit-eat.png"; });
+  flash(boxes.rabbit, "nibble");
+  setTimeout(() => {
+    if (token !== eatToken) return;
+    boxes.rabbit.querySelectorAll("img").forEach((img) => { img.src = "img/rabbit.png"; });
+  }, 1000);
+}
+
+function snapshot() {
+  return { grass: pop.grass, rabbit: pop.rabbit, wolf: pop.wolf };
+}
+
+async function cascade(kind, value, from) {
+  if (mode !== "now") return;
+  const run = ++seq;
+  dragFrom.grass = null;
+  dragFrom.rabbit = null;
+  dragFrom.wolf = null;
+  const before = from || snapshot();
+  pop[kind] = clamp(value, 0, MAX[kind]);
+  render(new Set([kind]));
+  highlight(kind);
+  if (kind === "grass") flash(boxes.grass, "gust");
+
+  const steps = [];
+  if (kind === "grass") {
+    const up = pop.grass > before.grass;
+    const same = pop.grass === before.grass;
+    steps.push({
+      text: same ? "草的數量沒有改變。" : up ? "草增加了，兔子的食物變多。" : "草減少了，兔子的食物變少。",
+      key: "grass"
+    });
+    steps.push({
+      key: "rabbit",
+      value: rabbitsForGrass(pop.grass),
+      text: up ? "兔子吃得飽，數目慢慢上升。" : "兔子吃不飽，數目跟着下降。"
+    });
+    steps.push({
+      key: "wolf",
+      value: wolvesForRabbits(rabbitsForGrass(pop.grass)),
+      text: up ? "兔子多了，狼更容易找到獵物，數目也上升。" : "兔子少了，狼難找獵物，數目也下降。"
+    });
+    if (pop.grass === 0) steps[2].text = "草沒有了，兔子無法生存，狼也失去獵物。";
+  } else if (kind === "rabbit") {
+    const up = pop.rabbit > before.rabbit;
+    steps.push({
+      text: up ? "兔子多了，開始把草吃少。" : "兔子少了，草少了被吃，可以慢慢長回。",
+      key: "rabbit"
+    });
+    steps.push({
+      key: "grass",
+      value: grassAfterRabbits(pop.rabbit),
+      text: up ? "草原被吃低了。" : "草長回來了。"
+    });
+    steps.push({
+      key: "wolf",
+      value: wolvesForRabbits(pop.rabbit),
+      text: up ? "兔子多了，狼的獵物增加，狼也變多。" : "兔子少了，狼的獵物不足，狼也減少。"
+    });
+  } else {
+    const up = pop.wolf > before.wolf;
+    steps.push({
+      text: up ? "狼多了，會獵食更多兔子。" : "狼少了，兔子的天敵減少。",
+      key: "wolf"
+    });
+    const nextRabbits = rabbitsAfterWolves(pop.wolf);
+    steps.push({
+      key: "rabbit",
+      value: nextRabbits,
+      text: up ? "兔子被吃掉，數目下降。" : "兔子變多了。"
+    });
+    steps.push({
+      key: "grass",
+      value: grassAfterRabbits(nextRabbits),
+      text: up ? "兔子少了，草少了被吃，長得更茂盛。" : "兔子變多後，又把草吃少。"
+    });
+  }
+
+  say(steps[0].text);
+  for (let i = 1; i < steps.length; i++) {
+    await wait(1100);
+    if (run !== seq) return;
+    const step = steps[i];
+    pop[step.key] = step.value;
+    render(new Set([step.key]));
+    highlight(step.key);
+    say(step.text);
+    if (step.key === "grass") flash(boxes.grass, "gust");
+    if (step.key === "rabbit" && kind !== "wolf") nibble();
+    if (step.key === "rabbit" && kind === "wolf") flash(boxes.rabbit, "shy");
+  }
+}
+
+for (const kind of ["grass", "rabbit", "wolf"]) {
+  ranges[kind].addEventListener("input", () => {
+    if (writing) return;
+    if (!dragFrom[kind]) dragFrom[kind] = snapshot();
+    seq++;
+    pop[kind] = Number(ranges[kind].value);
+    render(new Set([kind]));
+    highlight(kind);
+    if (mode === "live") {
+      day = 0;
+      history = [snapshot()];
+      drawCharts();
+      const name = kind === "grass" ? "草" : kind === "rabbit" ? "兔仔" : "狼";
+      say("已改了" + name + "的數量。" + countsLine(pop) + "。按「過一日」，看下一天。");
+    } else {
+      say("放開拉桿後，食物鏈會跟着改變。");
+    }
+  });
+  ranges[kind].addEventListener("change", () => {
+    if (writing || mode !== "now") {
+      dragFrom[kind] = null;
+      return;
+    }
+    const from = dragFrom[kind];
+    dragFrom[kind] = null;
+    cascade(kind, Number(ranges[kind].value), from);
+  });
+}
+
+document.getElementById("btn-day").addEventListener("click", nextDay);
+document.getElementById("btn-rabbits").addEventListener("click", () => {
+  setShock("rabbit", 12, "兔仔增加到 12 隻。按「過一日」，看下一天草和狼怎樣變。");
+});
+document.getElementById("btn-less").addEventListener("click", () => {
+  if (mode === "live") setShock("grass", 4, "草減少到 4 叢。按「過一日」，看食物鏈怎樣回到平衡。");
+  else cascade("grass", 4);
+});
+document.getElementById("btn-more").addEventListener("click", () => {
+  if (mode === "live") setShock("grass", 18, "草增加到 18 叢。按「過一日」，看食物鏈怎樣回到平衡。");
+  else cascade("grass", 18);
+});
+document.getElementById("btn-balance").addEventListener("click", () => {
+  seq++;
+  resetBoard(mode === "live"
+    ? "回到平衡：草 12 叢，兔仔 7 隻，狼 3 隻。按「過一日」，看下一天。"
+    : "回到平衡：草夠兔子吃，兔子的數目又足以讓狼生存，三種生物都留在草原上。");
+});
+document.getElementById("mode-now").addEventListener("click", () => setMode("now"));
+document.getElementById("mode-live").addEventListener("click", () => setMode("live"));
+
+if (motionOK) {
+  setInterval(() => {
+    wolfAlt = !wolfAlt;
+    const src = wolfAlt ? "img/wolf-step.png" : "img/wolf.png";
+    boxes.wolf.querySelectorAll("img").forEach((img) => { img.src = src; });
+  }, 560);
+}
+
+build();
+setMode("now");
+requestAnimationFrame(() => document.body.classList.add("ready"));
+
+window.__fc = {
+  counts: () => ({ grass: pop.grass, rabbit: pop.rabbit, wolf: pop.wolf, day: day, mode: mode }),
+  story: () => story.textContent,
+  history: () => history.map((h) => [h.grass, h.rabbit, h.wolf]),
+  stepDay: stepDay,
+  scrollWidth: () => document.documentElement.scrollWidth,
+  clientWidth: () => document.documentElement.clientWidth
+};
+</script>
+</body>
+</html>
