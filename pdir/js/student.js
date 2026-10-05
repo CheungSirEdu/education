@@ -20,9 +20,13 @@ let impIndex = 0;
 let revIndex = 0;
 let backToReview = false;
 let heard = "";
-let heardSlot = "first";
+let heardSlot = "";
 let showTypeSlot = "";
-let micSlot = "first";
+let micSlot = "";
+let pointerSeen = 0;
+let composerGesture = 0;
+let composerUntil = 0;
+document.addEventListener("pointerdown", () => { pointerSeen += 1; }, true);
 let pendingPhoto = "";
 let pendingPhotoFeedback = "";
 let pendingPhotoSource = "";
@@ -295,7 +299,20 @@ function fileUrl(path) {
   return (base ? base + rel : rel) + "?t=" + encodeURIComponent(who.token);
 }
 
+function settleComposer() {
+  heard = "";
+  heardSlot = "";
+  showTypeSlot = "";
+  composerGesture = pointerSeen;
+  composerUntil = Date.now() + 700;
+}
+
+function staleGesture() {
+  return Date.now() < composerUntil && pointerSeen === composerGesture;
+}
+
 function stopMic() {
+  micGen += 1;
   if (micTimer) {
     clearInterval(micTimer);
     micTimer = null;
@@ -359,7 +376,6 @@ function voicePrefix(slot) {
   const saved = ((node && node.dataset.text) || "").replace(/\s+/g, " ").trim();
   if (saved) return saved;
   if (heardSlot === slot && heard) return heard.replace(/\s+/g, " ").trim();
-  if (typed) return typed.value.replace(/\s+/g, " ").trim();
   return "";
 }
 
@@ -378,9 +394,8 @@ function paintVoice(slot, text, listening) {
 }
 
 function startMic(qid, slot) {
-  micGen += 1;
-  const gen = micGen;
   stopMic();
+  const gen = ++micGen;
   micSlot = slot || "first";
   const prefix = voicePrefix(micSlot);
   heard = prefix;
@@ -598,9 +613,7 @@ async function submitAnswer(stage, qid, slot) {
     });
     rec = data.student;
     pendingPhoto = "";
-    heard = text;
-    heardSlot = slot;
-    showTypeSlot = slot;
+    settleComposer();
     linkNote = "";
     render();
   } catch (e) {
@@ -608,9 +621,7 @@ async function submitAnswer(stage, qid, slot) {
       applyLocalText(stage, qid, text);
       remember("/api/answer", { stage: stage, qid: qid, text: text, slot: slot, photo: "", audio: audio });
       pendingPhoto = "";
-      heard = text;
-      heardSlot = slot;
-      showTypeSlot = slot;
+      settleComposer();
       err = "";
       linkNote = OFFLINE_NOTE;
       scheduleRejoin();
@@ -668,7 +679,7 @@ function barBlock(slot, draft, open, placeholder) {
   return `
     <div class="entry">
       <button type="button" class="entry-bar ${open ? "hidden" : ""}" id="entry-bar-${slot}" data-placeholder="${esc(placeholder)}">${esc(draft || placeholder)}</button>
-      <textarea id="typed-${slot}" class="entry-bar ${open ? "" : "hidden"}" placeholder="${esc(placeholder)}">${esc(draft)}</textarea>
+      <textarea id="typed-${slot}" class="entry-bar ${open ? "" : "hidden"}" placeholder="${esc(placeholder)}" autocomplete="off" autocorrect="off">${esc(draft)}</textarea>
       <div class="entry-menu" id="entry-menu-${slot}">
         <button type="button" id="pick-voice-${slot}">${VOICE_LABEL}</button>
       </div>
@@ -682,13 +693,12 @@ function barBlock(slot, draft, open, placeholder) {
 
 function composer(stage, qid, ask) {
   const attempts = attemptsOf(stage, qid);
-  const stacked = attempts.length > 2;
-  const first = stacked ? attempts[attempts.length - 1] : attempts[0];
-  const second = stacked ? null : attempts[1];
-  const third = stacked ? null : attempts[2];
-  const draft1 = (heardSlot === "first" ? heard : "") || (first && first.text) || "";
-  const draft2 = (heardSlot === "follow" ? heard : "") || (second && second.text) || "";
-  const draft3 = (heardSlot === "third" ? heard : "") || (third && third.text) || "";
+  const first = attempts[0];
+  const second = attempts[1];
+  const third = attempts[2];
+  const draft1 = first ? ((showTypeSlot === "first" && heardSlot === "first" ? heard : "") || first.text || "") : (heardSlot === "first" ? heard : "");
+  const draft2 = second ? ((showTypeSlot === "follow" && heardSlot === "follow" ? heard : "") || second.text || "") : (heardSlot === "follow" ? heard : "");
+  const draft3 = third ? ((showTypeSlot === "third" && heardSlot === "third" ? heard : "") || third.text || "") : (heardSlot === "third" ? heard : "");
   const oneShot = /where$/.test(qid);
   const wantThird = qid === "review-teach";
   return `
@@ -716,8 +726,19 @@ function bindOneBar(stage, qid, slot) {
   const menu = document.getElementById("entry-menu-" + slot);
   const typed = document.getElementById("typed-" + slot);
   if (!bar) return;
+  const pinTyped = () => {
+    if (!typed || !typed.isConnected || !typed.classList.contains("hidden")) return;
+    const node = document.getElementById("said-" + slot);
+    typed.value = (node && node.dataset.text) || "";
+  };
   if (typed) {
+    pinTyped();
+    requestAnimationFrame(pinTyped);
     typed.addEventListener("input", () => {
+      if (staleGesture()) {
+        pinTyped();
+        return;
+      }
       heardSlot = slot;
       heard = typed.value.replace(/\s+/g, " ").trim();
       const node = document.getElementById("said-" + slot);
@@ -725,6 +746,7 @@ function bindOneBar(stage, qid, slot) {
     });
   }
   bar.onclick = () => {
+    if (staleGesture()) return;
     if (mic || (mediaRec && mediaRec.state === "recording")) stopMic();
     showTypeSlot = slot;
     heardSlot = slot;
@@ -739,10 +761,18 @@ function bindOneBar(stage, qid, slot) {
   };
   const pickVoice = document.getElementById("pick-voice-" + slot);
   if (pickVoice) {
-    pickVoice.onclick = () => startMic(qid, slot);
+    pickVoice.onclick = () => {
+      if (staleGesture()) return;
+      startMic(qid, slot);
+    };
   }
   const send = document.getElementById("send-" + slot);
-  if (send) send.onclick = () => submitAnswer(stage, qid, slot);
+  if (send) {
+    send.onclick = () => {
+      if (staleGesture()) return;
+      submitAnswer(stage, qid, slot);
+    };
+  }
 }
 
 function icon(name) {
