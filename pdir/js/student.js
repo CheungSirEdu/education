@@ -22,6 +22,7 @@ let backToReview = false;
 let heard = "";
 let heardSlot = "";
 let showTypeSlot = "";
+let editingQid = "";
 let micSlot = "";
 let pointerSeen = 0;
 let composerGesture = 0;
@@ -299,12 +300,17 @@ function fileUrl(path) {
   return (base ? base + rel : rel) + "?t=" + encodeURIComponent(who.token);
 }
 
-function settleComposer() {
+function clearDraft() {
   heard = "";
   heardSlot = "";
   showTypeSlot = "";
+  editingQid = "";
   composerGesture = pointerSeen;
   composerUntil = Date.now() + 700;
+}
+
+function settleComposer() {
+  clearDraft();
 }
 
 function staleGesture() {
@@ -397,6 +403,7 @@ function startMic(qid, slot) {
   stopMic();
   const gen = ++micGen;
   micSlot = slot || "first";
+  editingQid = qid;
   const prefix = voicePrefix(micSlot);
   heard = prefix;
   heardSlot = micSlot;
@@ -590,6 +597,7 @@ async function submitAnswer(stage, qid, slot) {
   slot = slot || "first";
   await finishListening();
   const text = currentText(slot);
+  micGen += 1;
   const box = document.getElementById("said-" + slot);
   const audio = (box && box.dataset.audio) || "";
   if (!text || text === "正在聆聽…") {
@@ -691,26 +699,43 @@ function barBlock(slot, draft, open, placeholder) {
     </div>`;
 }
 
+function yourLine(text) {
+  if (!text) return "";
+  return `<div class="chat"><div class="bubble-you"><b>你</b><p>${esc(text)}</p></div></div>`;
+}
+
+function liveDraft(qid, slot) {
+  if (editingQid !== qid || heardSlot !== slot) return "";
+  return heard || "";
+}
+
+function slotOpen(qid, slot) {
+  return editingQid === qid && showTypeSlot === slot;
+}
+
 function composer(stage, qid, ask) {
   const attempts = attemptsOf(stage, qid);
   const first = attempts[0];
   const second = attempts[1];
   const third = attempts[2];
-  const draft1 = first ? ((showTypeSlot === "first" && heardSlot === "first" ? heard : "") || first.text || "") : (heardSlot === "first" ? heard : "");
-  const draft2 = second ? ((showTypeSlot === "follow" && heardSlot === "follow" ? heard : "") || second.text || "") : (heardSlot === "follow" ? heard : "");
-  const draft3 = third ? ((showTypeSlot === "third" && heardSlot === "third" ? heard : "") || third.text || "") : (heardSlot === "third" ? heard : "");
   const oneShot = /where$/.test(qid);
   const wantThird = qid === "review-teach";
+  const followBox = second
+    ? yourLine(second.text)
+    : barBlock("follow", liveDraft(qid, "follow"), slotOpen(qid, "follow"), "回答跟進問題");
+  const thirdBox = third
+    ? yourLine(third.text)
+    : barBlock("third", liveDraft(qid, "third"), slotOpen(qid, "third"), "說出原因");
   return `
-    ${barBlock("first", draft1, showTypeSlot === "first", "輸入你的意見")}
+    ${first ? yourLine(first.text) : barBlock("first", liveDraft(qid, "first"), slotOpen(qid, "first"), "輸入你的意見")}
     ${first && oneShot ? questionBox(first.feedback, true) : ""}
     ${first && !oneShot ? `
       ${questionBox(first.feedback, true)}
-      ${barBlock("follow", draft2, showTypeSlot === "follow", "回答跟進問題")}
+      ${followBox}
       ${second ? feedbackBubble(second) : ""}
       ${second && wantThird ? `
         <h2>你為什麼先教這一件？</h2>
-        ${barBlock("third", draft3, showTypeSlot === "third", "說出原因")}
+        ${thirdBox}
         ${third ? feedbackBubble(third) : ""}
       ` : ""}
     ` : ""}
@@ -735,10 +760,11 @@ function bindOneBar(stage, qid, slot) {
     pinTyped();
     requestAnimationFrame(pinTyped);
     typed.addEventListener("input", () => {
-      if (staleGesture()) {
+      if (typed.classList.contains("hidden") || staleGesture()) {
         pinTyped();
         return;
       }
+      editingQid = qid;
       heardSlot = slot;
       heard = typed.value.replace(/\s+/g, " ").trim();
       const node = document.getElementById("said-" + slot);
@@ -748,6 +774,7 @@ function bindOneBar(stage, qid, slot) {
   bar.onclick = () => {
     if (staleGesture()) return;
     if (mic || (mediaRec && mediaRec.state === "recording")) stopMic();
+    editingQid = qid;
     showTypeSlot = slot;
     heardSlot = slot;
     const draft = voicePrefix(slot);
@@ -1247,8 +1274,9 @@ function viewReview() {
         ${feedback ? questionBox(feedback, true) : ""}
         ${pickedTry ? `
           <h2>為什麼你覺得這個部分最難？</h2>
-          ${barBlock("follow", (whyTry && whyTry.text) || "", showTypeSlot === "follow", "說出為什麼")}
-          ${whyTry ? feedbackBubble(whyTry) : ""}
+          ${whyTry
+            ? yourLine(whyTry.text) + (whyTry.feedback ? feedbackBubble(whyTry) : "")
+            : barBlock("follow", liveDraft(item.id, "follow"), slotOpen(item.id, "follow"), "說出為什麼")}
         ` : ""}
       ` : composer("review", item.id, item.ask)}
       <div class="row">
@@ -1339,7 +1367,7 @@ function bind() {
     backToReview = true;
     screen = "review";
     revIndex = Math.max(0, (lesson.review || []).length - 1);
-    heard = "";
+    clearDraft();
     render();
   };
   app.querySelectorAll("[data-go]").forEach((button) => {
@@ -1350,9 +1378,8 @@ function bind() {
         render();
         return;
       }
-      heard = "";
+      clearDraft();
       pendingPhoto = "";
-      showTypeSlot = "";
       backToReview = false;
       screen = id;
       if (id === "do") doIndex = firstOpenStep();
@@ -1410,8 +1437,8 @@ function bind() {
   });
   const prevPlan = document.getElementById("prev-plan");
   const nextPlan = document.getElementById("next-plan");
-  if (prevPlan) prevPlan.onclick = () => { planIndex -= 1; heard = ""; showTypeSlot = ""; clearShot(); render(); };
-  if (nextPlan) nextPlan.onclick = () => { planIndex += 1; heard = ""; showTypeSlot = ""; clearShot(); render(); };
+  if (prevPlan) prevPlan.onclick = () => { planIndex -= 1; clearDraft(); clearShot(); render(); };
+  if (nextPlan) nextPlan.onclick = () => { planIndex += 1; clearDraft(); clearShot(); render(); };
   const toDo = document.getElementById("to-do");
   if (toDo) toDo.onclick = async () => {
     try {
@@ -1420,6 +1447,7 @@ function bind() {
     } catch (e) {
       err = e.message;
     }
+    clearDraft();
     screen = "do";
     doIndex = firstOpenStep();
     sessionStorage.setItem("bike-screen", "do");
@@ -1428,7 +1456,7 @@ function bind() {
   app.querySelectorAll("[data-step]").forEach((button) => {
     button.onclick = () => {
       doIndex = Number(button.dataset.step);
-      heard = "";
+      clearDraft();
       clearShot();
       render();
     };
@@ -1454,7 +1482,7 @@ function bind() {
     };
   }
   const nextStep = document.getElementById("next-step");
-  if (nextStep) nextStep.onclick = () => { doIndex += 1; heard = ""; clearShot(); render(); };
+  if (nextStep) nextStep.onclick = () => { doIndex += 1; clearDraft(); clearShot(); render(); };
   const toImprove = document.getElementById("to-improve");
   if (toImprove) {
     toImprove.onclick = async () => {
@@ -1464,6 +1492,7 @@ function bind() {
       } catch (e) {
         err = e.message;
       }
+      clearDraft();
       screen = "improve";
       impIndex = 0;
       sessionStorage.setItem("bike-screen", "improve");
@@ -1478,6 +1507,7 @@ function bind() {
     if (question && !choosing) bindComposer("plan", question.id);
     app.querySelectorAll("[data-pick]").forEach((button) => {
       button.onclick = async () => {
+        if (staleGesture()) return;
         if (!question) return;
         const stepNo = Number(button.dataset.step || 1);
         const choice = button.dataset.pick;
@@ -1501,6 +1531,7 @@ function bind() {
             err = e.message;
           }
         }
+        clearDraft();
         render();
       };
     });
@@ -1508,6 +1539,7 @@ function bind() {
   if (step && (step.choices || []).length) {
     app.querySelectorAll("[data-pick]").forEach((button) => {
       button.onclick = async () => {
+        if (staleGesture()) return;
         const choice = button.dataset.pick;
         try {
           const data = await api("/api/do", { id: step.id, choice: choice });
@@ -1524,6 +1556,7 @@ function bind() {
             err = e.message;
           }
         }
+        clearDraft();
         render();
       };
     });
@@ -1539,6 +1572,7 @@ function bind() {
     if (item && (item.choices || []).length) {
       app.querySelectorAll("[data-pick]").forEach((button) => {
         button.onclick = async () => {
+          if (staleGesture()) return;
           const choice = (item.choices || []).find((row) => row.id === button.dataset.pick);
           if (!choice) return;
           try {
@@ -1556,6 +1590,7 @@ function bind() {
               err = e.message;
             }
           }
+          clearDraft();
           render();
         };
       });
@@ -1587,8 +1622,8 @@ function bind() {
   }
   const prevQ = document.getElementById("prev-q");
   const nextQ = document.getElementById("next-q");
-  if (prevQ) prevQ.onclick = () => { impIndex -= 1; heard = ""; pendingPhoto = ""; render(); };
-  if (nextQ) nextQ.onclick = () => { impIndex += 1; heard = ""; pendingPhoto = ""; render(); };
+  if (prevQ) prevQ.onclick = () => { impIndex -= 1; clearDraft(); pendingPhoto = ""; render(); };
+  if (nextQ) nextQ.onclick = () => { impIndex += 1; clearDraft(); pendingPhoto = ""; render(); };
   const toReview = document.getElementById("to-review");
   if (toReview) {
     toReview.onclick = () => {
@@ -1602,6 +1637,7 @@ function bind() {
         render();
         return;
       }
+      clearDraft();
       backToReview = false;
       screen = "review";
       revIndex = 0;
@@ -1610,8 +1646,8 @@ function bind() {
   }
   const prevR = document.getElementById("prev-r");
   const nextR = document.getElementById("next-r");
-  if (prevR) prevR.onclick = () => { revIndex -= 1; heard = ""; render(); };
-  if (nextR) nextR.onclick = () => { revIndex += 1; heard = ""; render(); };
+  if (prevR) prevR.onclick = () => { revIndex -= 1; clearDraft(); render(); };
+  if (nextR) nextR.onclick = () => { revIndex += 1; clearDraft(); render(); };
 }
 
 function clearShot() {
