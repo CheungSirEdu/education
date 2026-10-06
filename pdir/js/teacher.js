@@ -392,6 +392,9 @@ function bind() {
   app.querySelectorAll("[data-del]").forEach((button) => {
     button.onclick = () => removeAnswer(button);
   });
+  app.querySelectorAll("[data-zoom]").forEach((button) => {
+    button.onclick = () => openZoom(button.dataset.zoom || "", button.dataset.who || "");
+  });
   const excel = document.getElementById("excel");
   if (excel) excel.onclick = downloadExcel;
   const analyze = document.getElementById("analyze");
@@ -574,11 +577,38 @@ async function fillOpenRead() {
 }
 
 async function hydrate() {
-  const nodes = app.querySelectorAll("[data-file]");
-  for (const node of nodes) {
+  const nodes = [...app.querySelectorAll("[data-file]")];
+  await Promise.all(nodes.map(async (node) => {
     const url = await blobUrl(node.dataset.file);
-    if (url) node.src = url;
-  }
+    if (url && node.isConnected) node.src = url;
+  }));
+}
+
+function closeZoom() {
+  const layer = document.querySelector(".photo-zoom");
+  if (layer) layer.remove();
+}
+
+async function openZoom(path, who) {
+  closeZoom();
+  const url = await blobUrl(path);
+  if (!url) return;
+  const fileName = (String(path || "").split("/").pop()) || "photo.jpg";
+  const layer = document.createElement("div");
+  layer.className = "photo-zoom";
+  layer.innerHTML = `
+    <div class="photo-zoom-bar">
+      <b>${esc(who || "學生相片")}</b>
+      <a class="btn" href="${url}" download="${esc(fileName)}">下載原相</a>
+      <button type="button" class="primary" id="zoom-close">關閉</button>
+    </div>
+    <img src="${url}" alt="${esc(who || "學生相片")}">`;
+  layer.addEventListener("click", (event) => {
+    if (event.target === layer) closeZoom();
+  });
+  document.body.appendChild(layer);
+  const close = document.getElementById("zoom-close");
+  if (close) close.onclick = closeZoom;
 }
 
 async function openStudent(id) {
@@ -717,20 +747,23 @@ function slideFace(slide, total) {
   }
   if (slide.kind === "plan") {
     const images = slide.question.image ? [slide.question.image] : (slide.item.images || []);
+    const wall = photoWall(planPhotoRows(slide.question));
     return `
       <div class="teacher-line"><b>P 計劃</b><span>${slide.pageNo}/${slide.planTotal || total}</span></div>
       <p class="plan-motto">看清零件，想明原理，安裝才穩。</p>
       <p class="hint">${esc(slide.item.name)}</p>
       ${partQuestionLinks(slide)}
+      ${wall ? `${faceQuestions(slide.question)}${wall}` : ""}
       ${filmHtml(slide.question.video, slide.question.poster)}
       ${shotsHtml(images)}
-      ${faceQuestions(slide.question)}`;
+      ${wall ? "" : faceQuestions(slide.question)}`;
   }
   if (slide.kind === "do") {
     const step = slide.step;
     return `
       <div class="teacher-line"><b>D 動手</b><span>${slide.index + 1}/${(lesson.doSteps || []).length}</span></div>
       <h2>${slide.index + 1}. ${esc(step.title)}</h2>
+      ${photoWall(doPhotoRows(step))}
       ${filmHtml(step.video, step.poster)}
       ${shotsHtml(step.images)}
       ${(step.tips || []).length ? `<ul class="lines">${step.tips.map((tip) => `<li>${esc(tip)}</li>`).join("")}</ul>` : ""}
@@ -886,6 +919,43 @@ function doFaceQuestions(step) {
   const prompts = DO_THREE[step.id];
   if (prompts) return prompts.map((ask, index) => `<h2>${index + 1}. ${esc(ask)}</h2>`).join("");
   return `${step.noteAsk ? `<h2>${esc(step.noteAsk)}</h2>` : ""}`;
+}
+
+function planPhotoRows(question) {
+  const rows = [];
+  if (!question) return rows;
+  records.forEach((rec) => {
+    const bag = ((rec.plan || {}).items || {})[question.id] || {};
+    if (!bag.photo) return;
+    rows.push({ ...person(rec), photo: bag.photo });
+  });
+  return rows;
+}
+
+function doPhotoRows(step) {
+  const rows = [];
+  records.forEach((rec) => {
+    const bag = (rec.do || {})[step.id] || {};
+    if (!bag.photo) return;
+    rows.push({ ...person(rec), photo: bag.photo });
+  });
+  return rows;
+}
+
+function photoWall(rows) {
+  const shots = (rows || []).filter((row) => row.photo);
+  if (!shots.length) return "";
+  return `<div class="photo-wall" aria-label="學生相片">
+    <p class="photo-wall-title">學生交上的相片（${shots.length}）</p>
+    ${shots.map((row) => `
+      <figure class="shot-card">
+        <button type="button" class="shot-open" data-zoom="${esc(row.photo)}" data-who="${esc(row.who)}">
+          <img data-file="${esc(row.photo)}" alt="${esc(row.who)}的相片">
+        </button>
+        <figcaption>${esc(row.who)}</figcaption>
+      </figure>`).join("")}
+    <p class="hint photo-wall-note">按一下可以放大，並下載學生交上的相片。放大後看到的就是已儲存的原相。</p>
+  </div>`;
 }
 
 function answerCards(rows, wipe) {
@@ -1366,7 +1436,7 @@ async function loadAll() {
 }
 
 async function poll() {
-  if (!pin || mic) return;
+  if (!pin || mic || document.querySelector(".photo-zoom")) return;
   try {
     const before = JSON.stringify(students.map((row) => [row.class, row.no, row.updated, row.improve, row.doDone]));
     await refreshStudents();
@@ -1384,6 +1454,9 @@ async function poll() {
 }
 
 async function boot() {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeZoom();
+  });
   if (window.bikeReady) await window.bikeReady;
   if (!pin) {
     render();

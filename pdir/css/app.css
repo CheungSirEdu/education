@@ -676,6 +676,63 @@ textarea.entry-bar { resize: vertical; }
 .heard.coach { background: var(--amber-bg); }
 .said b, .heard b { display: block; font-size: 13px; margin-bottom: 6px; }
 .proof { width: min(100%, 420px); height: 240px; object-fit: contain; background: #e7e3dc; border-radius: 14px; }
+.photo-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 14px 0 18px;
+}
+.photo-wall-title, .photo-wall-note { grid-column: 1 / -1; margin: 0; }
+.photo-wall-title { font-weight: 700; }
+.shot-card { margin: 0; }
+.shot-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: #111;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.shot-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: #111;
+}
+.shot-card figcaption {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 650;
+}
+.photo-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(8, 12, 16, 0.92);
+}
+.photo-zoom-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: white;
+}
+.photo-zoom img {
+  max-width: min(100%, 1280px);
+  max-height: calc(100vh - 96px);
+  object-fit: contain;
+  background: #111;
+  border-radius: 12px;
+}
 .grow { color: var(--mint); font-size: 14px; }
 .board {
   min-height: 100vh;
