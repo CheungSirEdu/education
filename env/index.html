@@ -159,7 +159,42 @@
     border-color: #c2410c;
   }
   .choices { display: flex; flex-wrap: wrap; gap: 8px; }
-  .choices .choice { flex: 1 1 200px; font-size: 18px; }
+  .choices .choice {
+    flex: 1 1 168px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    min-height: 112px;
+    padding: 8px 8px 10px;
+    font-size: 16px;
+    line-height: 1.25;
+    text-align: center;
+  }
+  .tabs button { display: inline-flex; align-items: center; gap: 6px; }
+  .mark { width: 28px; height: 28px; flex: none; }
+  svg.pic {
+    width: min(100%, 150px);
+    height: 58px;
+    display: block;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #e7f4fb;
+  }
+  .pic .now { opacity: 0; }
+  .pic.change .was { animation: fadeWas 2.8s ease-in-out infinite; }
+  .pic.change .now { animation: fadeNow 2.8s ease-in-out infinite; }
+  @keyframes fadeWas {
+    0%, 36% { opacity: 1; }
+    54%, 86% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  @keyframes fadeNow {
+    0%, 36% { opacity: 0; }
+    54%, 86% { opacity: 1; }
+    100% { opacity: 0; }
+  }
   .back {
     background: #17324a;
     color: white;
@@ -182,7 +217,9 @@
     .card { max-height: 86vh; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .puff, .swim, #rescue-boat.go { animation: none; }
+    .puff, .swim, #rescue-boat.go, .pic.change .was, .pic.change .now { animation: none; }
+    .pic.change .was { opacity: 0; }
+    .pic.change .now { opacity: 1; }
     #ship-body { transition: none; }
   }
 </style>
@@ -651,7 +688,9 @@ const rooms = {
     leadOff: "這間屋沒有人吸煙，沒有煙排到外面。",
     on: "開始吸煙",
     off: "停止吸煙",
-    key: "smoke"
+    key: "smoke",
+    onPic: "smokeOn",
+    offPic: "smokeOff"
   },
   cook: {
     title: "廚房",
@@ -659,7 +698,9 @@ const rooms = {
     leadOff: "廚房沒有油煙跑出去。",
     on: "開始煮食，冒出油煙",
     off: "關掉爐火",
-    key: "cook"
+    key: "cook",
+    onPic: "cookOn",
+    offPic: "cookOff"
   },
   paint: {
     title: "裝修",
@@ -667,7 +708,9 @@ const rooms = {
     leadOff: "沒有人在噴殺蟲劑或油漆。",
     on: "噴殺蟲劑、油漆",
     off: "停下裝修",
-    key: "paint"
+    key: "paint",
+    onPic: "paintOn",
+    offPic: "paintOff"
   },
   dishes: {
     title: "洗碗",
@@ -675,7 +718,9 @@ const rooms = {
     leadOff: "用過的水送去處理，沒有直排進海。",
     on: "洗碗水直排進海",
     off: "送去處理",
-    key: "dishes"
+    key: "dishes",
+    onPic: "dishOn",
+    offPic: "dishOff"
   },
   scraps: {
     title: "廚餘",
@@ -683,13 +728,65 @@ const rooms = {
     leadOff: "廚餘放進垃圾桶，沒有倒進海裡。",
     on: "把廚餘和剩油倒進海",
     off: "廚餘放進垃圾桶",
-    key: "scraps"
+    key: "scraps",
+    onPic: "scrapOn",
+    offPic: "scrapOff"
   }
 };
 
-function choice(label, act, extra, pressed, danger) {
+const scene = `<rect width="120" height="64" fill="#d7eefb"/>`;
+const stack = `<rect x="48" y="26" width="16" height="30" rx="2" fill="#64748b"/><rect x="44" y="22" width="24" height="8" rx="2" fill="#475569"/>`;
+const smokeCloud = `<circle cx="54" cy="18" r="8" fill="#4b5563"/><circle class="puff" cx="62" cy="14" r="6" fill="#6b7280"/><circle class="puff d2" cx="74" cy="8" r="8" fill="#9ca3af"/>`;
+const smokeStill = `<circle cx="56" cy="16" r="7" fill="#6b7280"/><circle cx="70" cy="10" r="9" fill="#9ca3af"/>`;
+const pipe = `<rect x="14" y="14" width="18" height="26" rx="2" fill="#64748b"/><path d="M23 40 v8" stroke="#475569" stroke-width="5" stroke-linecap="round"/>`;
+const dirty = `<ellipse cx="68" cy="52" rx="36" ry="9" fill="#5c4a32"/><circle cx="96" cy="34" r="5" fill="#6b5438"/>`;
+const clearW = `<ellipse cx="68" cy="52" rx="36" ry="9" fill="#7dd3fc"/><circle cx="96" cy="34" r="5" fill="#38bdf8"/>`;
+
+function icon(id) {
+  const draw = {
+    smokeOn: `${scene}<circle cx="34" cy="36" r="8" fill="#f2c1a8"/><rect x="24" y="44" width="20" height="14" rx="3" fill="#495057"/><rect x="42" y="38" width="14" height="3" fill="#fff"/>${smokeCloud}`,
+    smokeOff: `${scene}<circle cx="34" cy="36" r="8" fill="#f2c1a8"/><rect x="24" y="44" width="20" height="14" rx="3" fill="#495057"/><g class="was"><rect x="42" y="38" width="14" height="3" fill="#fff"/>${smokeStill}</g><g class="now"><path d="M78 40 q8 -14 16 0" fill="none" stroke="#1b7f4e" stroke-width="3" stroke-linecap="round"/></g>`,
+    cookOn: `${scene}<rect x="28" y="36" width="40" height="8" rx="2" fill="#d6d6d6"/><path d="M40 34 q6 -16 0 -4 q8 -14 0 4" fill="none" stroke="#9ca3af" stroke-width="3"/>`,
+    cookOff: `${scene}<rect x="28" y="36" width="40" height="8" rx="2" fill="#d6d6d6"/><g class="was"><path d="M40 34 q6 -16 0 -4 q8 -14 0 4" fill="none" stroke="#9ca3af" stroke-width="3"/></g>`,
+    paintOn: `${scene}<rect x="22" y="20" width="28" height="28" fill="#f6e7b4" stroke="#e0c97a"/><rect x="58" y="16" width="8" height="28" fill="#6c757d"/><circle cx="78" cy="18" r="6" fill="#d1d5db"/>`,
+    paintOff: `${scene}<rect x="22" y="20" width="28" height="28" fill="#f6e7b4" stroke="#e0c97a"/><g class="was"><rect x="58" y="16" width="8" height="28" fill="#6c757d"/><circle cx="78" cy="18" r="6" fill="#d1d5db"/></g><g class="now"><rect x="22" y="20" width="28" height="28" fill="#86efac" stroke="#1b7f4e"/></g>`,
+    dishOn: `${scene}<ellipse cx="36" cy="30" rx="16" ry="6" fill="#bde0fe"/><path d="M70 24 q16 16 6 28" fill="none" stroke="#5c4a32" stroke-width="6" stroke-linecap="round"/>`,
+    dishOff: `${scene}<ellipse cx="36" cy="30" rx="16" ry="6" fill="#bde0fe"/><g class="was"><path d="M70 24 q16 16 6 28" fill="none" stroke="#5c4a32" stroke-width="6" stroke-linecap="round"/></g><g class="now"><path d="M70 24 q16 16 6 28" fill="none" stroke="#7dd3fc" stroke-width="6" stroke-linecap="round"/></g>`,
+    scrapOn: `${scene}<rect x="24" y="28" width="28" height="16" rx="3" fill="#f4a261"/><path d="M64 30 q18 14 8 26" fill="none" stroke="#8d6e4c" stroke-width="6" stroke-linecap="round"/>`,
+    scrapOff: `${scene}<g class="was"><rect x="24" y="28" width="28" height="16" rx="3" fill="#f4a261"/><path d="M64 30 q18 14 8 26" fill="none" stroke="#8d6e4c" stroke-width="6" stroke-linecap="round"/></g><g class="now"><rect x="40" y="22" width="28" height="28" rx="3" fill="#52b788"/><rect x="34" y="18" width="40" height="8" rx="2" fill="#2d6a4f"/></g>`,
+    stackOn: `${scene}${stack}${smokeCloud}`,
+    stackOff: `${scene}${stack}<g class="was">${smokeStill}</g>`,
+    dustOn: `${scene}<ellipse cx="60" cy="50" rx="28" ry="8" fill="#c4a574"/><circle cx="50" cy="30" r="9" fill="#b08968"/><circle class="puff" cx="64" cy="22" r="8" fill="#d6c4a3"/><circle class="puff d2" cx="76" cy="16" r="7" fill="#c4b49a"/>`,
+    dustOff: `${scene}<ellipse cx="60" cy="50" rx="28" ry="8" fill="#c4a574"/><g class="was"><circle cx="48" cy="28" r="8" fill="#d6c4a3"/><circle cx="68" cy="20" r="11" fill="#c4b49a"/></g><g class="now"><path d="M46 16 q5 10 0 12 q-5 -2 0 -12z" fill="#38bdf8"/><path d="M66 12 q5 10 0 12 q-5 -2 0 -12z" fill="#7dd3fc"/></g>`,
+    waterOn: `${scene}${pipe}${dirty}`,
+    waterOff: `${scene}${pipe}<g class="was">${dirty}</g><g class="now">${clearW}</g>`,
+    dumpOn: `${scene}<path d="M20 40 h50 l8 10 H16 z" fill="#e11d48"/><rect x="78" y="28" width="8" height="16" rx="2" fill="#7ec8e3" transform="rotate(16 82 36)"/>`,
+    dumpOff: `${scene}<path d="M16 42 h40 l6 8 H12 z" fill="#f8fbff" stroke="#1e3a5f"/><g class="was"><rect x="70" y="30" width="8" height="16" rx="2" fill="#7ec8e3"/></g><g class="now"><rect x="72" y="24" width="22" height="24" rx="3" fill="#52b788"/></g>`,
+    sailOk: `${scene}<path d="M18 40 h46 l8 8 H14 z" fill="#f8fbff" stroke="#1e3a5f"/><path d="M92 28 l10 16 -14 4 z" fill="#94a3b8"/>`,
+    crash: `${scene}<path d="M24 36 h40 l8 12 H20 z" fill="#f8fbff" stroke="#1e3a5f" transform="rotate(12 40 42)"/><path d="M86 26 l14 14 -12 8 z" fill="#94a3b8"/><ellipse cx="70" cy="52" rx="22" ry="6" fill="#3a3224"/>`,
+    rescue: `${scene}<g class="was"><ellipse cx="60" cy="40" rx="36" ry="10" fill="#3a3224"/></g><g class="now"><ellipse cx="60" cy="40" rx="36" ry="10" fill="#38bdf8"/><path d="M18 36 h28 l4 8 H16 z" fill="#f97316"/></g>`,
+    trashOn: `${scene}<rect x="28" y="30" width="10" height="20" rx="2" fill="#7ec8e3"/><path d="M52 34 q12 6 6 14 q-12 2 -12 -6 z" fill="#fff" stroke="#94a3b8"/>`,
+    trashOff: `${scene}<g class="was"><rect x="24" y="30" width="10" height="20" rx="2" fill="#7ec8e3"/><path d="M46 34 q12 6 6 14 q-12 2 -12 -6 z" fill="#fff" stroke="#94a3b8"/></g><g class="now"><rect x="40" y="18" width="32" height="32" rx="4" fill="#52b788"/><path d="M48 22 h16" stroke="#fff" stroke-width="3"/></g>`,
+    netOn: `${scene}<ellipse cx="70" cy="40" rx="12" ry="8" fill="#2a9d8f"/><path d="M28 24 h28 v22 H28 z" fill="none" stroke="#f8fafc" stroke-width="2"/>`,
+    netOff: `${scene}<g class="was"><ellipse cx="48" cy="40" rx="12" ry="8" fill="#2a9d8f"/><path d="M36 26 h28 v20 H36 z" fill="none" stroke="#e2e8f0" stroke-width="2"/></g><g class="now"><ellipse cx="48" cy="40" rx="12" ry="8" fill="#2a9d8f"/><circle cx="60" cy="38" r="4" fill="#86efac"/></g>`,
+    drainOn: `${scene}<rect x="20" y="22" width="28" height="10" rx="2" fill="#495057"/><path d="M34 32 q6 12 0 20" fill="none" stroke="#5c4a32" stroke-width="6" stroke-linecap="round"/>`,
+    drainOff: `${scene}<rect x="20" y="22" width="28" height="10" rx="2" fill="#495057"/><g class="was"><path d="M34 32 q6 12 0 20" fill="none" stroke="#5c4a32" stroke-width="6" stroke-linecap="round"/></g><g class="now"><path d="M34 32 q6 12 0 20" fill="none" stroke="#7dd3fc" stroke-width="6" stroke-linecap="round"/></g>`,
+    taxiOn: `${scene}<rect x="28" y="30" width="40" height="16" rx="4" fill="#e63946"/><circle cx="18" cy="36" r="6" fill="#6b7280"/><circle class="puff" cx="12" cy="30" r="5" fill="#9ca3af"/>`,
+    walk: `${scene}<g class="was"><rect x="22" y="30" width="40" height="16" rx="4" fill="#e63946"/><circle cx="18" cy="36" r="6" fill="#9ca3af"/></g><g class="now"><circle cx="40" cy="28" r="6" fill="#f2c1a8"/><rect x="34" y="34" width="12" height="16" rx="3" fill="#457b9d"/><circle cx="70" cy="30" r="6" fill="#f2c1a8"/><rect x="64" y="36" width="12" height="14" rx="3" fill="#e76f51"/></g>`,
+    busOn: `${scene}<rect x="30" y="28" width="46" height="18" rx="4" fill="#2a9d8f"/><circle cx="20" cy="36" r="6" fill="#6b7280"/><circle class="puff" cx="12" cy="30" r="5" fill="#9ca3af"/>`,
+    busOff: `${scene}<rect x="30" y="28" width="46" height="18" rx="4" fill="#2a9d8f"/><g class="was"><circle cx="22" cy="36" r="6" fill="#9ca3af"/></g>`,
+    washOn: `${scene}<rect x="24" y="30" width="36" height="14" rx="3" fill="#e63946"/><ellipse cx="78" cy="46" rx="18" ry="6" fill="#d8f3dc"/><circle cx="72" cy="44" r="3" fill="#fff"/>`,
+    washOff: `${scene}<g class="was"><rect x="24" y="30" width="36" height="14" rx="3" fill="#e63946"/><ellipse cx="78" cy="46" rx="18" ry="6" fill="#bbf7d0"/></g><g class="now"><rect x="36" y="28" width="36" height="16" rx="3" fill="#94a3b8"/></g>`,
+    fireOn: `${scene}<path d="M52 46 q8 -22 2 -6 q10 -18 0 6 q8 6 -2 10 z" fill="#f25c05"/><circle cx="74" cy="20" r="7" fill="#6b7280"/><circle class="puff" cx="86" cy="12" r="6" fill="#9ca3af"/>`,
+    fireOff: `${scene}<g class="was"><path d="M52 46 q8 -22 2 -6 q10 -18 0 6 q8 6 -2 10 z" fill="#f25c05"/></g><g class="now"><ellipse cx="58" cy="46" rx="16" ry="6" fill="#6b7280"/></g>`
+  }[id] || scene;
+  const change = /Off$|walk|rescue|sailOk/.test(id) && id !== "sailOk";
+  return `<svg class="pic${change ? " change" : ""}" viewBox="0 0 120 64" aria-hidden="true">${draw}</svg>`;
+}
+
+function choice(label, act, extra, pressed, danger, pic) {
   const attrs = Object.entries(extra).map(([k, v]) => ` data-${k}="${v}"`).join("");
-  return `<button class="choice${danger ? " danger" : ""}" type="button" data-act="${act}"${attrs} aria-pressed="${pressed ? "true" : "false"}">${label}</button>`;
+  return `<button class="choice${danger ? " danger" : ""}" type="button" data-act="${act}"${attrs} aria-pressed="${pressed ? "true" : "false"}">${icon(pic)}<span>${label}</span></button>`;
 }
 
 function shipScene() {
@@ -802,7 +899,7 @@ function renderSheet() {
     extra.innerHTML = `<div class="tabs">${Object.entries(rooms).map(([id, r]) =>
       `<button type="button" data-act="room" data-room="${id}" aria-pressed="${state.room === id ? "true" : "false"}">${r.title}</button>`
     ).join("")}</div>${homeScene()}`;
-    body.innerHTML = `<div class="choices">${choice(room.off, "set", { key: room.key, val: "0" }, !state[room.key], false)}${choice(room.on, "set", { key: room.key, val: "1" }, state[room.key], true)}</div>`;
+    body.innerHTML = `<div class="choices">${choice(room.off, "set", { key: room.key, val: "0" }, !state[room.key], false, room.offPic)}${choice(room.on, "set", { key: room.key, val: "1" }, state[room.key], true, room.onPic)}</div>`;
     return;
   }
   if (state.place === "ship") {
@@ -817,13 +914,13 @@ function renderSheet() {
     if (state.dump && (state.oil || state.crashing || state.rescuing)) shipWarns.push("船上的垃圾掉進海裡，小動物可能誤食或被纏住。");
     extra.innerHTML = shipWarns.map((text) => `<p class="warn">${text}</p>`).join("");
     body.innerHTML = shipScene() + `<div class="choices">
-      ${choice("煙囪排出黑煙", "set", { key: "shipAir", val: "1" }, state.shipAir, true)}
-      ${choice("關掉黑煙", "set", { key: "shipAir", val: "0" }, !state.shipAir, false)}
-      ${choice("把垃圾扔下海", "set", { key: "dump", val: "1" }, state.dump, true)}
-      ${choice("垃圾帶回岸上", "set", { key: "dump", val: "0" }, !state.dump, false)}
-      ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false)}
-      ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true)}
-      ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false)}
+      ${choice("煙囪排出黑煙", "set", { key: "shipAir", val: "1" }, state.shipAir, true, "stackOn")}
+      ${choice("關掉黑煙", "set", { key: "shipAir", val: "0" }, !state.shipAir, false, "stackOff")}
+      ${choice("把垃圾扔下海", "set", { key: "dump", val: "1" }, state.dump, true, "dumpOn")}
+      ${choice("垃圾帶回岸上", "set", { key: "dump", val: "0" }, !state.dump, false, "dumpOff")}
+      ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false, "sailOk")}
+      ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true, "crash")}
+      ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false, "rescue")}
     </div>`;
     return;
   }
@@ -836,12 +933,12 @@ function renderSheet() {
     if (!bits.length) bits.push("工廠沒有把黑煙、塵土和污水放出來。");
     lead.textContent = bits.join("");
     body.innerHTML = `<div class="choices">
-      ${choice("煙囪排出黑煙", "set", { key: "factoryAir", val: "1" }, state.factoryAir, true)}
-      ${choice("關掉煙囪", "set", { key: "factoryAir", val: "0" }, !state.factoryAir, false)}
-      ${choice("地盤揚起塵土", "set", { key: "dust", val: "1" }, state.dust, true)}
-      ${choice("灑水減少塵土", "set", { key: "dust", val: "0" }, !state.dust, false)}
-      ${choice("污水排進海", "set", { key: "factoryWater", val: "1" }, state.factoryWater, true)}
-      ${choice("污水先處理好", "set", { key: "factoryWater", val: "0" }, !state.factoryWater, false)}
+      ${choice("煙囪排出黑煙", "set", { key: "factoryAir", val: "1" }, state.factoryAir, true, "stackOn")}
+      ${choice("關掉煙囪", "set", { key: "factoryAir", val: "0" }, !state.factoryAir, false, "stackOff")}
+      ${choice("地盤揚起塵土", "set", { key: "dust", val: "1" }, state.dust, true, "dustOn")}
+      ${choice("灑水減少塵土", "set", { key: "dust", val: "0" }, !state.dust, false, "dustOff")}
+      ${choice("污水排進海", "set", { key: "factoryWater", val: "1" }, state.factoryWater, true, "waterOn")}
+      ${choice("污水先處理好", "set", { key: "factoryWater", val: "0" }, !state.factoryWater, false, "waterOff")}
     </div>`;
     return;
   }
@@ -854,12 +951,12 @@ function renderSheet() {
     if (!bits.length) bits.push("海灘乾淨，漁網也收回了，渠口沒有污水。");
     lead.textContent = bits.join("");
     body.innerHTML = `<div class="choices">
-      ${choice("留下垃圾", "set", { key: "trash", val: "1" }, state.trash, true)}
-      ${choice("撿走垃圾，放進回收箱", "set", { key: "trash", val: "0" }, !state.trash, false)}
-      ${choice("留下漁網", "set", { key: "net", val: "1" }, state.net, true)}
-      ${choice("收回漁網", "set", { key: "net", val: "0" }, !state.net, false)}
-      ${choice("雨水渠吐出污水", "set", { key: "drain", val: "1" }, state.drain, true)}
-      ${choice("渠口沒有污水", "set", { key: "drain", val: "0" }, !state.drain, false)}
+      ${choice("留下垃圾", "set", { key: "trash", val: "1" }, state.trash, true, "trashOn")}
+      ${choice("撿走垃圾，放進回收箱", "set", { key: "trash", val: "0" }, !state.trash, false, "trashOff")}
+      ${choice("留下漁網", "set", { key: "net", val: "1" }, state.net, true, "netOn")}
+      ${choice("收回漁網", "set", { key: "net", val: "0" }, !state.net, false, "netOff")}
+      ${choice("雨水渠吐出污水", "set", { key: "drain", val: "1" }, state.drain, true, "drainOn")}
+      ${choice("渠口沒有污水", "set", { key: "drain", val: "0" }, !state.drain, false, "drainOff")}
     </div>`;
     return;
   }
@@ -872,12 +969,12 @@ function renderSheet() {
     if (!roadBits.length) roadBits.push("少乘車，改為行路，也沒有在路邊洗車。空氣清新一點，海水也少了清潔劑。");
     lead.textContent = roadBits.join("");
     body.innerHTML = `<div class="choices">
-      ${choice("經常乘搭的士", "set", { key: "taxi", val: "1" }, state.taxi, true)}
-      ${choice("少乘的士，改為行路", "set", { key: "taxi", val: "0" }, !state.taxi, false)}
-      ${choice("小巴開着引擎", "set", { key: "minibus", val: "1" }, state.minibus, true)}
-      ${choice("關掉小巴引擎", "set", { key: "minibus", val: "0" }, !state.minibus, false)}
-      ${choice("在路邊洗車", "set", { key: "wash", val: "1" }, state.wash, true)}
-      ${choice("不去路邊洗車", "set", { key: "wash", val: "0" }, !state.wash, false)}
+      ${choice("經常乘搭的士", "set", { key: "taxi", val: "1" }, state.taxi, true, "taxiOn")}
+      ${choice("少乘的士，改為行路", "set", { key: "taxi", val: "0" }, !state.taxi, false, "walk")}
+      ${choice("小巴開着引擎", "set", { key: "minibus", val: "1" }, state.minibus, true, "busOn")}
+      ${choice("關掉小巴引擎", "set", { key: "minibus", val: "0" }, !state.minibus, false, "busOff")}
+      ${choice("在路邊洗車", "set", { key: "wash", val: "1" }, state.wash, true, "washOn")}
+      ${choice("不去路邊洗車", "set", { key: "wash", val: "0" }, !state.wash, false, "washOff")}
     </div>`;
     return;
   }
@@ -886,8 +983,8 @@ function renderSheet() {
     ? "郊外有東西在燃燒，煙污染空氣。燒烤後要熄滅火種才離開。"
     : "火種已經熄滅，這裡沒有煙。";
   body.innerHTML = `<div class="choices">
-    ${choice("火還在燒", "set", { key: "fire", val: "1" }, state.fire, true)}
-    ${choice("熄滅火種才離開", "set", { key: "fire", val: "0" }, !state.fire, false)}
+    ${choice("火還在燒", "set", { key: "fire", val: "1" }, state.fire, true, "fireOn")}
+    ${choice("熄滅火種才離開", "set", { key: "fire", val: "0" }, !state.fire, false, "fireOff")}
   </div>`;
 }
 
