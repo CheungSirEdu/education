@@ -773,12 +773,21 @@ function slideFace(slide, total) {
       ${step.photoAsk ? `<p class="hint">${esc(step.photoAsk)}</p>` : ""}`;
   }
   if (slide.kind === "improve") {
+    const item = slide.item;
+    if (item.photo) {
+      return `
+        <div class="teacher-line"><b>I 改良</b><span>${esc(item.title || "安全裝備")}</span></div>
+        <h2>${esc(item.ask)}</h2>
+        ${photoWall(improvePhotoRows(item))}
+        ${shotsHtml(item.images)}
+        ${item.photoAsk ? `<p class="hint">${esc(item.photoAsk)}</p>` : ""}`;
+    }
     return `
       <div class="teacher-line"><b>I 改良</b><span>試踩之後執漏</span></div>
       <p class="hint">踩上單車走幾步。未打氣、螺絲未扭實、煞不到車，或座墊太高太低，都要說出來再修。</p>
-      ${filmHtml(slide.item.video, slide.item.poster)}
-      ${shotsHtml(slide.item.images)}
-      ${doFaceQuestions(slide.item)}`;
+      ${filmHtml(item.video, item.poster)}
+      ${shotsHtml(item.images)}
+      ${doFaceQuestions(item)}`;
   }
   const reviewNo = (lesson.review || []).indexOf(slide.item) + 1;
   return `
@@ -890,7 +899,12 @@ function jumpBar(slides) {
         const at = slides.findIndex((item) => item.kind === "do" && item.step.id === step.id);
         return `<button type="button" data-jump="${at}" class="${slideIndex === at ? "on" : ""}">${index + 1} ${esc(step.title)}</button>`;
       }).join("")}</div>`
-    : "";
+    : stage === "improve"
+      ? `<div class="steps">${(lesson.improve || []).map((item, index) => {
+          const at = slides.findIndex((row) => row.kind === "improve" && row.item.id === item.id);
+          return `<button type="button" data-jump="${at}" class="${slideIndex === at ? "on" : ""}">${index + 1} ${esc(item.title || item.ask)}</button>`;
+        }).join("")}</div>`
+      : "";
   return `<div class="jump">
     <div class="filters">${main.map(([id, label, at]) => `<button type="button" data-jump="${at}" class="${stage === id ? "on" : ""}">${label}</button>`).join("")}</div>
     ${steps}
@@ -936,6 +950,16 @@ function doPhotoRows(step) {
   const rows = [];
   records.forEach((rec) => {
     const bag = (rec.do || {})[step.id] || {};
+    if (!bag.photo) return;
+    rows.push({ ...person(rec), photo: bag.photo });
+  });
+  return rows;
+}
+
+function improvePhotoRows(item) {
+  const rows = [];
+  records.forEach((rec) => {
+    const bag = (rec.improve || {})[item.id] || {};
     if (!bag.photo) return;
     rows.push({ ...person(rec), photo: bag.photo });
   });
@@ -1270,14 +1294,34 @@ function doBlocks(step) {
 function improveBlocks(item) {
   const prompts = DO_THREE[item.id];
   if (prompts) return spokenBlocks("improve", item.id, prompts);
+  const blocks = [];
+  if (item.photo) {
+    const photoRows = [];
+    records.forEach((rec) => {
+      const bag = (rec.improve || {})[item.id] || {};
+      if (!bag.photo) return;
+      photoRows.push({
+        ...person(rec),
+        text: "交了一張相片",
+        photo: bag.photo,
+      });
+    });
+    blocks.push({
+      key: item.id + "-photo",
+      ask: item.photoAsk || "請拍一張相。",
+      rows: photoRows,
+      wipe: { stage: "improve", qid: item.id, part: "photo", index: 0 },
+    });
+  }
   const rows = allAttemptRows("improve", item.id);
-  return [{
+  blocks.push({
     key: item.id,
     ask: item.ask,
     summary: openSummary("improve", item.id, rows),
     rows,
     wipe: { stage: "improve", qid: item.id, part: "bag", index: 0 },
-  }];
+  });
+  return blocks;
 }
 
 function questionFromFeedback(feedback) {

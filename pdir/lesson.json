@@ -387,8 +387,20 @@
     {
       "id": "debug",
       "ask": "你踩了幾步之後，發現什麼問題要再修理？",
+      "title": "試踩執漏",
       "images": [
         "media/frame.jpg"
+      ]
+    },
+    {
+      "id": "safety",
+      "title": "安全裝備",
+      "ask": "你會叫一、二年級的小朋友帶些什麼，可以增加他們的安全性？",
+      "photo": true,
+      "photoAsk": "請拍一張相，鏡頭要同時見到頭盔和護肘。",
+      "images": [
+        "media/helmet.jpg",
+        "media/kneepad.jpg"
       ]
     }
   ],

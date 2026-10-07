@@ -1203,6 +1203,12 @@ function visibleImprove() {
   });
 }
 
+function improveSavedPhoto(item) {
+  const bag = (rec.improve || {})[item.id] || {};
+  if (bag.photo) return bag.photo;
+  return ((attemptsOf("improve", item.id).slice(-1)[0]) || {}).photo || "";
+}
+
 function viewImprove() {
   const items = visibleImprove();
   if (!items.length) {
@@ -1210,14 +1216,18 @@ function viewImprove() {
   }
   impIndex = Math.min(impIndex, items.length - 1);
   const item = items[impIndex];
+  const kicker = item.id === "safety" ? (item.title || "安全裝備") : "試踩之後執漏";
+  const hint = item.id === "safety"
+    ? "一、二年級踩單車之前，要保護頭部和手肘。"
+    : "踩上單車走幾步。未打氣、螺絲未扭實、煞不到車，或座墊太高太低，都要說出來再修。";
   return shell(`
     ${gateNote()}
     <div class="card">
-      <div class="teacher-line"><b>I 改良</b><span>試踩之後執漏</span></div>
-      <p class="hint">踩上單車走幾步。未打氣、螺絲未扭實、煞不到車，或座墊太高太低，都要說出來再修。</p>
+      <div class="teacher-line"><b>I 改良</b><span>${esc(kicker)}</span></div>
+      <p class="hint">${esc(hint)}</p>
       <h2>${esc(item.ask)}</h2>
       ${planMedia(item, item)}
-      ${photoBlock(item, ((attemptsOf("improve", item.id).slice(-1)[0]) || {}).photo || "")}
+      ${photoBlock(item, improveSavedPhoto(item), (rec.improve || {})[item.id] || {})}
       ${composer("improve", item.id, item.ask)}
       <div class="row">
         ${impIndex > 0 ? `<button type="button" class="quiet" id="prev-q">上一題</button>` : ""}
@@ -1493,6 +1503,7 @@ function bind() {
         err = e.message;
       }
       clearDraft();
+      clearShot();
       screen = "improve";
       impIndex = 0;
       sessionStorage.setItem("bike-screen", "improve");
@@ -1622,8 +1633,8 @@ function bind() {
   }
   const prevQ = document.getElementById("prev-q");
   const nextQ = document.getElementById("next-q");
-  if (prevQ) prevQ.onclick = () => { impIndex -= 1; clearDraft(); pendingPhoto = ""; render(); };
-  if (nextQ) nextQ.onclick = () => { impIndex += 1; clearDraft(); pendingPhoto = ""; render(); };
+  if (prevQ) prevQ.onclick = () => { impIndex -= 1; clearDraft(); clearShot(); render(); };
+  if (nextQ) nextQ.onclick = () => { impIndex += 1; clearDraft(); clearShot(); render(); };
   const toReview = document.getElementById("to-review");
   if (toReview) {
     toReview.onclick = () => {
@@ -1684,8 +1695,11 @@ async function saveShot(file) {
     }
   } else if (screen === "improve") {
     const item = visibleImprove()[impIndex];
+    if (!item) return;
     const uploaded = await uploadPhoto(file, "imp-" + item.id);
     pendingPhoto = uploaded.path || "";
+    const data = await api("/api/me?class=" + who.class + "&no=" + who.no);
+    rec = data.student;
   }
 }
 
@@ -1751,11 +1765,12 @@ function bindPhoto() {
         const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
         const step = screen === "do" ? lesson.doSteps[doIndex] : null;
         const planQ = screen === "plan" ? ((planPages()[planIndex] || {}).question) : null;
+        const improveItem = screen === "improve" ? visibleImprove()[impIndex] : null;
         if (shotPreview) URL.revokeObjectURL(shotPreview);
         shotPreview = URL.createObjectURL(file);
         pendingPhotoFeedback = "";
         pendingPhotoSource = "";
-        photoLooking = !!((step && step.photo) || (planQ && planQ.photo));
+        photoLooking = !!((step && step.photo) || (planQ && planQ.photo) || (improveItem && improveItem.photo));
         err = "";
         render();
         try {
