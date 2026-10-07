@@ -169,6 +169,7 @@
     font-size: 18px;
   }
   .mini { width: 100%; height: auto; border-radius: 16px; display: block; margin-bottom: 10px; background: #e7f3fb; }
+  svg.mini.short { height: 108px; }
   .warn {
     background: #fff4e5;
     border-radius: 12px;
@@ -247,6 +248,11 @@
         <circle cx="524" cy="304" r="5" fill="#d7eef8"/>
         <circle cx="548" cy="304" r="5" fill="#d7eef8"/>
       </g>
+      <g id="dump" display="none">
+        <rect x="250" y="268" width="14" height="26" rx="3" fill="#7ec8e3" transform="rotate(18 257 281)"/>
+        <path d="M286 278 q18 8 8 18 q-20 4 -22 -8 z" fill="#f8fafc" stroke="#94a3b8"/>
+        <circle cx="318" cy="292" r="7" fill="#f4a261"/>
+      </g>
       <g id="fish">
         <g class="swim" id="fish1">
           <ellipse cx="300" cy="330" rx="18" ry="9" fill="#ffb703"/>
@@ -293,6 +299,15 @@
         <rect x="490" y="492" width="28" height="16" rx="3" fill="#e76f51"/>
         <circle cx="530" cy="500" r="8" fill="#f4a261"/>
       </g>
+      <g id="drain" display="none">
+        <rect x="338" y="416" width="34" height="14" rx="3" fill="#495057"/>
+        <path d="M355 430 q8 16 0 30" fill="none" stroke="#6e6248" stroke-width="7" stroke-linecap="round"/>
+      </g>
+      <g id="scraps" display="none">
+        <ellipse cx="760" cy="378" rx="34" ry="10" fill="#8d6e4c" opacity=".8"/>
+        <circle cx="744" cy="374" r="5" fill="#e9c46a"/>
+        <circle cx="776" cy="382" r="4" fill="#6b705c"/>
+      </g>
       <g id="hill">
         <path d="M0 360 C80 250 150 280 210 330 C150 360 70 390 0 400 Z" fill="#7dba67"/>
         <g id="flames" display="none">
@@ -321,6 +336,11 @@
         <g id="factory-pipe" display="none">
           <path d="M210 450 h40 v10 h-40 z" fill="#6c757d"/>
           <path d="M246 460 q20 20 8 40" fill="none" stroke="#6e6248" stroke-width="8" stroke-linecap="round"/>
+        </g>
+        <g id="dust" display="none">
+          <circle class="puff" cx="188" cy="338" r="12" fill="#d7c4a3"/>
+          <circle class="puff d2" cx="208" cy="318" r="16" fill="#cbb89a"/>
+          <circle class="puff d3" cx="170" cy="326" r="9" fill="#e6d3b3"/>
         </g>
       </g>
       <g id="homes-art">
@@ -368,6 +388,23 @@
         <g id="exhaust" display="none">
           <circle class="puff" cx="688" cy="548" r="8" fill="#9ca3af"/>
           <circle class="puff d2" cx="674" cy="540" r="11" fill="#6b7280"/>
+        </g>
+        <g id="minibus" display="none">
+          <rect x="800" y="528" width="86" height="34" rx="6" fill="#2a9d8f"/>
+          <rect x="812" y="534" width="16" height="12" rx="2" fill="#d8f3dc"/>
+          <rect x="834" y="534" width="16" height="12" rx="2" fill="#d8f3dc"/>
+          <rect x="856" y="534" width="16" height="12" rx="2" fill="#d8f3dc"/>
+          <circle cx="818" cy="564" r="7" fill="#212529"/>
+          <circle cx="866" cy="564" r="7" fill="#212529"/>
+        </g>
+        <g id="bus-exhaust" display="none">
+          <circle class="puff" cx="788" cy="542" r="8" fill="#9ca3af"/>
+          <circle class="puff d2" cx="774" cy="532" r="11" fill="#6b7280"/>
+        </g>
+        <g id="wash" display="none">
+          <ellipse cx="648" cy="548" rx="26" ry="9" fill="#d8f3dc" opacity=".9"/>
+          <circle cx="636" cy="544" r="4" fill="#ffffff" opacity=".85"/>
+          <circle cx="658" cy="550" r="5" fill="#ffffff" opacity=".75"/>
         </g>
       </g>
       <g id="people">
@@ -453,6 +490,12 @@ const start = () => ({
   net: false,
   taxi: true,
   fire: false,
+  dust: false,
+  minibus: false,
+  drain: false,
+  scraps: false,
+  wash: false,
+  dump: false,
   crashing: false,
   rescuing: false,
   place: null,
@@ -462,8 +505,8 @@ let state = start();
 let timer = 0;
 
 const $ = (id) => document.getElementById(id);
-const airKeys = ["smoke", "cook", "paint", "factoryAir", "shipAir", "taxi", "fire"];
-const waterKeys = ["dishes", "factoryWater", "oil", "trash", "net"];
+const airKeys = ["smoke", "cook", "paint", "factoryAir", "shipAir", "taxi", "fire", "dust", "minibus"];
+const waterKeys = ["dishes", "factoryWater", "oil", "trash", "net", "drain", "scraps", "wash", "dump"];
 const count = (keys) => keys.reduce((n, k) => n + (state[k] ? 1 : 0), 0);
 
 function airInfo(n) {
@@ -493,25 +536,32 @@ function mix(a, b, t) {
 function renderMap() {
   const air = count(airKeys);
   const water = count(waterKeys);
-  const t = air / 7;
+  const t = Math.min(1, air / 7);
   $("sky-a").setAttribute("stop-color", mix("#8ecff5", "#8b939c", t));
   $("sky-b").setAttribute("stop-color", mix("#e7f6ff", "#d5dbe1", t));
   $("sea-rect").setAttribute("fill", state.oil ? "#6f8f84" : "#1aa4c9");
   $("haze").setAttribute("opacity", (t * 0.22).toFixed(2));
   show("sun", air < 5);
   show("oil", state.oil);
-  show("murk", state.factoryWater || state.dishes);
+  show("murk", state.factoryWater || state.dishes || state.drain || state.scraps || state.wash);
   show("factory-smoke", state.factoryAir);
   show("factory-pipe", state.factoryWater);
+  show("dust", state.dust);
   show("ship-smoke", state.shipAir);
+  show("dump", state.dump);
   show("home-smoke", state.smoke);
   show("win-smoke", state.smoke);
   show("cook-smoke", state.cook);
+  show("scraps", state.scraps);
   show("exhaust", state.taxi);
   show("taxi", state.taxi);
+  show("minibus", state.minibus);
+  show("bus-exhaust", state.minibus);
+  show("wash", state.wash);
   show("flames", state.fire);
   show("trash", state.trash);
   show("net", state.net);
+  show("drain", state.drain);
   $("fish").classList.toggle("hurt", state.oil);
   show("bird-fly", !state.oil);
   show("bird-oiled", state.oil);
@@ -533,11 +583,11 @@ function renderMap() {
   $("leaf2").setAttribute("transform", air >= 3 ? "rotate(-24 816 464)" : "");
   $("bee").setAttribute("opacity", air >= 4 ? "0.35" : "1");
   $("turtle").setAttribute("opacity", state.net ? "0.85" : "1");
-  show("dot-home", state.smoke || state.cook || state.paint || state.dishes);
-  show("dot-factory", state.factoryAir || state.factoryWater);
-  show("dot-ship", state.shipAir || state.oil || state.crashing);
-  show("dot-beach", state.trash || state.net);
-  show("dot-road", state.taxi);
+  show("dot-home", state.smoke || state.cook || state.paint || state.dishes || state.scraps);
+  show("dot-factory", state.factoryAir || state.factoryWater || state.dust);
+  show("dot-ship", state.shipAir || state.oil || state.crashing || state.dump);
+  show("dot-beach", state.trash || state.net || state.drain);
+  show("dot-road", state.taxi || state.minibus || state.wash);
   show("dot-hill", state.fire);
 
   const ai = airInfo(air);
@@ -592,6 +642,14 @@ const rooms = {
     on: "洗碗水直排進海",
     off: "送去處理",
     key: "dishes"
+  },
+  scraps: {
+    title: "廚餘",
+    leadOn: "把廚餘和剩油倒進水渠，這些髒東西會流到海裡。",
+    leadOff: "廚餘放進垃圾桶，沒有倒進海裡。",
+    on: "把廚餘和剩油倒進海",
+    off: "廚餘放進垃圾桶",
+    key: "scraps"
   }
 };
 
@@ -602,7 +660,7 @@ function choice(label, act, extra, pressed, danger) {
 
 function shipScene() {
   const oil = state.oil;
-  return `<svg class="mini" viewBox="0 0 640 240" aria-hidden="true">
+  return `<svg class="mini short" viewBox="0 0 640 240" aria-hidden="true">
     <rect width="640" height="240" fill="${oil ? "#9aa89a" : "#bfe9f6"}"/>
     <path d="M0 130 C120 110 200 150 320 128 C440 106 520 150 640 120 L640 240 L0 240 Z" fill="${oil ? "#5c6754" : "#1f8fb8"}"/>
     <path d="M470 118 l40 16 24 36 -16 6 -34 -18 z" fill="#8d97a1"/>
@@ -612,6 +670,7 @@ function shipScene() {
       <path d="M90 132 h130 l14 22 H78 z" fill="#e23b3b"/>
     </g>
     ${oil ? '<ellipse cx="360" cy="168" rx="120" ry="16" fill="#3a3224"/><text x="300" y="172" fill="#f8f1dc" font-size="16">油</text>' : ""}
+    ${state.dump ? '<rect x="470" y="150" width="12" height="22" rx="2" fill="#7ec8e3"/><path d="M500 156 q14 6 6 14 q-16 4 -16 -6 z" fill="#f8fafc" stroke="#94a3b8"/>' : ""}
     <g>
       <ellipse cx="${oil ? 250 : 230}" cy="${oil ? 150 : 176}" rx="16" ry="8" fill="${oil ? "#9aa0a6" : "#ffb703"}" transform="${oil ? "rotate(180 250 150)" : ""}"/>
       <ellipse cx="400" cy="${oil ? 156 : 190}" rx="14" ry="7" fill="${oil ? "#9aa0a6" : "#8ecae6"}" transform="${oil ? "rotate(170 400 156)" : ""}"/>
@@ -654,6 +713,19 @@ function homeScene() {
       ${state.paint ? '<circle cx="200" cy="90" r="8" fill="#d1d5db"/><path d="M430 60 q8 -16 0 -4 q10 -18 0 8" fill="none" stroke="#9aa3ab" stroke-width="3"/>' : ""}
     </svg>`;
   }
+  if (r === "scraps") {
+    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
+      <rect width="640" height="220" fill="#fff6e4"/>
+      <rect x="70" y="150" width="500" height="16" fill="#c5ccd3"/>
+      <circle cx="170" cy="108" r="20" fill="#f2c1a8"/>
+      <rect x="150" y="126" width="46" height="50" fill="#e76f51"/>
+      <rect x="250" y="96" width="70" height="40" rx="6" fill="#f4a261"/>
+      <ellipse cx="284" cy="96" rx="24" ry="8" fill="#e9c46a"/>
+      ${state.scraps
+        ? '<path d="M300 140 q40 24 20 48" fill="none" stroke="#8d6e4c" stroke-width="8" stroke-linecap="round"/><circle cx="330" cy="186" r="6" fill="#6b705c"/>'
+        : '<rect x="360" y="96" width="46" height="58" rx="4" fill="#52b788"/><rect x="352" y="88" width="62" height="12" rx="3" fill="#2d6a4f"/>'}
+    </svg>`;
+  }
   return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
     <rect width="640" height="220" fill="#fff6e4"/>
     <rect x="80" y="110" width="480" height="24" fill="#e7cba0"/>
@@ -693,11 +765,17 @@ function renderSheet() {
     if (state.crashing) lead.textContent = "輪船正向石頭駛過去……";
     else if (state.rescuing) lead.textContent = "拯救小隊正在清理海面的油。";
     else if (state.oil) lead.textContent = "輪船撞到石頭，漏出燃油。海面有很多油，小魚和小鳥活不了。";
-    else lead.textContent = "輪船在海上行駛。煙囪的黑煙會污染空氣。如果撞到石頭，燃油就會漏進海裡。";
-    if (state.shipAir) extra.innerHTML = `<p class="warn">煙囪正在排出黑煙，天空會變得灰濛濛。</p>`;
+    else if (state.dump) lead.textContent = "船員把垃圾扔下海。膠袋和膠樽會傷害海裡的動物。拯救小隊只清理油污，不會撿走這些垃圾。";
+    else lead.textContent = "輪船在海上行駛。煙囪的黑煙會污染空氣。如果撞到石頭，燃油就會漏進海裡。船上的垃圾也不可以扔下海。";
+    const shipWarns = [];
+    if (state.shipAir) shipWarns.push("煙囪正在排出黑煙，天空會變得灰濛濛。");
+    if (state.dump && (state.oil || state.crashing || state.rescuing)) shipWarns.push("船上的垃圾掉進海裡，小動物可能誤食或被纏住。");
+    extra.innerHTML = shipWarns.map((text) => `<p class="warn">${text}</p>`).join("");
     body.innerHTML = shipScene() + `<div class="choices">
       ${choice("煙囪排出黑煙", "set", { key: "shipAir", val: "1" }, state.shipAir, true)}
       ${choice("關掉黑煙", "set", { key: "shipAir", val: "0" }, !state.shipAir, false)}
+      ${choice("把垃圾扔下海", "set", { key: "dump", val: "1" }, state.dump, true)}
+      ${choice("垃圾帶回岸上", "set", { key: "dump", val: "0" }, !state.dump, false)}
       ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false)}
       ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true)}
       ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false)}
@@ -708,12 +786,15 @@ function renderSheet() {
     title.textContent = "工廠";
     const bits = [];
     if (state.factoryAir) bits.push("煙囪排出黑煙，天空變得灰濛濛。");
+    if (state.dust) bits.push("旁邊的地盤揚起塵土，空氣變得污濁。");
     if (state.factoryWater) bits.push("工業活動產生的污水流進海裡。");
-    if (!bits.length) bits.push("工廠沒有把黑煙和污水放出來。");
+    if (!bits.length) bits.push("工廠沒有把黑煙、塵土和污水放出來。");
     lead.textContent = bits.join("");
     body.innerHTML = `<div class="choices">
       ${choice("煙囪排出黑煙", "set", { key: "factoryAir", val: "1" }, state.factoryAir, true)}
       ${choice("關掉煙囪", "set", { key: "factoryAir", val: "0" }, !state.factoryAir, false)}
+      ${choice("地盤揚起塵土", "set", { key: "dust", val: "1" }, state.dust, true)}
+      ${choice("灑水減少塵土", "set", { key: "dust", val: "0" }, !state.dust, false)}
       ${choice("污水排進海", "set", { key: "factoryWater", val: "1" }, state.factoryWater, true)}
       ${choice("污水先處理好", "set", { key: "factoryWater", val: "0" }, !state.factoryWater, false)}
     </div>`;
@@ -724,24 +805,34 @@ function renderSheet() {
     const bits = [];
     if (state.trash) bits.push("人們玩樂後留下膠袋、膠樽和垃圾。魚、海龜和海鳥可能被纏住，或誤食這些塑膠。");
     if (state.net) bits.push("廢棄的漁網纏住了小海龜。");
-    if (!bits.length) bits.push("海灘乾淨，漁網也收回了。");
+    if (state.drain) bits.push("雨水渠吐出污水，髒水直排進海。");
+    if (!bits.length) bits.push("海灘乾淨，漁網也收回了，渠口沒有污水。");
     lead.textContent = bits.join("");
     body.innerHTML = `<div class="choices">
       ${choice("留下垃圾", "set", { key: "trash", val: "1" }, state.trash, true)}
       ${choice("撿走垃圾，放進回收箱", "set", { key: "trash", val: "0" }, !state.trash, false)}
       ${choice("留下漁網", "set", { key: "net", val: "1" }, state.net, true)}
       ${choice("收回漁網", "set", { key: "net", val: "0" }, !state.net, false)}
+      ${choice("雨水渠吐出污水", "set", { key: "drain", val: "1" }, state.drain, true)}
+      ${choice("渠口沒有污水", "set", { key: "drain", val: "0" }, !state.drain, false)}
     </div>`;
     return;
   }
   if (state.place === "road") {
     title.textContent = "馬路";
-    lead.textContent = state.taxi
-      ? "經常乘搭的士，汽車排出廢氣，空氣受到污染。"
-      : "少乘的士，改為行路，馬路上少了廢氣。";
+    const roadBits = [];
+    if (state.taxi) roadBits.push("經常乘搭的士，汽車排出廢氣。");
+    if (state.minibus) roadBits.push("小巴在路邊開着引擎，也排出廢氣。");
+    if (state.wash) roadBits.push("在路邊洗車，清潔劑流進雨水渠，再流到海裡。");
+    if (!roadBits.length) roadBits.push("少乘車，改為行路，也沒有在路邊洗車。空氣清新一點，海水也少了清潔劑。");
+    lead.textContent = roadBits.join("");
     body.innerHTML = `<div class="choices">
       ${choice("經常乘搭的士", "set", { key: "taxi", val: "1" }, state.taxi, true)}
       ${choice("少乘的士，改為行路", "set", { key: "taxi", val: "0" }, !state.taxi, false)}
+      ${choice("小巴開着引擎", "set", { key: "minibus", val: "1" }, state.minibus, true)}
+      ${choice("關掉小巴引擎", "set", { key: "minibus", val: "0" }, !state.minibus, false)}
+      ${choice("在路邊洗車", "set", { key: "wash", val: "1" }, state.wash, true)}
+      ${choice("不去路邊洗車", "set", { key: "wash", val: "0" }, !state.wash, false)}
     </div>`;
     return;
   }
