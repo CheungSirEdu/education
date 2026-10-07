@@ -203,8 +203,8 @@
     <svg class="town" id="town" viewBox="0 0 1200 720" role="img" aria-label="小區：上面是海和輪船，左邊是工廠，右邊是住宅。">
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop id="sky-a" offset="0" stop-color="#8ecff5"/>
-          <stop id="sky-b" offset="1" stop-color="#e7f6ff"/>
+          <stop id="sky-a" offset="0" stop-color="#1d74e0"/>
+          <stop id="sky-b" offset="1" stop-color="#8ecfff"/>
         </linearGradient>
         <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
           <stop id="sea-a" offset="0" stop-color="#67d3ea"/>
@@ -223,7 +223,6 @@
       <g id="sun">
         <circle cx="1040" cy="86" r="42" fill="#ffe08a"/>
       </g>
-      <rect id="haze" width="1200" height="280" fill="#6b7280" opacity="0"/>
       <rect id="sea-rect" x="0" y="230" width="1200" height="200" fill="#1aa4c9"/>
       <path d="M0 242 C200 232 400 252 600 238 C800 224 1000 250 1200 236" fill="none" stroke="#e7f8ff" stroke-width="5"/>
       <g id="oil" display="none">
@@ -455,6 +454,7 @@
           <path d="M940 550 h6" stroke="#f2c1a8" stroke-width="3" stroke-linecap="round"/>
         </g>
       </g>
+      <rect id="haze" width="1200" height="720" fill="#1c2838" opacity="0" pointer-events="none"/>
       <g data-place="ship" tabindex="0" role="button" aria-label="輪船">
         <rect class="hot" x="400" y="120" width="340" height="230" rx="18" fill="transparent"/>
         <rect x="548" y="132" width="86" height="32" rx="16" fill="#fff"/>
@@ -568,12 +568,14 @@ function mix(a, b, t) {
 function renderMap() {
   const air = count(airKeys);
   const water = count(waterKeys);
-  const t = Math.min(1, air / 7);
-  $("sky-a").setAttribute("stop-color", mix("#8ecff5", "#8b939c", t));
-  $("sky-b").setAttribute("stop-color", mix("#e7f6ff", "#d5dbe1", t));
+  const skyT = Math.min(1, air / 5);
+  $("sky-a").setAttribute("stop-color", mix("#1d74e0", "#3e4a59", skyT));
+  $("sky-b").setAttribute("stop-color", mix("#8ecfff", "#5c6775", skyT));
   $("sea-rect").setAttribute("fill", state.oil ? "#6f8f84" : "#1aa4c9");
-  $("haze").setAttribute("opacity", (t * 0.22).toFixed(2));
-  show("sun", air < 5);
+  const shade = [0, 0.1, 0.18, 0.28, 0.38, 0.48, 0.54, 0.58, 0.61, 0.63][Math.min(air, 9)];
+  $("haze").setAttribute("opacity", shade.toFixed(2));
+  show("sun", air < 6);
+  $("sun").setAttribute("opacity", air >= 6 ? "0" : (1 - air / 8).toFixed(2));
   show("oil", state.oil);
   show("murk", state.factoryWater || state.dishes || state.drain || state.scraps || state.wash);
   show("factory-smoke", state.factoryAir);
