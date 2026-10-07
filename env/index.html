@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第四課 愛護環境</title>
+<style>
+  :root {
+    --ink: #1c3144;
+    --card: #fffdf8;
+    --line: #d7e3ea;
+    --good: #1b7f4e;
+    --bad: #c2410c;
+    --sea: #3cb6d6;
+    --sky: #8ecff5;
+    --land: #b7dd8a;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "PingFang HK", "PingFang TC", "Heiti TC", "Noto Sans TC", sans-serif;
+    color: var(--ink);
+    background: #e7f4fb;
+  }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  .app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 10px 12px 8px;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  h1 { font-size: 28px; line-height: 1.1; margin: 0; }
+  .sub { margin: 2px 0 0; color: #3d5c73; font-size: 15px; }
+  .meters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .meter {
+    background: white;
+    border-radius: 16px;
+    padding: 8px 12px 9px;
+    min-width: 148px;
+    box-shadow: 0 1px 0 rgba(28, 49, 68, .06);
+  }
+  .meter b { display: block; font-size: 18px; }
+  .meter span { font-size: 13px; color: #4d6578; }
+  .meter.bad b { color: var(--bad); }
+  .meter.mid b { color: #b45309; }
+  .meter.good b { color: var(--good); }
+  .stage {
+    position: relative;
+    background: white;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(40, 80, 110, .12);
+    flex: 1;
+    min-height: 0;
+  }
+  svg.town {
+    width: min(100%, calc((100dvh - 148px) * 1.6667));
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    background: #8ecff5;
+  }
+  svg.town [data-place] { cursor: pointer; }
+  svg.town [data-place]:focus { outline: none; }
+  svg.town [data-place]:focus-visible .hot {
+    stroke: #0f3d66;
+    stroke-width: 4;
+  }
+  .tag {
+    font-size: 20px;
+    font-weight: 700;
+    fill: #17324a;
+  }
+  .puff { transform-box: fill-box; transform-origin: center; animation: rise 2.6s linear infinite; }
+  .puff.d2 { animation-delay: .8s; }
+  .puff.d3 { animation-delay: 1.6s; }
+  @keyframes rise {
+    from { opacity: .55; transform: translateY(6px) scale(.75); }
+    to { opacity: 0; transform: translateY(-42px) scale(1.35); }
+  }
+  .swim { transform-box: fill-box; transform-origin: center; animation: swim 3.2s ease-in-out infinite; }
+  .swim.s2 { animation-delay: .6s; }
+  .swim.s3 { animation-delay: 1.1s; }
+  #fish.hurt .swim { animation: none; }
+  @keyframes swim {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(16px); }
+  }
+  #ship-body { transition: transform .9s ease-in; }
+  #ship-body.hit { transform: translate(118px, 36px) rotate(7deg); }
+  #rescue-boat.go { animation: cross 1.6s ease-in-out forwards; }
+  @keyframes cross {
+    from { transform: translate(-180px, 0); }
+    to { transform: translate(520px, 0); }
+  }
+  .note {
+    margin: 8px 2px 0;
+    min-height: 2.7em;
+    font-size: 17px;
+    line-height: 1.45;
+  }
+  .tools { display: flex; gap: 8px; margin-top: 4px; }
+  .ghost {
+    border: 0;
+    background: transparent;
+    color: #3d5c73;
+    text-decoration: underline;
+    padding: 6px 2px;
+    min-height: 44px;
+  }
+  .sheet {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 40, 58, .35);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 5;
+    padding: 12px;
+  }
+  .sheet[hidden] { display: none; }
+  .card {
+    width: min(760px, 100%);
+    max-height: min(78vh, 680px);
+    overflow: auto;
+    background: var(--card);
+    border-radius: 22px;
+    padding: 14px 14px 16px;
+    box-shadow: 0 16px 50px rgba(0, 0, 0, .2);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 24px; }
+  .card .lead { margin: 0 0 10px; font-size: 17px; line-height: 1.5; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tabs button, .choice, .back {
+    border: 2px solid #d5e2ea;
+    background: white;
+    border-radius: 14px;
+    min-height: 48px;
+    padding: 8px 12px;
+  }
+  .tabs button[aria-pressed="true"], .choice[aria-pressed="true"] {
+    background: #e7f6ee;
+    border-color: #1b7f4e;
+    font-weight: 700;
+  }
+  .choice.danger[aria-pressed="true"] {
+    background: #fff1e8;
+    border-color: #c2410c;
+  }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choices .choice { flex: 1 1 200px; font-size: 18px; }
+  .back {
+    background: #17324a;
+    color: white;
+    border-color: #17324a;
+    width: 100%;
+    margin-top: 12px;
+    font-size: 18px;
+  }
+  .mini { width: 100%; height: auto; border-radius: 16px; display: block; margin-bottom: 10px; background: #e7f3fb; }
+  .warn {
+    background: #fff4e5;
+    border-radius: 12px;
+    padding: 8px 10px;
+    margin: 0 0 10px;
+  }
+  @media (max-width: 720px) {
+    h1 { font-size: 24px; }
+    .tag { font-size: 22px; }
+    .card { max-height: 86vh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .puff, .swim, #rescue-boat.go { animation: none; }
+    #ship-body { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>愛護環境</h1>
+      <p class="sub">二年級科學　第四課　點一點小區，看看空氣和水怎樣變。</p>
+    </div>
+    <div class="meters">
+      <div class="meter" id="air-meter"><span>空氣質素健康指數</span><b id="air-name">低</b></div>
+      <div class="meter" id="water-meter"><span>海水</span><b id="water-name">清潔</b></div>
+    </div>
+  </header>
+  <div class="stage">
+    <svg class="town" id="town" viewBox="0 0 1200 720" role="img" aria-label="小區：上面是海和輪船，左邊是工廠，右邊是住宅。">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop id="sky-a" offset="0" stop-color="#8ecff5"/>
+          <stop id="sky-b" offset="1" stop-color="#e7f6ff"/>
+        </linearGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+          <stop id="sea-a" offset="0" stop-color="#67d3ea"/>
+          <stop id="sea-b" offset="1" stop-color="#1f8fb8"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="720" fill="url(#sky)"/>
+      <g id="sun">
+        <circle cx="1040" cy="86" r="42" fill="#ffe08a"/>
+      </g>
+      <rect id="haze" width="1200" height="280" fill="#6b7280" opacity="0"/>
+      <rect id="sea-rect" x="0" y="230" width="1200" height="200" fill="#1aa4c9"/>
+      <path d="M0 242 C200 232 400 252 600 238 C800 224 1000 250 1200 236" fill="none" stroke="#e7f8ff" stroke-width="5"/>
+      <g id="oil" display="none">
+        <ellipse cx="690" cy="330" rx="170" ry="28" fill="#3a3224" opacity=".85"/>
+        <ellipse cx="650" cy="324" rx="90" ry="12" fill="#6d5a32" opacity=".7"/>
+        <ellipse cx="760" cy="338" rx="70" ry="10" fill="#2a2418"/>
+      </g>
+      <g id="murk" display="none">
+        <ellipse cx="250" cy="360" rx="120" ry="22" fill="#6e6248" opacity=".55"/>
+        <ellipse cx="980" cy="390" rx="90" ry="16" fill="#6e6248" opacity=".45"/>
+      </g>
+      <g id="rocks">
+        <path d="M760 300 l46 18 28 42 -18 8 -40 -22 -36 -8 z" fill="#8d97a1"/>
+        <path d="M820 292 l34 8 18 28 -22 6 -28 -16 z" fill="#6e7882"/>
+      </g>
+      <g id="ship-body">
+        <g id="ship-smoke" display="none">
+          <circle class="puff" cx="612" cy="214" r="12" fill="#8d97a0"/>
+          <circle class="puff d2" cx="628" cy="200" r="16" fill="#9aa3ab"/>
+          <circle class="puff d3" cx="600" cy="188" r="10" fill="#b0b7be"/>
+        </g>
+        <rect x="548" y="236" width="18" height="34" rx="3" fill="#f4f7fb"/>
+        <rect x="542" y="228" width="30" height="12" rx="2" fill="#d5dde6"/>
+        <rect x="470" y="262" width="150" height="36" rx="6" fill="#2f6fed"/>
+        <path d="M470 280 h150 l18 28 H452 z" fill="#e23b3b"/>
+        <rect x="492" y="270" width="22" height="14" fill="#f6c445"/>
+        <rect x="522" y="270" width="22" height="14" fill="#3dbb7a"/>
+        <rect x="552" y="270" width="22" height="14" fill="#f08a24"/>
+        <circle cx="500" cy="304" r="5" fill="#d7eef8"/>
+        <circle cx="524" cy="304" r="5" fill="#d7eef8"/>
+        <circle cx="548" cy="304" r="5" fill="#d7eef8"/>
+      </g>
+      <g id="fish">
+        <g class="swim" id="fish1">
+          <ellipse cx="300" cy="330" rx="18" ry="9" fill="#ffb703"/>
+          <path d="M282 330 l-12 -8 v16 z" fill="#fb8500"/>
+        </g>
+        <g class="swim s2" id="fish2">
+          <ellipse cx="390" cy="360" rx="16" ry="8" fill="#8ecae6"/>
+          <path d="M374 360 l-10 -7 v14 z" fill="#219ebc"/>
+        </g>
+        <g class="swim s3" id="fish3">
+          <ellipse cx="560" cy="350" rx="15" ry="8" fill="#ffd166"/>
+          <path d="M545 350 l-10 -6 v12 z" fill="#f4a261"/>
+        </g>
+      </g>
+      <g id="bird">
+        <g id="bird-fly">
+          <path d="M430 150 q14 -16 28 0 q14 -16 28 0" fill="none" stroke="#3d4c5c" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <g id="bird-oiled" display="none">
+          <ellipse cx="720" cy="318" rx="16" ry="9" fill="#5c4a32"/>
+          <circle cx="734" cy="314" r="6" fill="#6b5840"/>
+          <path d="M706 318 l-8 4" stroke="#5c4a32" stroke-width="2"/>
+        </g>
+      </g>
+      <g id="turtle">
+        <ellipse cx="470" cy="390" rx="16" ry="10" fill="#2a9d8f"/>
+        <circle cx="486" cy="388" r="5" fill="#81c784"/>
+      </g>
+      <g id="net" display="none">
+        <path d="M450 376 h40 v24 h-40 z" fill="none" stroke="#f4f1ea" stroke-width="2"/>
+        <path d="M450 384 h40 M450 392 h40 M458 376 v24 M470 376 v24 M482 376 v24" stroke="#f4f1ea" stroke-width="1"/>
+      </g>
+      <g id="rescue-boat" display="none">
+        <rect x="40" y="300" width="70" height="18" rx="4" fill="#f4f7fb"/>
+        <path d="M36 318 h78 l-8 12 H44 z" fill="#f77f00"/>
+        <rect x="62" y="286" width="8" height="16" fill="#264653"/>
+        <text x="48" y="312" font-size="11" fill="#17324a">拯救</text>
+      </g>
+      <path d="M0 430 C200 400 360 470 560 440 C760 410 900 470 1200 430 L1200 720 L0 720 Z" fill="#c6e6a1"/>
+      <path d="M280 470 C360 450 470 500 560 478 C620 464 680 490 760 470 L760 520 C640 540 500 500 360 530 C300 540 260 510 280 470 Z" fill="#f3d7a1"/>
+      <g id="trash" display="none">
+        <rect x="390" y="478" width="18" height="34" rx="4" fill="#7ec8e3" transform="rotate(-14 399 495)"/>
+        <path d="M440 488 q22 10 10 24 q-24 6 -28 -10 z" fill="#f8fafc" stroke="#94a3b8"/>
+        <rect x="490" y="492" width="28" height="16" rx="3" fill="#e76f51"/>
+        <circle cx="530" cy="500" r="8" fill="#f4a261"/>
+      </g>
+      <g id="hill">
+        <path d="M0 360 C80 250 150 280 210 330 C150 360 70 390 0 400 Z" fill="#7dba67"/>
+        <g id="flames" display="none">
+          <path d="M78 300 q10 -28 4 -8 q12 -24 2 6 q14 8 -6 16 q-8 10 -12 -2 q-10 8 -8 -6 z" fill="#f25c05"/>
+          <path d="M82 304 q6 -14 2 0 q6 -12 0 6 q-6 6 -2 -6 z" fill="#ffd166"/>
+          <g>
+            <circle class="puff" cx="86" cy="270" r="10" fill="#9aa3ab"/>
+            <circle class="puff d2" cx="100" cy="258" r="14" fill="#b0b7be"/>
+          </g>
+        </g>
+      </g>
+      <g id="factory-art">
+        <rect x="70" y="360" width="150" height="120" rx="6" fill="#d8dee6"/>
+        <rect x="86" y="378" width="28" height="22" fill="#f6c445"/>
+        <rect x="124" y="378" width="28" height="22" fill="#8ecae6"/>
+        <rect x="162" y="378" width="28" height="22" fill="#f6c445"/>
+        <rect x="100" y="430" width="40" height="50" fill="#8d99ae"/>
+        <rect x="108" y="300" width="18" height="70" fill="#6c757d"/>
+        <rect x="146" y="286" width="18" height="84" fill="#495057"/>
+        <g id="factory-smoke" display="none">
+          <ellipse cx="118" cy="278" rx="16" ry="10" fill="#6b7280"/>
+          <ellipse cx="158" cy="262" rx="22" ry="13" fill="#4b5563"/>
+          <circle class="puff" cx="118" cy="284" r="12" fill="#8d97a0"/>
+          <circle class="puff d2" cx="156" cy="268" r="16" fill="#9aa3ab"/>
+        </g>
+        <g id="factory-pipe" display="none">
+          <path d="M210 450 h40 v10 h-40 z" fill="#6c757d"/>
+          <path d="M246 460 q20 20 8 40" fill="none" stroke="#6e6248" stroke-width="8" stroke-linecap="round"/>
+        </g>
+      </g>
+      <g id="homes-art">
+        <rect x="860" y="330" width="110" height="170" rx="8" fill="#f4a261"/>
+        <rect x="980" y="360" width="130" height="140" rx="8" fill="#e76f51"/>
+        <g fill="#fff8ee">
+          <rect x="878" y="350" width="26" height="22" rx="2"/>
+          <rect x="916" y="350" width="26" height="22" rx="2"/>
+          <rect x="878" y="386" width="26" height="22" rx="2"/>
+          <rect x="916" y="386" width="26" height="22" rx="2"/>
+          <rect x="1000" y="382" width="28" height="22" rx="2"/>
+          <rect x="1042" y="382" width="28" height="22" rx="2"/>
+          <rect x="1000" y="418" width="28" height="22" rx="2"/>
+          <rect x="1042" y="418" width="28" height="22" rx="2"/>
+        </g>
+        <rect id="win-smoke" x="878" y="350" width="26" height="22" rx="2" fill="#4b5563" display="none"/>
+        <g id="home-smoke" display="none">
+          <ellipse cx="900" cy="328" rx="18" ry="11" fill="#4b5563"/>
+          <ellipse cx="922" cy="310" rx="14" ry="9" fill="#6b7280"/>
+          <circle class="puff" cx="890" cy="336" r="10" fill="#6b7280"/>
+        </g>
+        <g id="cook-smoke" display="none">
+          <circle class="puff" cx="1056" cy="360" r="9" fill="#d1d5db"/>
+          <circle class="puff d2" cx="1072" cy="344" r="12" fill="#e5e7eb"/>
+        </g>
+        <g id="plant">
+          <rect x="800" y="470" width="8" height="28" fill="#6b8f4e"/>
+          <ellipse id="leaf1" cx="792" cy="468" rx="14" ry="8" fill="#4caf50"/>
+          <ellipse id="leaf2" cx="816" cy="464" rx="14" ry="8" fill="#66bb6a"/>
+        </g>
+        <g id="bee">
+          <ellipse cx="830" cy="440" rx="8" ry="5" fill="#f4d35e"/>
+          <path d="M824 436 q-6 -8 2 -2 M836 436 q6 -8 -2 -2" stroke="#f4d35e" fill="none"/>
+        </g>
+      </g>
+      <g id="road">
+        <path d="M620 560 h430 v46 H760 z" fill="#6c757d"/>
+        <path d="M650 582 h40 M730 582 h40 M810 582 h40 M890 582 h40" stroke="#f8f9fa" stroke-width="4"/>
+        <g id="taxi">
+          <rect x="700" y="536" width="78" height="28" rx="6" fill="#e63946"/>
+          <rect x="714" y="524" width="40" height="16" rx="4" fill="#f1faee"/>
+          <circle cx="718" cy="566" r="7" fill="#212529"/>
+          <circle cx="760" cy="566" r="7" fill="#212529"/>
+        </g>
+        <g id="exhaust" display="none">
+          <circle class="puff" cx="688" cy="548" r="8" fill="#9ca3af"/>
+          <circle class="puff d2" cx="674" cy="540" r="11" fill="#6b7280"/>
+        </g>
+      </g>
+      <g id="people">
+        <g id="people-ok">
+          <circle cx="900" cy="548" r="8" fill="#f2c1a8"/>
+          <rect x="892" y="556" width="16" height="22" rx="4" fill="#457b9d"/>
+          <circle cx="932" cy="552" r="7" fill="#f2c1a8"/>
+          <rect x="925" y="559" width="14" height="18" rx="4" fill="#e76f51"/>
+        </g>
+        <g id="people-bad" display="none">
+          <circle cx="900" cy="546" r="8" fill="#f2c1a8"/>
+          <rect x="892" y="554" width="16" height="22" rx="4" fill="#457b9d"/>
+          <path d="M906 546 h8" stroke="#f2c1a8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="934" cy="550" r="7" fill="#f2c1a8"/>
+          <rect x="927" y="557" width="14" height="18" rx="4" fill="#e9c46a"/>
+          <path d="M940 550 h6" stroke="#f2c1a8" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </g>
+      <g data-place="ship" tabindex="0" role="button" aria-label="輪船">
+        <rect class="hot" x="450" y="180" width="250" height="150" rx="18" fill="transparent"/>
+        <rect x="500" y="168" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="514" y="191">輪船</text>
+        <circle id="dot-ship" cx="578" cy="176" r="6" fill="#e63946" display="none"/>
+      </g>
+      <g data-place="factory" tabindex="0" role="button" aria-label="工廠">
+        <rect class="hot" x="60" y="280" width="200" height="210" rx="18" fill="transparent"/>
+        <rect x="86" y="478" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="100" y="501">工廠</text>
+        <circle id="dot-factory" cx="164" cy="486" r="6" fill="#e63946" display="none"/>
+      </g>
+      <g data-place="home" tabindex="0" role="button" aria-label="住宅">
+        <rect class="hot" x="850" y="300" width="280" height="210" rx="18" fill="transparent"/>
+        <rect x="980" y="478" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="994" y="501">住宅</text>
+        <circle id="dot-home" cx="1058" cy="486" r="6" fill="#e63946" display="none"/>
+      </g>
+      <g data-place="beach" tabindex="0" role="button" aria-label="海灘">
+        <rect class="hot" x="330" y="450" width="230" height="90" rx="18" fill="transparent"/>
+        <rect x="390" y="430" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="404" y="453">海灘</text>
+        <circle id="dot-beach" cx="468" cy="438" r="6" fill="#e63946" display="none"/>
+      </g>
+      <g data-place="road" tabindex="0" role="button" aria-label="馬路">
+        <rect class="hot" x="640" y="520" width="200" height="90" rx="18" fill="transparent"/>
+        <rect x="760" y="600" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="774" y="623">馬路</text>
+        <circle id="dot-road" cx="838" cy="608" r="6" fill="#e63946" display="none"/>
+      </g>
+      <g data-place="hill" tabindex="0" role="button" aria-label="郊外">
+        <rect class="hot" x="10" y="240" width="180" height="120" rx="18" fill="transparent"/>
+        <rect x="24" y="248" width="86" height="32" rx="16" fill="#fff"/>
+        <text class="tag" x="38" y="271">郊外</text>
+        <circle id="dot-hill" cx="102" cy="256" r="6" fill="#e63946" display="none"/>
+      </g>
+    </svg>
+  </div>
+  <p class="note" id="note"></p>
+  <div class="tools">
+    <button class="ghost" type="button" id="reset">回到開始的小區</button>
+  </div>
+</div>
+<div class="sheet" id="sheet" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title"></h2>
+    <p class="lead" id="sheet-lead"></p>
+    <div id="sheet-extra"></div>
+    <div id="sheet-body"></div>
+    <button class="back" type="button" data-act="close">返回小區</button>
+  </div>
+</div>
+<script>
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const start = () => ({
+  smoke: true,
+  cook: false,
+  paint: false,
+  dishes: false,
+  factoryAir: true,
+  factoryWater: true,
+  shipAir: false,
+  oil: false,
+  trash: true,
+  net: false,
+  taxi: true,
+  fire: false,
+  crashing: false,
+  rescuing: false,
+  place: null,
+  room: "smoke"
+});
+let state = start();
+let timer = 0;
+
+const $ = (id) => document.getElementById(id);
+const airKeys = ["smoke", "cook", "paint", "factoryAir", "shipAir", "taxi", "fire"];
+const waterKeys = ["dishes", "factoryWater", "oil", "trash", "net"];
+const count = (keys) => keys.reduce((n, k) => n + (state[k] ? 1 : 0), 0);
+
+function airInfo(n) {
+  if (n === 0) return { name: "低", word: "清新", level: "good" };
+  if (n <= 2) return { name: "中", word: "一般", level: "mid" };
+  if (n <= 4) return { name: "高", word: "污濁", level: "bad" };
+  return { name: "嚴重", word: "很污濁", level: "bad" };
+}
+function waterInfo(n) {
+  if (state.oil && n > 1) return { name: "有油又混濁", level: "bad" };
+  if (state.oil) return { name: "有油污", level: "bad" };
+  if (n === 0) return { name: "清潔", level: "good" };
+  if (n <= 2) return { name: "開始混濁", level: "mid" };
+  return { name: "很混濁", level: "bad" };
+}
+function show(id, on) {
+  const el = $(id);
+  if (el) el.style.display = on ? "inline" : "none";
+}
+function mix(a, b, t) {
+  const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  const c = A.map((v, i) => Math.round(v + (B[i] - v) * t));
+  return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+function renderMap() {
+  const air = count(airKeys);
+  const water = count(waterKeys);
+  const t = air / 7;
+  $("sky-a").setAttribute("stop-color", mix("#8ecff5", "#8b939c", t));
+  $("sky-b").setAttribute("stop-color", mix("#e7f6ff", "#d5dbe1", t));
+  $("sea-rect").setAttribute("fill", state.oil ? "#6f8f84" : "#1aa4c9");
+  $("haze").setAttribute("opacity", (t * 0.22).toFixed(2));
+  show("sun", air < 5);
+  show("oil", state.oil);
+  show("murk", state.factoryWater || state.dishes);
+  show("factory-smoke", state.factoryAir);
+  show("factory-pipe", state.factoryWater);
+  show("ship-smoke", state.shipAir);
+  show("home-smoke", state.smoke);
+  show("win-smoke", state.smoke);
+  show("cook-smoke", state.cook);
+  show("exhaust", state.taxi);
+  show("taxi", state.taxi);
+  show("flames", state.fire);
+  show("trash", state.trash);
+  show("net", state.net);
+  $("fish").classList.toggle("hurt", state.oil);
+  show("bird-fly", !state.oil);
+  show("bird-oiled", state.oil);
+  show("people-ok", air < 2);
+  show("people-bad", air >= 2);
+  $("ship-body").classList.toggle("hit", state.oil || state.crashing);
+  const boat = $("rescue-boat");
+  show("rescue-boat", state.rescuing);
+  boat.classList.toggle("go", state.rescuing && !reduce);
+  const hurt = state.oil;
+  ["fish1", "fish2", "fish3"].forEach((id, i) => {
+    const g = $(id);
+    g.setAttribute("transform", hurt ? `translate(${40 + i * 30} ${-8}) rotate(180)` : "");
+    g.querySelector("ellipse").setAttribute("fill", hurt ? "#9aa0a6" : ["#ffb703", "#8ecae6", "#ffd166"][i]);
+  });
+  $("leaf1").setAttribute("fill", air >= 3 ? "#a9845b" : "#4caf50");
+  $("leaf2").setAttribute("fill", air >= 3 ? "#c4a574" : "#66bb6a");
+  $("leaf1").setAttribute("transform", air >= 3 ? "rotate(28 792 468)" : "");
+  $("leaf2").setAttribute("transform", air >= 3 ? "rotate(-24 816 464)" : "");
+  $("bee").setAttribute("opacity", air >= 4 ? "0.35" : "1");
+  $("turtle").setAttribute("opacity", state.net ? "0.85" : "1");
+  show("dot-home", state.smoke || state.cook || state.paint || state.dishes);
+  show("dot-factory", state.factoryAir || state.factoryWater);
+  show("dot-ship", state.shipAir || state.oil || state.crashing);
+  show("dot-beach", state.trash || state.net);
+  show("dot-road", state.taxi);
+  show("dot-hill", state.fire);
+
+  const ai = airInfo(air);
+  const wi = waterInfo(water);
+  $("air-name").textContent = ai.name + "　" + ai.word;
+  $("water-name").textContent = wi.name;
+  $("air-meter").className = "meter " + ai.level;
+  $("water-meter").className = "meter " + wi.level;
+
+  const bits = [];
+  if (air === 0) bits.push("空氣清新，遠處的景物都看得清楚。");
+  else if (air <= 2) bits.push("空氣開始有煙和氣味。");
+  else if (air <= 4) bits.push("天空灰濛濛的，空氣中也有刺鼻的氣味。");
+  else bits.push("空氣質素健康指數達到嚴重。兒童、長者和病人應避免長時間在戶外逗留。");
+  if (state.oil) bits.push("海面有很多油，小魚和小鳥活不了。");
+  else if (water === 0) bits.push("海水清潔、透明。");
+  else bits.push("海水變得混濁，小動物不容易生活。");
+  if (air === 0 && water === 0) {
+    $("note").textContent = "小區的空氣清新，海水也清潔。植物挺直，小魚和小鳥可以安心生活。";
+  } else $("note").textContent = bits.join("");
+}
+
+const rooms = {
+  smoke: {
+    title: "客廳",
+    leadOn: "有人在屋裡吸煙。煙會跑到窗外，小區的空氣就變污濁。",
+    leadOff: "這間屋沒有人吸煙，沒有煙排到外面。",
+    on: "開始吸煙",
+    off: "停止吸煙",
+    key: "smoke"
+  },
+  cook: {
+    title: "廚房",
+    leadOn: "煮食時冒出很多油煙，附近的空氣受到污染。",
+    leadOff: "廚房沒有油煙跑出去。",
+    on: "開始煮食，冒出油煙",
+    off: "關掉爐火",
+    key: "cook"
+  },
+  paint: {
+    title: "裝修",
+    leadOn: "噴殺蟲劑和油漆放出刺鼻的氣味，空氣受到污染。",
+    leadOff: "沒有人在噴殺蟲劑或油漆。",
+    on: "噴殺蟲劑、油漆",
+    off: "停下裝修",
+    key: "paint"
+  },
+  dishes: {
+    title: "洗碗",
+    leadOn: "洗碗水有清潔劑和食物殘渣。直排進海，海水就變得混濁。",
+    leadOff: "用過的水送去處理，沒有直排進海。",
+    on: "洗碗水直排進海",
+    off: "送去處理",
+    key: "dishes"
+  }
+};
+
+function choice(label, act, extra, pressed, danger) {
+  const attrs = Object.entries(extra).map(([k, v]) => ` data-${k}="${v}"`).join("");
+  return `<button class="choice${danger ? " danger" : ""}" type="button" data-act="${act}"${attrs} aria-pressed="${pressed ? "true" : "false"}">${label}</button>`;
+}
+
+function shipScene() {
+  const oil = state.oil;
+  return `<svg class="mini" viewBox="0 0 640 240" aria-hidden="true">
+    <rect width="640" height="240" fill="${oil ? "#9aa89a" : "#bfe9f6"}"/>
+    <path d="M0 130 C120 110 200 150 320 128 C440 106 520 150 640 120 L640 240 L0 240 Z" fill="${oil ? "#5c6754" : "#1f8fb8"}"/>
+    <path d="M470 118 l40 16 24 36 -16 6 -34 -18 z" fill="#8d97a1"/>
+    <g transform="${oil || state.crashing ? "translate(70 18) rotate(6)" : ""}">
+      <rect x="150" y="96" width="16" height="28" fill="#f4f7fb"/>
+      <rect x="90" y="118" width="130" height="28" rx="4" fill="#2f6fed"/>
+      <path d="M90 132 h130 l14 22 H78 z" fill="#e23b3b"/>
+    </g>
+    ${oil ? '<ellipse cx="360" cy="168" rx="120" ry="16" fill="#3a3224"/><text x="300" y="172" fill="#f8f1dc" font-size="16">油</text>' : ""}
+    <g>
+      <ellipse cx="${oil ? 250 : 230}" cy="${oil ? 150 : 176}" rx="16" ry="8" fill="${oil ? "#9aa0a6" : "#ffb703"}" transform="${oil ? "rotate(180 250 150)" : ""}"/>
+      <ellipse cx="400" cy="${oil ? 156 : 190}" rx="14" ry="7" fill="${oil ? "#9aa0a6" : "#8ecae6"}" transform="${oil ? "rotate(170 400 156)" : ""}"/>
+    </g>
+    ${oil ? '<ellipse cx="430" cy="158" rx="14" ry="8" fill="#5c4a32"/>' : '<path d="M80 70 q12 -14 24 0 q12 -14 24 0" fill="none" stroke="#3d4c5c" stroke-width="3"/>'}
+  </svg>`;
+}
+
+function homeScene() {
+  const r = state.room;
+  if (r === "smoke") {
+    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
+      <rect width="640" height="220" fill="#d7ecf8"/>
+      <rect x="70" y="40" width="220" height="110" rx="6" fill="#c5e4f5" stroke="#9cc3d6"/>
+      <rect x="300" y="120" width="200" height="70" rx="16" fill="#ffe08a"/>
+      <circle cx="390" cy="108" r="22" fill="#f2c1a8"/>
+      <rect x="360" y="124" width="70" height="40" rx="8" fill="#495057"/>
+      ${state.smoke ? '<rect x="430" y="112" width="22" height="5" rx="2" fill="white"/><circle cx="454" cy="114" r="3" fill="#f25c05"/><circle cx="470" cy="96" r="10" fill="#9aa3ab"/><circle cx="488" cy="78" r="14" fill="#6b7280"/>' : ""}
+    </svg>`;
+  }
+  if (r === "cook") {
+    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
+      <rect width="640" height="220" fill="#e7f6e4"/>
+      <rect x="80" y="120" width="460" height="70" fill="#e7cba0"/>
+      <rect x="230" y="96" width="120" height="28" rx="4" fill="#d6d6d6"/>
+      <circle cx="180" cy="100" r="20" fill="#f2c1a8"/>
+      ${state.cook ? '<path d="M280 90 q10 -30 0 -8 q12 -24 0 6" fill="none" stroke="#c5cdd4" stroke-width="4"/><path d="M310 88 q8 -26 0 -6" fill="none" stroke="#c5cdd4" stroke-width="4"/>' : ""}
+    </svg>`;
+  }
+  if (r === "paint") {
+    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
+      <rect width="640" height="220" fill="#fde2e4"/>
+      <rect x="70" y="70" width="180" height="110" fill="#f6e7b4" stroke="#e0c97a"/>
+      <circle cx="250" cy="120" r="18" fill="#f2c1a8"/>
+      <rect x="232" y="136" width="36" height="40" fill="#f4a261"/>
+      <rect x="300" y="100" width="16" height="36" fill="#c1121f"/>
+      <circle cx="360" cy="100" r="18" fill="#f2c1a8"/>
+      <rect x="344" y="118" width="40" height="46" fill="#2a9d8f"/>
+      <rect x="390" y="70" width="14" height="70" fill="#6c757d"/>
+      ${state.paint ? '<circle cx="200" cy="90" r="8" fill="#d1d5db"/><path d="M430 60 q8 -16 0 -4 q10 -18 0 8" fill="none" stroke="#9aa3ab" stroke-width="3"/>' : ""}
+    </svg>`;
+  }
+  return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
+    <rect width="640" height="220" fill="#fff6e4"/>
+    <rect x="80" y="110" width="480" height="24" fill="#e7cba0"/>
+    <rect x="300" y="134" width="150" height="50" fill="#f8f9fa"/>
+    <ellipse cx="360" cy="128" rx="28" ry="10" fill="#bde0fe"/>
+    <circle cx="180" cy="108" r="20" fill="#f2c1a8"/>
+    <rect x="160" y="126" width="46" height="50" fill="#52b788"/>
+    <rect x="430" y="92" width="18" height="40" fill="#2d6a4f"/>
+    ${state.dishes ? '<path d="M470 150 q30 20 10 40" fill="none" stroke="#6e6248" stroke-width="6"/>' : ""}
+  </svg>`;
+}
+
+function renderSheet() {
+  const sheet = $("sheet");
+  if (!state.place) {
+    sheet.hidden = true;
+    return;
+  }
+  sheet.hidden = false;
+  const title = $("sheet-title");
+  const lead = $("sheet-lead");
+  const extra = $("sheet-extra");
+  const body = $("sheet-body");
+  extra.innerHTML = "";
+  if (state.place === "home") {
+    title.textContent = "住宅";
+    const room = rooms[state.room];
+    lead.textContent = state[room.key] ? room.leadOn : room.leadOff;
+    extra.innerHTML = `<div class="tabs">${Object.entries(rooms).map(([id, r]) =>
+      `<button type="button" data-act="room" data-room="${id}" aria-pressed="${state.room === id ? "true" : "false"}">${r.title}</button>`
+    ).join("")}</div>${homeScene()}`;
+    body.innerHTML = `<div class="choices">${choice(room.off, "set", { key: room.key, val: "0" }, !state[room.key], false)}${choice(room.on, "set", { key: room.key, val: "1" }, state[room.key], true)}</div>`;
+    return;
+  }
+  if (state.place === "ship") {
+    title.textContent = "輪船";
+    if (state.crashing) lead.textContent = "輪船正向石頭駛過去……";
+    else if (state.rescuing) lead.textContent = "拯救小隊正在清理海面的油。";
+    else if (state.oil) lead.textContent = "輪船撞到石頭，漏出燃油。海面有很多油，小魚和小鳥活不了。";
+    else lead.textContent = "輪船在海上行駛。煙囪的黑煙會污染空氣。如果撞到石頭，燃油就會漏進海裡。";
+    if (state.shipAir) extra.innerHTML = `<p class="warn">煙囪正在排出黑煙，天空會變得灰濛濛。</p>`;
+    body.innerHTML = shipScene() + `<div class="choices">
+      ${choice("煙囪排出黑煙", "set", { key: "shipAir", val: "1" }, state.shipAir, true)}
+      ${choice("關掉黑煙", "set", { key: "shipAir", val: "0" }, !state.shipAir, false)}
+      ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false)}
+      ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true)}
+      ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false)}
+    </div>`;
+    return;
+  }
+  if (state.place === "factory") {
+    title.textContent = "工廠";
+    const bits = [];
+    if (state.factoryAir) bits.push("煙囪排出黑煙，天空變得灰濛濛。");
+    if (state.factoryWater) bits.push("工業活動產生的污水流進海裡。");
+    if (!bits.length) bits.push("工廠沒有把黑煙和污水放出來。");
+    lead.textContent = bits.join("");
+    body.innerHTML = `<div class="choices">
+      ${choice("煙囪排出黑煙", "set", { key: "factoryAir", val: "1" }, state.factoryAir, true)}
+      ${choice("關掉煙囪", "set", { key: "factoryAir", val: "0" }, !state.factoryAir, false)}
+      ${choice("污水排進海", "set", { key: "factoryWater", val: "1" }, state.factoryWater, true)}
+      ${choice("污水先處理好", "set", { key: "factoryWater", val: "0" }, !state.factoryWater, false)}
+    </div>`;
+    return;
+  }
+  if (state.place === "beach") {
+    title.textContent = "海灘";
+    const bits = [];
+    if (state.trash) bits.push("人們玩樂後留下膠袋、膠樽和垃圾。魚、海龜和海鳥可能被纏住，或誤食這些塑膠。");
+    if (state.net) bits.push("廢棄的漁網纏住了小海龜。");
+    if (!bits.length) bits.push("海灘乾淨，漁網也收回了。");
+    lead.textContent = bits.join("");
+    body.innerHTML = `<div class="choices">
+      ${choice("留下垃圾", "set", { key: "trash", val: "1" }, state.trash, true)}
+      ${choice("撿走垃圾，放進回收箱", "set", { key: "trash", val: "0" }, !state.trash, false)}
+      ${choice("留下漁網", "set", { key: "net", val: "1" }, state.net, true)}
+      ${choice("收回漁網", "set", { key: "net", val: "0" }, !state.net, false)}
+    </div>`;
+    return;
+  }
+  if (state.place === "road") {
+    title.textContent = "馬路";
+    lead.textContent = state.taxi
+      ? "經常乘搭的士，汽車排出廢氣，空氣受到污染。"
+      : "少乘的士，改為行路，馬路上少了廢氣。";
+    body.innerHTML = `<div class="choices">
+      ${choice("經常乘搭的士", "set", { key: "taxi", val: "1" }, state.taxi, true)}
+      ${choice("少乘的士，改為行路", "set", { key: "taxi", val: "0" }, !state.taxi, false)}
+    </div>`;
+    return;
+  }
+  title.textContent = "郊外";
+  lead.textContent = state.fire
+    ? "郊外有東西在燃燒，煙污染空氣。燒烤後要熄滅火種才離開。"
+    : "火種已經熄滅，這裡沒有煙。";
+  body.innerHTML = `<div class="choices">
+    ${choice("火還在燒", "set", { key: "fire", val: "1" }, state.fire, true)}
+    ${choice("熄滅火種才離開", "set", { key: "fire", val: "0" }, !state.fire, false)}
+  </div>`;
+}
+
+function render() {
+  renderMap();
+  renderSheet();
+}
+
+function crash() {
+  if (state.crashing || state.rescuing) return;
+  state.crashing = true;
+  render();
+  clearTimeout(timer);
+  const wait = reduce ? 0 : 900;
+  timer = setTimeout(() => {
+    state.crashing = false;
+    state.oil = true;
+    render();
+  }, wait);
+}
+function rescue() {
+  if (!state.oil || state.rescuing || state.crashing) return;
+  state.rescuing = true;
+  render();
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    state.rescuing = false;
+    state.oil = false;
+    render();
+  }, reduce ? 0 : 1600);
+}
+
+$("town").addEventListener("click", (e) => {
+  const g = e.target.closest("[data-place]");
+  if (!g) return;
+  state.place = g.dataset.place;
+  render();
+});
+$("town").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const g = e.target.closest("[data-place]");
+  if (!g) return;
+  e.preventDefault();
+  state.place = g.dataset.place;
+  render();
+});
+$("sheet").addEventListener("click", (e) => {
+  if (e.target === $("sheet")) {
+    state.place = null;
+    render();
+    return;
+  }
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "close") state.place = null;
+  if (act === "room") state.room = b.dataset.room;
+  if (act === "set") state[b.dataset.key] = b.dataset.val === "1";
+  if (act === "crash") { crash(); return; }
+  if (act === "safe") { if (!state.oil) state.crashing = false; }
+  if (act === "rescue") { rescue(); return; }
+  render();
+});
+$("reset").addEventListener("click", () => {
+  clearTimeout(timer);
+  state = start();
+  render();
+});
+render();
+</script>
+</body>
+</html>
