@@ -558,6 +558,7 @@
       </div>
       <div class="classes" id="beanClassChips"></div>
       <div class="dates" id="beanDayChips"></div>
+      <div class="dates" id="beanNoChips"></div>
       <div class="search">
         <input id="beanQ" type="search" placeholder="搜尋姓名、班別或學號" autocomplete="off" />
         <button class="toolbtn excel-btn" id="beanCsvBar" type="button">匯出 Excel</button>
@@ -794,6 +795,7 @@
     beanTab: "photos",
     beanFilter: "all",
     beanDay: "all",
+    beanNo: "all",
     beanQ: "",
     timesRecords: [],
     timesLoaded: false,
@@ -2448,6 +2450,10 @@
     });
   }
   function beanName(r) { return lookupName(r.klass, r.no) || "名單以外"; }
+  function beanStudentOk(r) {
+    if (!state.beanNo || state.beanNo === "all") return true;
+    return String(parseInt(r.no, 10)) === String(state.beanNo);
+  }
   function beanPassQ(r) {
     const q = state.beanQ.trim().toLowerCase();
     if (!q) return true;
@@ -2457,6 +2463,7 @@
     if (state.beanFilter === "all") {
       if (!beanClassOk(r.klass)) return false;
     } else if (r.klass !== state.beanFilter) return false;
+    if (!beanStudentOk(r)) return false;
     if (state.beanDay !== "all" && r.day !== state.beanDay) return false;
     return beanPassQ(r);
   }
@@ -2828,6 +2835,20 @@
     });
     $("beanDayChips").innerHTML = [`<button class="chip${state.beanDay === "all" ? " on" : ""}" type="button" data-bday="all">全部日子</button>`]
       .concat(dayList.map(d => `<button class="chip${state.beanDay === d ? " on" : ""}" type="button" data-bday="${esc(d)}">${esc(d)}</button>`)).join("");
+    const nos = {};
+    const noSource = state.beanFilter === "all" ? BEAN_CLASSES : [state.beanFilter];
+    noSource.forEach(c => {
+      rosterStudents(c).forEach(s => { nos[String(parseInt(s.no, 10))] = true; });
+    });
+    beanLive(state.beanRecords).forEach(r => {
+      if (state.beanFilter === "all" ? beanClassOk(r.klass) : r.klass === state.beanFilter) {
+        nos[String(parseInt(r.no, 10))] = true;
+      }
+    });
+    const noList = Object.keys(nos).filter(n => n && n !== "NaN").sort((a, b) => Number(a) - Number(b));
+    if (state.beanNo !== "all" && noList.indexOf(String(state.beanNo)) < 0) state.beanNo = "all";
+    $("beanNoChips").innerHTML = [`<button class="chip${state.beanNo === "all" ? " on" : ""}" type="button" data-bno="all">全部學號</button>`]
+      .concat(noList.map(n => `<button class="chip${state.beanNo === n ? " on" : ""}" type="button" data-bno="${esc(n)}">${esc(n)}號</button>`)).join("");
   }
   function renderBeanStats() {
     const live = beanLive(state.beanRecords).filter(r =>
@@ -2883,7 +2904,7 @@
         done[r.klass + "\t" + r.no] = true;
       });
       const missing = beanRoster()
-        .filter(s => !done[s.klass + "\t" + s.no] && beanPassQ({ klass: s.klass, no: s.no, day: "", stage: "" }));
+        .filter(s => !done[s.klass + "\t" + s.no] && beanPassQ({ klass: s.klass, no: s.no, day: "", stage: "" }) && beanStudentOk(s));
       $("beanMain").innerHTML = editBanner() + `<h2 class="h2">未交　${missing.length}</h2>
         <div class="pills">${missing.map(s => `<span class="pill">${esc(s.klass)} ${esc(s.no)}號 ${esc(s.name)}</span>`).join("") || `<p class="empty">這範圍已經全部交過相片。</p>`}</div>`;
       return;
@@ -2892,10 +2913,19 @@
       a.klass.localeCompare(b.klass, "zh-Hant") || Number(a.no) - Number(b.no) || String(a.day).localeCompare(String(b.day))
     );
     if (!photos.length) {
-      $("beanMain").innerHTML = editBanner() + `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
+      const msg = state.beanNo !== "all"
+        ? "呢個學號暫時未有相片。"
+        : "暫時未有紀錄。請學生儲存後，撳「重新整理」。";
+      $("beanMain").innerHTML = editBanner() + `<p class="empty">${msg}</p>`;
       return;
     }
-    $("beanMain").innerHTML = editBanner() + `<h2 class="h2">全部相片　${photos.length}</h2>
+    let heading = "全部相片　" + photos.length;
+    if (state.beanNo !== "all") {
+      const klass = state.beanFilter !== "all" ? state.beanFilter : "";
+      const name = klass ? lookupName(klass, state.beanNo) : "";
+      heading = (klass ? klass + "　" : "") + state.beanNo + "號" + (name ? "　" + name : "") + "　" + photos.length + " 張";
+    }
+    $("beanMain").innerHTML = editBanner() + `<h2 class="h2">${esc(heading)}</h2>
       <div class="photo-wall">${photos.map((r, i) => `
         <button class="photo-card" type="button" data-bean="${i}">
           ${state.editing ? `<span class="photo-del" data-bean-del="${i}">刪除</span>` : ""}
@@ -3175,6 +3205,13 @@
       const b = e.target.closest("button[data-bday]");
       if (!b) return;
       state.beanDay = b.getAttribute("data-bday");
+      renderBean();
+    };
+    $("beanNoChips").onclick = (e) => {
+      const b = e.target.closest("button[data-bno]");
+      if (!b) return;
+      state.beanNo = b.getAttribute("data-bno");
+      if (state.beanNo !== "all") state.beanDay = "all";
       renderBean();
     };
     $("beanQ").addEventListener("input", () => {
