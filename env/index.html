@@ -616,7 +616,8 @@ const start = () => ({
   crashing: false,
   rescuing: false,
   place: null,
-  room: "smoke"
+  room: "smoke",
+  tab: { factory: "chimney", beach: "trash", road: "taxi", ship: "funnel" }
 });
 let state = start();
 let timer = 0;
@@ -977,6 +978,173 @@ function shipScene() {
   </svg>`;
 }
 
+function pairChoices(onLabel, offLabel, key, onPic, offPic) {
+  return `<div class="choices">${choice(onLabel, "set", { key, val: "1" }, state[key], true, onPic)}${choice(offLabel, "set", { key, val: "0" }, !state[key], false, offPic)}</div>`;
+}
+function tabBar(place, tabs, current) {
+  return `<div class="tabs">${Object.entries(tabs).map(([id, tab]) =>
+    `<button type="button" data-act="tab" data-place="${place}" data-tab="${id}" aria-pressed="${current === id ? "true" : "false"}">${tab.title}</button>`
+  ).join("")}</div>`;
+}
+const places = {
+  factory: {
+    title: "工廠",
+    tabs: {
+      chimney: {
+        title: "煙囪",
+        leadOn: "煙囪排出黑煙，天空變得灰濛濛。",
+        leadOff: "煙囪已經關掉，沒有黑煙排出來。",
+        key: "factoryAir",
+        on: "煙囪排出黑煙",
+        off: "關掉煙囪",
+        onPic: "stackOn",
+        offPic: "stackOff"
+      },
+      dust: {
+        title: "塵土",
+        leadOn: "旁邊的地盤揚起塵土，空氣變得污濁。",
+        leadOff: "地盤沒有揚起塵土。",
+        key: "dust",
+        on: "地盤揚起塵土",
+        off: "灑水減少塵土",
+        onPic: "dustOn",
+        offPic: "dustOff"
+      },
+      sewage: {
+        title: "污水",
+        leadOn: "工業活動產生的污水流進海裡。",
+        leadOff: "污水先處理好，沒有直排進海。",
+        key: "factoryWater",
+        on: "污水排進海",
+        off: "污水先處理好",
+        onPic: "waterOn",
+        offPic: "waterOff"
+      }
+    }
+  },
+  beach: {
+    title: "海灘",
+    tabs: {
+      trash: {
+        title: "垃圾",
+        leadOn: "人們玩樂後留下膠袋、膠樽和垃圾。魚、海龜和海鳥可能被纏住，或誤食這些塑膠。",
+        leadOff: "海灘的垃圾已經放進回收箱。",
+        key: "trash",
+        on: "留下垃圾",
+        off: "撿走垃圾，放進回收箱",
+        onPic: "trashOn",
+        offPic: "trashOff"
+      },
+      net: {
+        title: "漁網",
+        leadOn: "廢棄的漁網纏住了小海龜。",
+        leadOff: "漁網收回了，小海龜沒有被纏住。",
+        key: "net",
+        on: "留下漁網",
+        off: "收回漁網",
+        onPic: "netOn",
+        offPic: "netOff"
+      },
+      drain: {
+        title: "渠口",
+        leadOn: "雨水渠吐出污水，髒水直排進海。",
+        leadOff: "渠口沒有污水。",
+        key: "drain",
+        on: "雨水渠吐出污水",
+        off: "渠口沒有污水",
+        onPic: "drainOn",
+        offPic: "drainOff"
+      }
+    }
+  },
+  road: {
+    title: "馬路",
+    tabs: {
+      taxi: {
+        title: "的士",
+        leadOn: "經常乘搭的士，汽車排出廢氣。",
+        leadOff: "少乘的士，改為行路，少了廢氣。",
+        key: "taxi",
+        on: "經常乘搭的士",
+        off: "少乘的士，改為行路",
+        onPic: "taxiOn",
+        offPic: "walk"
+      },
+      bus: {
+        title: "小巴",
+        leadOn: "小巴在路邊開着引擎，也排出廢氣。",
+        leadOff: "小巴引擎已經關掉。",
+        key: "minibus",
+        on: "小巴開着引擎",
+        off: "關掉小巴引擎",
+        onPic: "busOn",
+        offPic: "busOff"
+      },
+      wash: {
+        title: "洗車",
+        leadOn: "在路邊洗車，清潔劑流進雨水渠，再流到海裡。",
+        leadOff: "沒有在路邊洗車，清潔劑沒有流進海裡。",
+        key: "wash",
+        on: "在路邊洗車",
+        off: "不去路邊洗車",
+        onPic: "washOn",
+        offPic: "washOff"
+      }
+    }
+  },
+  ship: {
+    title: "輪船",
+    tabs: {
+      funnel: {
+        title: "煙囪",
+        leadOn: "煙囪正在排出黑煙，天空會變得灰濛濛。",
+        leadOff: "煙囪沒有黑煙。",
+        key: "shipAir",
+        on: "煙囪排出黑煙",
+        off: "關掉黑煙",
+        onPic: "shipOn",
+        offPic: "shipOff"
+      },
+      rubbish: {
+        title: "垃圾",
+        leadOn: "船員把垃圾扔下海。膠袋和膠樽會傷害海裡的動物。拯救小隊只清理油污，不會撿走這些垃圾。",
+        leadOff: "船上的垃圾留在船上，沒有扔下海。",
+        key: "dump",
+        on: "把垃圾扔下海",
+        off: "垃圾帶回岸上",
+        onPic: "dumpOn",
+        offPic: "dumpOff"
+      },
+      sail: {
+        title: "航行",
+        lead() {
+          if (state.crashing) return "輪船正向石頭駛過去……";
+          if (state.rescuing) return "拯救小隊正在清理海面的油。";
+          if (state.oil) return "輪船撞到石頭，漏出燃油。海面有很多油，小魚和小鳥活不了。";
+          return "輪船在海上行駛。如果撞到石頭，燃油就會漏進海裡。";
+        },
+        body() {
+          return shipScene() + `<div class="choices">
+            ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false, "sailOk")}
+            ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true, "crash")}
+            ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false, "rescue")}
+          </div>`;
+        }
+      }
+    }
+  }
+};
+function showPlace(id, title, lead, extra, body) {
+  const place = places[id];
+  const tabs = place.tabs;
+  const tabId = tabs[state.tab[id]] ? state.tab[id] : Object.keys(tabs)[0];
+  state.tab[id] = tabId;
+  const tab = tabs[tabId];
+  title.textContent = place.title;
+  lead.textContent = tab.lead ? tab.lead() : (state[tab.key] ? tab.leadOn : tab.leadOff);
+  extra.innerHTML = tabBar(id, tabs, tabId);
+  body.innerHTML = tab.body ? tab.body() : pairChoices(tab.on, tab.off, tab.key, tab.onPic, tab.offPic);
+}
 function renderSheet() {
   const sheet = $("sheet");
   if (!state.place) {
@@ -999,80 +1167,8 @@ function renderSheet() {
     body.innerHTML = `<div class="choices">${choice(room.off, "set", { key: room.key, val: "0" }, !state[room.key], false, room.offPic)}${choice(room.on, "set", { key: room.key, val: "1" }, state[room.key], true, room.onPic)}</div>`;
     return;
   }
-  if (state.place === "ship") {
-    title.textContent = "輪船";
-    if (state.crashing) lead.textContent = "輪船正向石頭駛過去……";
-    else if (state.rescuing) lead.textContent = "拯救小隊正在清理海面的油。";
-    else if (state.oil) lead.textContent = "輪船撞到石頭，漏出燃油。海面有很多油，小魚和小鳥活不了。";
-    else if (state.dump) lead.textContent = "船員把垃圾扔下海。膠袋和膠樽會傷害海裡的動物。拯救小隊只清理油污，不會撿走這些垃圾。";
-    else lead.textContent = "輪船在海上行駛。煙囪的黑煙會污染空氣。如果撞到石頭，燃油就會漏進海裡。船上的垃圾也不可以扔下海。";
-    const shipWarns = [];
-    if (state.shipAir) shipWarns.push("煙囪正在排出黑煙，天空會變得灰濛濛。");
-    if (state.dump && (state.oil || state.crashing || state.rescuing)) shipWarns.push("船上的垃圾掉進海裡，小動物可能誤食或被纏住。");
-    extra.innerHTML = shipWarns.map((text) => `<p class="warn">${text}</p>`).join("");
-    body.innerHTML = shipScene() + `<div class="choices">
-      ${choice("煙囪排出黑煙", "set", { key: "shipAir", val: "1" }, state.shipAir, true, "shipOn")}
-      ${choice("關掉黑煙", "set", { key: "shipAir", val: "0" }, !state.shipAir, false, "shipOff")}
-      ${choice("把垃圾扔下海", "set", { key: "dump", val: "1" }, state.dump, true, "dumpOn")}
-      ${choice("垃圾帶回岸上", "set", { key: "dump", val: "0" }, !state.dump, false, "dumpOff")}
-      ${choice("小心駛過", "safe", {}, !state.oil && !state.crashing, false, "sailOk")}
-      ${choice("撞到石頭", "crash", {}, state.oil || state.crashing, true, "crash")}
-      ${choice("派出拯救小隊", "rescue", {}, state.rescuing, false, "rescue")}
-    </div>`;
-    return;
-  }
-  if (state.place === "factory") {
-    title.textContent = "工廠";
-    const bits = [];
-    if (state.factoryAir) bits.push("煙囪排出黑煙，天空變得灰濛濛。");
-    if (state.dust) bits.push("旁邊的地盤揚起塵土，空氣變得污濁。");
-    if (state.factoryWater) bits.push("工業活動產生的污水流進海裡。");
-    if (!bits.length) bits.push("工廠沒有把黑煙、塵土和污水放出來。");
-    lead.textContent = bits.join("");
-    body.innerHTML = `<div class="choices">
-      ${choice("煙囪排出黑煙", "set", { key: "factoryAir", val: "1" }, state.factoryAir, true, "stackOn")}
-      ${choice("關掉煙囪", "set", { key: "factoryAir", val: "0" }, !state.factoryAir, false, "stackOff")}
-      ${choice("地盤揚起塵土", "set", { key: "dust", val: "1" }, state.dust, true, "dustOn")}
-      ${choice("灑水減少塵土", "set", { key: "dust", val: "0" }, !state.dust, false, "dustOff")}
-      ${choice("污水排進海", "set", { key: "factoryWater", val: "1" }, state.factoryWater, true, "waterOn")}
-      ${choice("污水先處理好", "set", { key: "factoryWater", val: "0" }, !state.factoryWater, false, "waterOff")}
-    </div>`;
-    return;
-  }
-  if (state.place === "beach") {
-    title.textContent = "海灘";
-    const bits = [];
-    if (state.trash) bits.push("人們玩樂後留下膠袋、膠樽和垃圾。魚、海龜和海鳥可能被纏住，或誤食這些塑膠。");
-    if (state.net) bits.push("廢棄的漁網纏住了小海龜。");
-    if (state.drain) bits.push("雨水渠吐出污水，髒水直排進海。");
-    if (!bits.length) bits.push("海灘乾淨，漁網也收回了，渠口沒有污水。");
-    lead.textContent = bits.join("");
-    body.innerHTML = `<div class="choices">
-      ${choice("留下垃圾", "set", { key: "trash", val: "1" }, state.trash, true, "trashOn")}
-      ${choice("撿走垃圾，放進回收箱", "set", { key: "trash", val: "0" }, !state.trash, false, "trashOff")}
-      ${choice("留下漁網", "set", { key: "net", val: "1" }, state.net, true, "netOn")}
-      ${choice("收回漁網", "set", { key: "net", val: "0" }, !state.net, false, "netOff")}
-      ${choice("雨水渠吐出污水", "set", { key: "drain", val: "1" }, state.drain, true, "drainOn")}
-      ${choice("渠口沒有污水", "set", { key: "drain", val: "0" }, !state.drain, false, "drainOff")}
-    </div>`;
-    return;
-  }
-  if (state.place === "road") {
-    title.textContent = "馬路";
-    const roadBits = [];
-    if (state.taxi) roadBits.push("經常乘搭的士，汽車排出廢氣。");
-    if (state.minibus) roadBits.push("小巴在路邊開着引擎，也排出廢氣。");
-    if (state.wash) roadBits.push("在路邊洗車，清潔劑流進雨水渠，再流到海裡。");
-    if (!roadBits.length) roadBits.push("少乘車，改為行路，也沒有在路邊洗車。空氣清新一點，海水也少了清潔劑。");
-    lead.textContent = roadBits.join("");
-    body.innerHTML = `<div class="choices">
-      ${choice("經常乘搭的士", "set", { key: "taxi", val: "1" }, state.taxi, true, "taxiOn")}
-      ${choice("少乘的士，改為行路", "set", { key: "taxi", val: "0" }, !state.taxi, false, "walk")}
-      ${choice("小巴開着引擎", "set", { key: "minibus", val: "1" }, state.minibus, true, "busOn")}
-      ${choice("關掉小巴引擎", "set", { key: "minibus", val: "0" }, !state.minibus, false, "busOff")}
-      ${choice("在路邊洗車", "set", { key: "wash", val: "1" }, state.wash, true, "washOn")}
-      ${choice("不去路邊洗車", "set", { key: "wash", val: "0" }, !state.wash, false, "washOff")}
-    </div>`;
+  if (places[state.place]) {
+    showPlace(state.place, title, lead, extra, body);
     return;
   }
   title.textContent = "郊外";
@@ -1139,6 +1235,7 @@ $("sheet").addEventListener("click", (e) => {
   const act = b.dataset.act;
   if (act === "close") state.place = null;
   if (act === "room") state.room = b.dataset.room;
+  if (act === "tab") state.tab[b.dataset.place] = b.dataset.tab;
   if (act === "set") state[b.dataset.key] = b.dataset.val === "1";
   if (act === "crash") { crash(); return; }
   if (act === "safe") { if (!state.oil) state.crashing = false; }
