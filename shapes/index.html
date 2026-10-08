@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>圖形拼砌</title>
+<style>
+  :root {
+    --ink: #1c2833;
+    --accent: #1f4e8c;
+    --accent-2: #2f6fba;
+    --cream: #fbf8f1;
+    --paper: #e7eef6;
+    --gold: #e8c15a;
+    --ok: #1e8a5a;
+    --muted: #5d6d7e;
+    --line: #d5e0ea;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: "PingFang HK", "PingFang TC", "Noto Sans TC", "微軟正黑體", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    min-height: 100%;
+    padding: max(10px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));
+  }
+  header.bar {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 14px;
+    padding: 12px 14px 10px;
+    text-align: center;
+  }
+  header.bar h1 { margin: 0; font-size: 26px; letter-spacing: .12em; font-weight: 800; }
+  header.bar p { margin: 4px 0 0; color: #f8f1d8; font-weight: 650; font-size: 16px; line-height: 1.45; }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .nav button, .dots button {
+    border: 0;
+    background: rgba(255,255,255,.16);
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 750;
+    font-size: 15px;
+    min-height: 40px;
+    padding: 0 10px;
+  }
+  .dots { display: flex; gap: 6px; flex: 1 1 auto; justify-content: center; min-width: 0; }
+  .dots button { flex: 1 1 0; min-width: 28px; max-width: 44px; padding: 0; }
+  .dots button.on { background: var(--gold); color: #1c2833; }
+  .dots button.done { box-shadow: inset 0 -3px 0 #8fd7b0; }
+  .card {
+    background: var(--cream);
+    border-radius: 18px;
+    margin-top: 12px;
+    padding: 10px 10px 12px;
+    box-shadow: 0 8px 24px rgba(31, 78, 140, .12);
+  }
+  .stage {
+    height: min(46vh, 460px);
+    background: #fffdf8;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  svg { width: 100%; height: 100%; display: block; touch-action: none; }
+  .status {
+    min-height: 28px;
+    margin: 8px 4px 4px;
+    text-align: center;
+    font-weight: 750;
+    font-size: 16px;
+    color: var(--accent);
+  }
+  .status.ok { color: var(--ok); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tools button {
+    flex: 1 1 30%;
+    min-height: 52px;
+    border-radius: 14px;
+    border: 2px solid #c5d4e4;
+    background: #fff;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .tools button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tools button:disabled { opacity: .45; }
+  .tools button:active:not(:disabled) { transform: scale(.98); }
+  #reset {
+    flex: 1 1 100%;
+    min-height: 68px;
+    font-size: 26px;
+    letter-spacing: .18em;
+    background: #e53935;
+    color: #fff;
+    border-color: #c62828;
+  }
+  .banner {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    background: #e5f6ec;
+    color: var(--ok);
+    border: 0;
+    border-radius: 14px;
+    text-align: center;
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: 850;
+    padding: 12px;
+    opacity: .4;
+  }
+  .banner[hidden] { display: none; }
+  .banner:not(:disabled) { opacity: 1; cursor: pointer; }
+  .banner:not(:disabled):active { transform: scale(.98); }
+  #report { display: none; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; }
+  body.testing #report { display: block; }
+  body.testing .who-line { display: none; }
+  .who-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px;
+    min-height: 36px;
+  }
+  .who-line span { font-weight: 750; font-size: 16px; color: #f8f1d8; }
+  .who-line button, .ghost {
+    border: 0;
+    background: rgba(255,255,255,.16);
+    color: #fff;
+    border-radius: 10px;
+    font-weight: 750;
+    font-size: 15px;
+    min-height: 36px;
+    padding: 0 12px;
+  }
+  .who-line button {
+    background: #fff;
+    color: var(--accent);
+    font-size: 17px;
+    font-weight: 800;
+    min-height: 40px;
+    padding: 0 14px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  .label { margin: 12px 4px 8px; font-weight: 800; color: var(--accent); font-size: 18px; }
+  .class-row, .name-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .class-row button, .name-grid button, .level-pick, .go {
+    border: 2px solid #c5d4e4;
+    background: #fff;
+    color: var(--accent);
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: 22px;
+    min-height: 64px;
+  }
+  .class-row button { flex: 1 1 30%; }
+  .class-row button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #leaderNo {
+    display: block;
+    width: 100%;
+    margin: 4px 0 10px;
+    background: #fff;
+    border: 2px solid #c5d4e4;
+    border-radius: 14px;
+    min-height: 72px;
+    font-family: inherit;
+    font-size: 36px;
+    font-weight: 850;
+    text-align: center;
+    color: var(--ink);
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .leader-name { text-align: center; font-size: 28px; font-weight: 850; margin: 8px 0; color: var(--ink); }
+  .go, .level-pick { width: 100%; }
+  .go { background: var(--accent); color: #fff; border-color: var(--accent); margin-top: 8px; }
+  .level-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .level-pick b { font-size: 22px; }
+  .level-pick span { font-size: 16px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+  .ghost {
+    width: 100%;
+    margin-top: 4px;
+    background: #e7eef6;
+    color: var(--accent);
+    min-height: 48px;
+  }
+  .name-grid button { flex: 1 1 46%; }
+  .name-grid button:disabled { opacity: .45; }
+  .big-answer {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--ok);
+  }
+  #quizFig { background: #fffdf8; }
+  #quizFig svg { width: 100%; height: 100%; display: block; }
+  @media (max-width: 640px) {
+    .app { width: 100%; padding-left: 8px; padding-right: 8px; }
+    header.bar, .nav, .card { min-width: 0; }
+    header.bar { padding: 10px 8px 8px; }
+    .nav {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 4px;
+      width: 100%;
+    }
+    .nav button { font-size: 14px; padding: 0 6px; min-height: 36px; }
+    .dots { gap: 4px; width: 100%; min-width: 0; }
+    .dots button { min-width: 0; max-width: none; font-size: 14px; }
+    .tools button { flex: 1 1 46%; font-size: 17px; min-height: 48px; }
+    header.bar h1 { font-size: 22px; letter-spacing: .06em; }
+    header.bar p { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+    .stage { height: min(42vh, 380px); }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="gate">
+  <header class="bar">
+    <h1>圖形拼砌</h1>
+    <p>一組三人或四人，填組長的學號就可以。</p>
+  </header>
+  <div class="card">
+    <p class="label">班別</p>
+    <div class="class-row" id="classRow">
+      <button type="button" data-class="4A">4A</button>
+      <button type="button" data-class="4B">4B</button>
+      <button type="button" data-class="4C">4C</button>
+    </div>
+    <p class="label">組長學號</p>
+    <input id="leaderNo" type="text" inputmode="numeric" maxlength="2" autocomplete="off" enterkeyhint="done" aria-label="組長學號">
+    <p class="status" id="gateMsg"></p>
+    <div id="leaderBox" hidden>
+      <p class="leader-name" id="leaderName"></p>
+      <button type="button" class="go" id="enterBtn">進入</button>
+    </div>
+  </div>
+</div>
+<div class="app" id="menu" hidden>
+  <header class="bar">
+    <h1>圖形拼砌</h1>
+    <p id="menuWho"></p>
+  </header>
+  <div class="card">
+    <button type="button" class="level-pick" data-pack="0"><b>Level 1</b><span>八關分割拼砌</span></button>
+    <button type="button" class="level-pick" data-pack="1"><b>Level 2</b><span>五題拼砌</span></button>
+    <button type="button" class="level-pick" data-pack="2"><b>Level 3</b><span>五題填補</span></button>
+    <button type="button" class="ghost" id="changeGroup">更改班別或學號</button>
+  </div>
+</div>
+<div class="app" id="quiz" hidden>
+  <header class="bar">
+    <h1>Level 3　填補圖形</h1>
+    <div class="who-line">
+      <span id="quizWho"></span>
+      <button type="button" id="quizMenu">返回目錄</button>
+    </div>
+    <p id="quizGoal"></p>
+  </header>
+  <div class="card">
+    <div class="stage" id="quizFig"></div>
+    <p class="status" id="quizPrompt"></p>
+    <div class="name-grid" id="quizNames"></div>
+    <p class="big-answer" id="quizAnswer" hidden></p>
+    <button type="button" class="banner" id="quizNext" hidden>下一題</button>
+  </div>
+</div>
+<div class="app" id="play" hidden>
+  <header class="bar">
+    <h1>圖形拼砌</h1>
+    <div class="who-line">
+      <span id="whoName"></span>
+      <button type="button" id="toMenu">返回目錄</button>
+    </div>
+    <p id="goal">把圖形分割，再拼成右面的指定圖形。</p>
+    <div class="nav">
+      <button type="button" id="prev">上一關</button>
+      <div class="dots" id="dots"></div>
+      <button type="button" id="next">下一關</button>
+    </div>
+  </header>
+  <div class="card">
+    <div class="stage"><svg id="board"></svg></div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="tools">
+      <button type="button" id="rot90">轉 90°</button>
+      <button type="button" id="rot15">轉 15°</button>
+      <button type="button" id="flip">反轉</button>
+      <button type="button" id="hint">提示</button>
+      <button type="button" id="reset">重設</button>
+    </div>
+    <button type="button" class="banner" id="banner" disabled>拼砌成功</button>
+  </div>
+</div>
+<pre id="report"></pre>
+<script>
+const SVGNS = "http://www.w3.org/2000/svg";
+const H = Math.sqrt(3);
+
+const LEVELS = [
+  {
+    name: "正方形變大長方形",
+    goal: "把正方形裡的兩個長方形，拼成右面的大長方形。",
+    left: "正方形",
+    right: "長方形",
+    needsCut: false,
+    pieces: [
+      {
+        color: "#5eb0e8",
+        start: [[0, 0], [2, 0], [2, 4], [0, 4]],
+        solution: [[0, 0], [4, 0], [4, 2], [0, 2]]
+      },
+      {
+        color: "#2f80ed",
+        start: [[2, 0], [4, 0], [4, 4], [2, 4]],
+        solution: [[4, 0], [8, 0], [8, 2], [4, 2]]
+      }
+    ],
+    target: [[0, 0], [8, 0], [8, 2], [0, 2]]
+  },
+  {
+    name: "兩個梯形拼平行四邊形",
+    goal: "用兩個相同的梯形，拼成右面的平行四邊形。",
+    left: "梯形",
+    right: "平行四邊形",
+    needsCut: false,
+    pieces: [
+      {
+        color: "#2f80ed",
+        start: [[0, 0], [4, 0], [3, 2], [1, 2]],
+        solution: [[0, 0], [4, 0], [3, 2], [1, 2]]
+      },
+      {
+        color: "#f2a007",
+        start: [[5, 0], [9, 0], [8, 2], [6, 2]],
+        solution: [[1, 2], [-3, 2], [-2, 0], [0, 0]]
+      }
+    ],
+    target: [[4, 0], [3, 2], [-3, 2], [-2, 0]]
+  },
+  {
+    name: "菱形分割拼平行四邊形",
+    goal: "把菱形分割成兩個三角形，再拼成右面的平行四邊形。",
+    left: "菱形",
+    right: "平行四邊形",
+    needsCut: true,
+    pieces: [
+      {
+        color: "#c9a0e0",
+        start: [[0, 0], [4, 0], [2, 3]],
+        solution: [[0, 0], [4, 0], [2, 3]]
+      },
+      {
+        color: "#8e44ad",
+        start: [[0, 0], [2, -3], [4, 0]],
+        solution: [[4, 0], [6, 3], [2, 3]]
+      }
+    ],
+    target: [[0, 0], [4, 0], [6, 3], [2, 3]]
+  },
+  {
+    name: "菱形變平行四邊形",
+    goal: "把菱形分割成兩個三角形，再拼成一個平行四邊形。",
+    left: "菱形",
+    right: "平行四邊形",
+    needsCut: true,
+    pieces: [
+      {
+        color: "#f2a007",
+        start: [[0, 0], [5, 0], [8, 4]],
+        solution: [[0, 0], [5, 0], [8, 4]]
+      },
+      {
+        color: "#1aa37a",
+        start: [[0, 0], [3, 4], [8, 4]],
+        solution: [[5, 0], [8, 4], [13, 4]]
+      }
+    ],
+    target: [[0, 0], [5, 0], [13, 4], [8, 4]]
+  },
+  {
+    name: "平行四邊形變長方形",
+    goal: "把平行四邊形分割，再拼成一個長方形。",
+    left: "平行四邊形",
+    right: "長方形",
+    needsCut: true,
+    wideCut: true,
+    pieces: [
+      {
+        color: "#1aa37a",
+        start: [[0, 0], [2, 0], [2, 3]],
+        solution: [[6, 0], [8, 0], [8, 3]]
+      },
+      {
+        color: "#2f80ed",
+        start: [[2, 0], [6, 0], [8, 3], [2, 3]],
+        solution: [[2, 0], [6, 0], [8, 3], [2, 3]]
+      }
+    ],
+    target: [[2, 0], [8, 0], [8, 3], [2, 3]]
+  },
+  {
+    name: "正方形變大三角形",
+    goal: "把正方形分割成兩個三角形，再拼成一個較大的三角形。",
+    left: "正方形",
+    right: "三角形",
+    needsCut: true,
+    pieces: [
+      {
+        color: "#f2a007",
+        start: [[0, 0], [4, 0], [4, 4]],
+        solution: [[0, 0], [4, 0], [4, 4]]
+      },
+      {
+        color: "#e15a3a",
+        start: [[0, 0], [4, 4], [0, 4]],
+        solution: [[4, 0], [8, 0], [4, 4]]
+      }
+    ],
+    target: [[0, 0], [8, 0], [4, 4]]
+  },
+  {
+    name: "六邊形變平行四邊形",
+    goal: "把六邊形分割成兩個梯形，再拼成一個平行四邊形。",
+    left: "六邊形",
+    right: "平行四邊形",
+    needsCut: true,
+    looseCut: true,
+    pieces: [
+      {
+        color: "#f0a202",
+        start: [[-2, 0], [-1, H], [1, H], [2, 0]],
+        solution: [[-2, 0], [-1, H], [1, H], [2, 0]]
+      },
+      {
+        color: "#e07a14",
+        start: [[-2, 0], [2, 0], [1, -H], [-1, -H]],
+        solution: [[-1, H], [-2, 0], [-4, 0], [-5, H]]
+      }
+    ],
+    target: [[1, H], [2, 0], [-4, 0], [-5, H]]
+  },
+  {
+    name: "長方形變正方形",
+    goal: "把長方形分割，再拼成一個正方形。",
+    left: "長方形",
+    right: "正方形",
+    needsCut: true,
+    pieces: [
+      {
+        color: "#2f80ed",
+        start: [[0, 0], [4, 0], [4, 2], [0, 2]],
+        solution: [[0, 0], [4, 0], [4, 2], [0, 2]]
+      },
+      {
+        color: "#1aa37a",
+        start: [[4, 0], [8, 0], [8, 2], [4, 2]],
+        solution: [[0, 2], [4, 2], [4, 4], [0, 4]]
+      }
+    ],
+    target: [[0, 0], [4, 0], [4, 4], [0, 4]]
+  }
+];
+
+const TRI_A = "#8bc34a";
+const TRI_B = "#2e7d32";
+const PARA = "#f2a007";
+const LEVEL2 = [
+  {
+    name: "兩個三角形拼正方形",
+    goal: "用兩個相同的三角形，拼成右面的正方形。",
+    left: "三角形",
+    right: "正方形",
+    needsCut: false,
+    pieces: [
+      { color: TRI_A, start: [[0, 0], [3, 0], [3, 3]], solution: [[0, 0], [3, 0], [3, 3]] },
+      { color: TRI_B, start: [[4, 0], [7, 0], [7, 3]], solution: [[0, 0], [0, 3], [3, 3]] }
+    ],
+    target: [[0, 0], [3, 0], [3, 3], [0, 3]]
+  },
+  {
+    name: "拼成長方形",
+    goal: "用兩個三角形和一個平行四邊形，拼成右面的長方形。",
+    left: "圖形",
+    right: "長方形",
+    needsCut: false,
+    pieces: [
+      { color: TRI_A, start: [[0, 0], [3, 0], [3, 3]], solution: [[0, 0], [0, 3], [3, 3]] },
+      { color: TRI_B, start: [[4, 0], [7, 0], [7, 3]], solution: [[3, 0], [6, 0], [6, 3]] },
+      { color: PARA, start: [[8.5, 0], [11.5, 0], [14.5, 3], [11.5, 3]], solution: [[0, 0], [3, 0], [6, 3], [3, 3]] }
+    ],
+    target: [[0, 0], [6, 0], [6, 3], [0, 3]]
+  },
+  {
+    name: "拼成三角形",
+    goal: "用兩個三角形和一個平行四邊形，拼成右面的三角形。",
+    left: "圖形",
+    right: "三角形",
+    needsCut: false,
+    pieces: [
+      { color: TRI_A, start: [[0, 0], [3, 0], [3, 3]], solution: [[3, 3], [6, 3], [6, 6]] },
+      { color: TRI_B, start: [[4, 0], [7, 0], [7, 3]], solution: [[3, 0], [6, 0], [6, 3]] },
+      { color: PARA, start: [[8.5, 0], [11.5, 0], [14.5, 3], [11.5, 3]], solution: [[0, 0], [3, 0], [6, 3], [3, 3]] }
+    ],
+    target: [[0, 0], [6, 0], [6, 6]]
+  },
+  {
+    name: "拼成六邊形",
+    goal: "用兩個三角形和一個平行四邊形，拼成右面的六邊形。",
+    left: "圖形",
+    right: "六邊形",
+    needsCut: false,
+    pieces: [
+      { color: TRI_A, start: [[0, 0], [3, 0], [3, 3]], solution: [[6, 3], [6, 6], [3, 6]] },
+      { color: TRI_B, start: [[4, 0], [7, 0], [7, 3]], solution: [[3, 6], [3, 3], [6, 3]] },
+      { color: PARA, start: [[8.5, 0], [11.5, 0], [14.5, 3], [11.5, 3]], solution: [[0, 0], [3, 3], [3, 6], [0, 3]] }
+    ],
+    target: [[0, 0], [3, 3], [6, 3], [6, 6], [3, 6], [0, 3]]
+  },
+  {
+    name: "拼成七邊形",
+    goal: "用兩個三角形和一個平行四邊形，拼成右面的七邊形。",
+    left: "圖形",
+    right: "七邊形",
+    needsCut: false,
+    pieces: [
+      { color: TRI_A, start: [[0, 0], [3, 0], [3, 3]], solution: [[2, 3], [5, 3], [5, 6]] },
+      { color: TRI_B, start: [[4, 0], [7, 0], [7, 3]], solution: [[3, 3], [6, 3], [6, 0]] },
+      { color: PARA, start: [[8.5, 0], [11.5, 0], [14.5, 3], [11.5, 3]], solution: [[0, 3], [3, 0], [6, 0], [3, 3]] }
+    ],
+    target: [[5, 6], [2, 3], [0, 3], [3, 0], [6, 0], [6, 3], [5, 3]]
+  }
+];
+
+const QUIZ = [
+  {
+    title: "正方形",
+    prompt: "要填補哪一個圖形，才可以拼成正方形？",
+    answer: "長方形",
+    cols: 5,
+    rows: 5,
+    color: "#8bc34a",
+    given: [[0, 0], [2, 0], [2, 2], [5, 2], [5, 5], [0, 5]],
+    missing: [[2, 0], [5, 0], [5, 2], [2, 2]]
+  },
+  {
+    title: "長方形",
+    prompt: "要填補哪一個圖形，才可以拼成長方形？",
+    answer: "梯形",
+    cols: 8,
+    rows: 4,
+    color: "#5eb0e8",
+    given: [[0, 0], [8, 0], [6, 1], [6, 4], [0, 4]],
+    missing: [[6, 1], [8, 0], [8, 4], [6, 4]]
+  },
+  {
+    title: "正方形",
+    prompt: "要填補哪一個圖形，才可以拼成正方形？",
+    answer: "三角形",
+    cols: 5,
+    rows: 5,
+    color: "#8bc34a",
+    given: [[0, 0], [2, 0], [5, 3], [5, 5], [0, 5]],
+    missing: [[2, 0], [5, 0], [5, 3]]
+  },
+  {
+    title: "長方形",
+    prompt: "要填補哪一個圖形，才可以拼成長方形？",
+    answer: "正方形",
+    cols: 8,
+    rows: 5,
+    color: "#5eb0e8",
+    given: [[0, 0], [3, 0], [3, 3], [6, 3], [6, 0], [8, 0], [8, 5], [0, 5]],
+    missing: [[3, 0], [6, 0], [6, 3], [3, 3]]
+  },
+  {
+    title: "長方形",
+    prompt: "要填補哪一個圖形，才可以拼成長方形？",
+    answer: "平行四邊形",
+    cols: 8,
+    rows: 5,
+    color: "#9575cd",
+    given: [[0, 0], [2, 0], [4, 3], [7, 3], [5, 0], [8, 0], [8, 5], [0, 5]],
+    missing: [[2, 0], [5, 0], [7, 3], [4, 3]]
+  }
+];
+const QUIZ_NAMES = ["三角形", "正方形", "長方形", "平行四邊形", "梯形"];
+
+const svg = document.getElementById("board");
+const statusEl = document.getElementById("status");
+const goalEl = document.getElementById("goal");
+const bannerEl = document.getElementById("banner");
+const dotsEl = document.getElementById("dots");
+
+const state = {
+  index: 0,
+  pieces: [],
+  target: [],
+  cut: false,
+  badCut: false,
+  won: false,
+  revealCut: false,
+  busy: false,
+  selected: 0,
+  done: LEVELS.map(() => false),
+  drag: null,
+  view: null,
+  hintTimer: 0
+};
+
+function centroid(pts) {
+  let a = 0, cx = 0, cy = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % pts.length];
+    const cross = x1 * y2 - x2 * y1;
+    a += cross;
+    cx += (x1 + x2) * cross;
+    cy += (y1 + y2) * cross;
+  }
+  a *= 0.5;
+  const f = 1 / (6 * a);
+  return { x: cx * f, y: cy * f, area: Math.abs(a) };
+}
+
+function rotatePt(x, y, deg) {
+  const a = deg * Math.PI / 180;
+  const c = Math.cos(a), s = Math.sin(a);
+  return [x * c - y * s, x * s + y * c];
+}
+
+function normDeg(d) {
+  let x = d % 360;
+  if (x < 0) x += 360;
+  return x;
+}
+
+function angDiff(a, b) {
+  let d = Math.abs(a - b) % 360;
+  if (d > 180) d = 360 - d;
+  return d;
+}
+
+function polyMatch(a, b, tol) {
+  if (a.length !== b.length) return false;
+  const n = a.length;
+  for (let s = 0; s < n; s++) {
+    let ok = true;
+    for (let i = 0; i < n; i++) {
+      const p = b[(i + s) % n];
+      if (Math.abs(p[0] - a[i][0]) > tol || Math.abs(p[1] - a[i][1]) > tol) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+
+function fitPose(local, worldPts) {
+  const c = centroid(worldPts);
+  const target = worldPts.map(([x, y]) => [x - c.x, y - c.y]);
+  const variants = [target, target.slice().reverse()];
+  for (const flip of [0, 1]) {
+    const src = local.map(([x, y]) => [flip ? -x : x, y]);
+    for (const tgt of variants) {
+      for (let i = 0; i < src.length; i++) {
+        for (let j = 0; j < tgt.length; j++) {
+          const s2 = src[(i + 1) % src.length];
+          const t2 = tgt[(j + 1) % tgt.length];
+          const sa = Math.atan2(s2[1] - src[i][1], s2[0] - src[i][0]);
+          const ta = Math.atan2(t2[1] - tgt[j][1], t2[0] - tgt[j][0]);
+          const rot = normDeg((ta - sa) * 180 / Math.PI);
+          const rotated = src.map(([x, y]) => rotatePt(x, y, rot));
+          if (polyMatch(rotated, tgt, 1e-3)) {
+            return { x: c.x, y: c.y, rot, flip };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function worldOf(piece) {
+  const { x, y, rot, flip } = piece.pose;
+  return piece.local.map(([px, py]) => {
+    const X = flip ? -px : px;
+    const [xr, yr] = rotatePt(X, py, rot);
+    return [xr + x, yr + y];
+  });
+}
+
+function pip(p, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1];
+    const xj = poly[j][0], yj = poly[j][1];
+    const hit = ((yi > p[1]) !== (yj > p[1])) &&
+      (p[0] < (xj - xi) * (p[1] - yi) / ((yj - yi) || 1e-12) + xi);
+    if (hit) inside = !inside;
+  }
+  return inside;
+}
+
+function bbox(pts) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of pts) {
+    minX = Math.min(minX, x); minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function scalePoly(poly, k) {
+  const c = centroid(poly);
+  return poly.map(([x, y]) => [c.x + (x - c.x) * k, c.y + (y - c.y) * k]);
+}
+
+function shapeKey(piece) {
+  const lens = [];
+  const pts = piece.local;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    lens.push(Math.hypot(a[0] - b[0], a[1] - b[1]));
+  }
+  lens.sort((a, b) => a - b);
+  return lens.map(n => n.toFixed(2)).join(",");
+}
+
+function covers() {
+  const eroded = scalePoly(state.target, 0.84);
+  const dilated = scalePoly(state.target, 1.18);
+  let missed = 0, overlap = 0, extra = 0, inside = 0;
+  const eb = bbox(eroded);
+  for (let y = eb.minY; y <= eb.maxY; y += 0.2) {
+    for (let x = eb.minX; x <= eb.maxX; x += 0.2) {
+      if (!pip([x, y], eroded)) continue;
+      inside++;
+      let count = 0;
+      for (const piece of state.pieces) {
+        if (pip([x, y], worldOf(piece))) count++;
+      }
+      if (count === 0) missed++;
+      else if (count > 1) overlap++;
+    }
+  }
+  for (const piece of state.pieces) {
+    const poly = worldOf(piece);
+    const pb = bbox(poly);
+    for (let y = pb.minY; y <= pb.maxY; y += 0.2) {
+      for (let x = pb.minX; x <= pb.maxX; x += 0.2) {
+        if (!pip([x, y], poly)) continue;
+        if (!pip([x, y], dilated)) extra++;
+      }
+    }
+  }
+  return {
+    ok: inside > 8 && missed === 0 && extra === 0 && overlap <= 2,
+    missed, extra, overlap, inside
+  };
+}
+
+function clientToSvg(e) {
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: 0, y: 0 };
+  const p = pt.matrixTransform(ctm.inverse());
+  return { x: p.x, y: p.y };
+}
+
+let packIndex = 0;
+let group = null;
+function levels() { return packIndex === 1 ? LEVEL2 : LEVELS; }
+function level() { return levels()[state.index]; }
+function groupTag() {
+  return group ? group.cls + "-" + group.no : "";
+}
+function saveProgress() {
+  try {
+    const tag = groupTag();
+    if (tag) {
+      sessionStorage.setItem("shape-cut-done-" + tag + "-" + packIndex, JSON.stringify(state.done));
+      sessionStorage.setItem("shape-cut-level-" + tag + "-" + packIndex, String(state.index));
+      sessionStorage.setItem("shape-cut-group", JSON.stringify(group));
+    }
+    if (packIndex === 0 && state.done.length === LEVELS.length) {
+      sessionStorage.setItem("shape-cut-done", JSON.stringify(state.done));
+      sessionStorage.setItem("shape-cut-level", String(state.index));
+    }
+  } catch (err) {}
+}
+function readDone(pack) {
+  const len = (pack === 1 ? LEVEL2 : LEVELS).length;
+  try {
+    const tag = groupTag();
+    if (tag) {
+      const own = JSON.parse(sessionStorage.getItem("shape-cut-done-" + tag + "-" + pack) || "null");
+      if (Array.isArray(own) && own.length === len) return own;
+    }
+    if (pack === 0) {
+      const legacy = JSON.parse(sessionStorage.getItem("shape-cut-done") || "null");
+      if (Array.isArray(legacy) && legacy.length === len) return legacy;
+    }
+  } catch (err) {}
+  return Array(len).fill(false);
+}
+
+function up(pts) {
+  return pts.map(([x, y]) => [x, -y]);
+}
+
+function prepare(def) {
+  const pieces = def.pieces.map((raw, i) => {
+    const start = up(raw.start);
+    const c = centroid(start);
+    const local = start.map(([x, y]) => [x - c.x, y - c.y]);
+    const solution = fitPose(local, up(raw.solution));
+    return {
+      id: i,
+      color: raw.color,
+      local,
+      pose: { x: c.x, y: c.y, rot: 0, flip: 0 },
+      solution,
+      key: ""
+    };
+  });
+  pieces.forEach(p => { p.key = shapeKey(p); });
+  const startPts = pieces.flatMap(worldOf);
+  const sb = bbox(startPts);
+  const tb = bbox(up(def.target));
+  const dx = sb.maxX + 3.2 - tb.minX;
+  const shiftX = dx > 0 ? dx : 0;
+  const sCy = (sb.minY + sb.maxY) / 2;
+  const tCy = (tb.minY + tb.maxY) / 2;
+  const shiftY = sCy - tCy;
+  const target = up(def.target).map(([x, y]) => [x + shiftX, y + shiftY]);
+  pieces.forEach(p => {
+    if (!p.solution) return;
+    p.solution = {
+      x: p.solution.x + shiftX,
+      y: p.solution.y + shiftY,
+      rot: p.solution.rot,
+      flip: p.solution.flip
+    };
+  });
+  return { pieces, target };
+}
+
+function load(index, keepDone) {
+  state.index = (index + levels().length) % levels().length;
+  const built = prepare(level());
+  state.pieces = built.pieces;
+  state.target = built.target;
+  state.cut = !level().needsCut;
+  state.badCut = false;
+  state.won = false;
+  state.revealCut = false;
+  state.busy = false;
+  state.selected = 0;
+  state.drag = null;
+  clearTimeout(state.hintTimer);
+  if (!keepDone) {
+    /* done flags persist across levels */
+  }
+  const whoName = document.getElementById("whoName");
+  if (whoName) whoName.textContent = group ? group.cls + "　組長　" + group.name : "";
+  goalEl.textContent = "Level " + (packIndex + 1) + "　第 " + (state.index + 1) + " 關　" + level().goal;
+  bannerEl.disabled = true;
+  bannerEl.textContent = "拼砌成功";
+  captureView();
+  renderDots();
+  render();
+  setStatus(level().needsCut
+    ? "在圖形上畫一條線來分割。分錯了可以按「重設」。"
+    : "拖動圖形，拼入右面的虛線框。可以旋轉或反轉。");
+  saveProgress();
+}
+
+function renderDots() {
+  dotsEl.innerHTML = "";
+  levels().forEach((lv, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = state.done[i] ? "✓" : String(i + 1);
+    b.title = lv.name;
+    if (i === state.index) b.classList.add("on");
+    if (state.done[i]) b.classList.add("done");
+    b.addEventListener("click", () => load(i));
+    dotsEl.appendChild(b);
+  });
+}
+
+function setStatus(text, ok) {
+  statusEl.textContent = text;
+  statusEl.classList.toggle("ok", !!ok);
+}
+
+function selectedPiece() {
+  return state.pieces[state.selected] || state.pieces[0];
+}
+
+function ensureCut(action) {
+  if (level().needsCut && !state.cut) {
+    setStatus("請先畫線分割。");
+    return false;
+  }
+  return true;
+}
+
+function captureView() {
+  const polys = state.pieces.map(worldOf);
+  const box = bbox(polys.flat().concat(state.target));
+  const padX = 1.8;
+  const padTop = 3.15;
+  const padBot = 1.5;
+  state.view = {
+    minX: box.minX - padX,
+    minY: box.minY - padTop,
+    w: box.maxX - box.minX + padX * 2,
+    h: box.maxY - box.minY + padTop + padBot
+  };
+}
+
+function S(name, attrs) {
+  const n = document.createElementNS(SVGNS, name);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+}
+
+function pointsAttr(pts) {
+  return pts.map(p => p[0].toFixed(3) + "," + p[1].toFixed(3)).join(" ");
+}
+
+function samePt(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.05;
+}
+
+function sharedEdge(polyA, polyB) {
+  for (let i = 0; i < polyA.length; i++) {
+    const p = polyA[i];
+    const q = polyA[(i + 1) % polyA.length];
+    if (polyB.some(v => samePt(v, p)) && polyB.some(v => samePt(v, q))) return [p, q];
+  }
+  return null;
+}
+
+function unionOutline(polyA, polyB) {
+  const out = [];
+  for (let i = 0; i < polyA.length; i++) {
+    const p = polyA[i];
+    const q = polyA[(i + 1) % polyA.length];
+    out.push(p);
+    if (!polyB.some(v => samePt(v, p)) || !polyB.some(v => samePt(v, q))) continue;
+    const ib = polyB.findIndex(v => samePt(v, q));
+    const next = polyB[(ib + 1) % polyB.length];
+    const step = samePt(next, p) ? -1 : 1;
+    const detour = [];
+    let k = (ib + step + polyB.length) % polyB.length;
+    let guard = 0;
+    while (!samePt(polyB[k], p) && guard++ < polyB.length) {
+      detour.push(polyB[k]);
+      k = (k + step + polyB.length) % polyB.length;
+    }
+    detour.reverse();
+    out.push(...detour);
+  }
+  return out;
+}
+
+function dedupePoly(pts) {
+  const out = [];
+  for (const p of pts) {
+    if (!out.length || Math.hypot(p[0] - out[out.length - 1][0], p[1] - out[out.length - 1][1]) > 1e-5) out.push(p);
+  }
+  if (out.length > 2 && Math.hypot(out[0][0] - out[out.length - 1][0], out[0][1] - out[out.length - 1][1]) < 1e-5) out.pop();
+  return out;
+}
+
+function splitConvex(poly, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const side = (p) => (p[0] - a.x) * dy - (p[1] - a.y) * dx;
+  const left = [];
+  const right = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i];
+    const q = poly[(i + 1) % poly.length];
+    const sp = side(p);
+    const sq = side(q);
+    if (sp >= -1e-8) left.push(p);
+    if (sp <= 1e-8) right.push(p);
+    if ((sp > 1e-8 && sq < -1e-8) || (sp < -1e-8 && sq > 1e-8)) {
+      const t = sp / (sp - sq);
+      const ip = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+      left.push(ip);
+      right.push(ip);
+    }
+  }
+  return [dedupePoly(left), dedupePoly(right)];
+}
+
+function segmentsCross(a, b, c, d) {
+  function side(p, q, r) {
+    return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  }
+  const ab = side(a, b, c) * side(a, b, d);
+  const cd = side(c, d, a) * side(c, d, b);
+  return ab < -1e-8 && cd < -1e-8;
+}
+
+function strokeHits(a, b, poly) {
+  const mid = [(a.x + b.x) / 2, (a.y + b.y) / 2];
+  if (pip([a.x, a.y], poly) || pip([b.x, b.y], poly) || pip(mid, poly)) return true;
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i];
+    const q = poly[(i + 1) % poly.length];
+    if (segmentsCross([a.x, a.y], [b.x, b.y], p, q)) return true;
+  }
+  return false;
+}
+
+function undirectedDeg(radA, radB) {
+  let deg = Math.abs(radA - radB) * 180 / Math.PI;
+  deg %= 180;
+  if (deg > 90) deg = 180 - deg;
+  return deg;
+}
+
+function pointLineDist(px, py, a, b) {
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  return Math.abs((px - a.x) * (b.y - a.y) - (py - a.y) * (b.x - a.x)) / len;
+}
+
+function sameSeg(g, h) {
+  if (!g || !h) return false;
+  return (samePt(g[0], h[0]) && samePt(g[1], h[1])) || (samePt(g[0], h[1]) && samePt(g[1], h[0]));
+}
+
+function lineNearEdge(a, b, edge, outline, loose, wide) {
+  const p = edge[0];
+  const q = edge[1];
+  const eang = Math.atan2(q[1] - p[1], q[0] - p[0]);
+  const deg = undirectedDeg(Math.atan2(b.y - a.y, b.x - a.x), eang);
+  let rivalAng = 180;
+  let parallelGap = Infinity;
+  const mx = (p[0] + q[0]) / 2;
+  const my = (p[1] + q[1]) / 2;
+  const ring = outline && outline.length ? outline : [p, q];
+  for (let i = 0; i < ring.length; i++) {
+    const u = ring[i];
+    const v = ring[(i + 1) % ring.length];
+    if (Math.hypot(v[0] - u[0], v[1] - u[1]) < 1e-6) continue;
+    if ((samePt(u, p) && samePt(v, q)) || (samePt(u, q) && samePt(v, p))) continue;
+    const od = undirectedDeg(Math.atan2(v[1] - u[1], v[0] - u[0]), eang);
+    if (od < 12) {
+      parallelGap = Math.min(parallelGap, pointLineDist(mx, my, { x: u[0], y: u[1] }, { x: v[0], y: v[1] }));
+    } else {
+      rivalAng = Math.min(rivalAng, od);
+    }
+  }
+  let angTol = Math.min(42, Math.max(30, rivalAng - 6));
+  let allow = 2.2;
+  if (Number.isFinite(parallelGap)) allow = Math.min(allow, parallelGap * 0.72);
+  if (loose) {
+    angTol = Math.max(angTol, 50);
+    const looseAllow = Number.isFinite(parallelGap) ? Math.min(parallelGap * 0.88, 1.62) : 1.62;
+    allow = Math.max(allow, looseAllow);
+  }
+  const endDist = Math.max(pointLineDist(p[0], p[1], a, b), pointLineDist(q[0], q[1], a, b));
+  if (wide) {
+    allow = Math.max(allow, 2.6);
+    if (endDist <= 2.6) angTol = Math.max(angTol, 78);
+  }
+  if (deg > angTol) return false;
+  return endDist <= allow;
+}
+
+function partsMatchDonors(parts) {
+  const donors = state.pieces.map(p => p.local);
+  const used = new Set();
+  for (const part of parts) {
+    const c = centroid(part);
+    const local = part.map(([x, y]) => [x - c.x, y - c.y]);
+    let found = -1;
+    for (let i = 0; i < donors.length; i++) {
+      if (used.has(i)) continue;
+      if (fitPose(local, donors[i])) { found = i; break; }
+    }
+    if (found < 0) return false;
+    used.add(found);
+  }
+  return used.size === donors.length;
+}
+
+function guideCuts(outline) {
+  const guides = [];
+  const n = outline.length;
+  const whole = centroid(outline).area;
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const p = outline[i];
+      const q = outline[j];
+      if (Math.hypot(q[0] - p[0], q[1] - p[1]) < 1.2) continue;
+      const parts = splitConvex(outline, { x: p[0], y: p[1] }, { x: q[0], y: q[1] })
+        .map(dedupePoly)
+        .filter(poly => poly.length >= 3);
+      if (parts.length !== 2 || parts.some(poly => centroid(poly).area < whole * 0.12)) continue;
+      if (!partsMatchDonors(parts)) continue;
+      guides.push([p, q]);
+    }
+  }
+  return guides;
+}
+
+function dropCollinear(pts) {
+  if (pts.length < 4) return pts;
+  const out = [];
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i + n - 1) % n];
+    const b = pts[i];
+    const c = pts[(i + 1) % n];
+    const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    if (Math.abs(cross) > 1e-5) out.push(b);
+  }
+  return out.length >= 3 ? out : pts;
+}
+
+function edgePointGuides(outline) {
+  const guides = [];
+  const n = outline.length;
+  const whole = centroid(outline).area;
+  for (let i = 0; i < n; i++) {
+    const v = outline[i];
+    for (let e = 0; e < n; e++) {
+      if (e === i || (e + 1) % n === i) continue;
+      const a = outline[e];
+      const b = outline[(e + 1) % n];
+      const abx = b[0] - a[0];
+      const aby = b[1] - a[1];
+      const len2 = abx * abx + aby * aby;
+      if (len2 < 1e-8) continue;
+      const t = ((v[0] - a[0]) * abx + (v[1] - a[1]) * aby) / len2;
+      if (t <= 0.08 || t >= 0.92) continue;
+      const p = [a[0] + abx * t, a[1] + aby * t];
+      if (Math.hypot(p[0] - v[0], p[1] - v[1]) < 1.2) continue;
+      const parts = splitConvex(outline, { x: v[0], y: v[1] }, { x: p[0], y: p[1] })
+        .map(dedupePoly)
+        .map(dropCollinear)
+        .filter(poly => poly.length >= 3);
+      if (parts.length !== 2 || parts.some(poly => centroid(poly).area < whole * 0.12)) continue;
+      if (!partsMatchDonors(parts)) continue;
+      guides.push([v, p]);
+    }
+  }
+  return guides;
+}
+
+function render() {
+  const lv = level();
+  const polys = state.pieces.map(worldOf);
+  if (!state.view) captureView();
+  const minX = state.view.minX;
+  const minY = state.view.minY;
+  const w = state.view.w;
+  const h = state.view.h;
+  svg.setAttribute("viewBox", minX + " " + minY + " " + w + " " + h);
+  svg.style.cursor = (lv.needsCut && !state.cut) ? "crosshair" : "default";
+
+  const frag = document.createDocumentFragment();
+  const grid = S("g", { stroke: "#efe6d2", "stroke-width": "1", "vector-effect": "non-scaling-stroke" });
+  const x0 = Math.floor(minX), x1 = Math.ceil(minX + w);
+  const y0 = Math.floor(minY), y1 = Math.ceil(minY + h);
+  for (let x = x0; x <= x1; x++) {
+    grid.appendChild(S("line", { x1: x, y1: minY, x2: x, y2: minY + h }));
+  }
+  for (let y = y0; y <= y1; y++) {
+    grid.appendChild(S("line", { x1: minX, y1: y, x2: minX + w, y2: y }));
+  }
+  grid.style.pointerEvents = "none";
+  frag.appendChild(grid);
+
+  const targetBox = bbox(state.target);
+  const targetCx = (targetBox.minX + targetBox.maxX) / 2;
+  const leftPolys = polys.filter(poly => {
+    const b = bbox(poly);
+    return (b.minX + b.maxX) / 2 < targetBox.minX - 0.35;
+  });
+  if (leftPolys.length) {
+    const leftBox = bbox(leftPolys.flat());
+    const leftCx = (leftBox.minX + leftBox.maxX) / 2;
+    if (Math.abs(leftCx - targetCx) > 2.2) {
+      const leftText = S("text", {
+        x: leftCx,
+        y: leftBox.minY - 1.75,
+        "text-anchor": "middle",
+        "font-size": "0.58",
+        "font-weight": "700",
+        fill: "#5d6d7e",
+        "font-family": "PingFang HK, PingFang TC, sans-serif"
+      });
+      leftText.textContent = lv.left;
+      leftText.style.pointerEvents = "none";
+      frag.appendChild(leftText);
+    }
+  }
+
+  const zone = S("rect", {
+    x: targetBox.minX - 0.55,
+    y: targetBox.minY - 0.55,
+    width: targetBox.maxX - targetBox.minX + 1.1,
+    height: targetBox.maxY - targetBox.minY + 1.1,
+    rx: "0.35",
+    fill: "#f3f7ff",
+    stroke: "#c5d4ea",
+    "stroke-width": "2",
+    "vector-effect": "non-scaling-stroke"
+  });
+  zone.style.pointerEvents = "none";
+  frag.appendChild(zone);
+  const rightText = S("text", {
+    x: targetCx,
+    y: targetBox.minY - 1.75,
+    "text-anchor": "middle",
+    "font-size": "0.58",
+    "font-weight": "800",
+    fill: "#1f4e8c",
+    "font-family": "PingFang HK, PingFang TC, sans-serif"
+  });
+  rightText.textContent = lv.right;
+  rightText.style.pointerEvents = "none";
+  frag.appendChild(rightText);
+
+  const targetPoly = S("polygon", {
+    points: pointsAttr(state.target),
+    fill: "rgba(31,78,140,0.08)",
+    stroke: "#1f4e8c",
+    "stroke-width": "3.5",
+    "stroke-dasharray": "8 6",
+    "vector-effect": "non-scaling-stroke"
+  });
+  targetPoly.style.pointerEvents = "none";
+  frag.appendChild(targetPoly);
+
+  const showWhole = lv.needsCut && !state.cut && polys.length >= 2;
+  if (showWhole) {
+    const whole = S("polygon", {
+      points: pointsAttr(unionOutline(polys[0], polys[1])),
+      fill: "#2f80ed",
+      "fill-opacity": "0.96",
+      stroke: "#1c2833",
+      "stroke-width": "4",
+      "vector-effect": "non-scaling-stroke",
+      "stroke-linejoin": "round"
+    });
+    whole.dataset.role = "whole";
+    frag.appendChild(whole);
+    if (state.revealCut) {
+      const edge = sharedEdge(polys[0], polys[1]);
+      if (edge) frag.appendChild(cutLine(edge[0], edge[1], true));
+    }
+  } else {
+    const order = state.pieces.map((_, i) => i);
+    order.sort((a, b) => (a === state.selected) - (b === state.selected));
+    for (const i of order) {
+      const piece = state.pieces[i];
+      const poly = S("polygon", {
+        points: pointsAttr(polys[i]),
+        fill: piece.color,
+        "fill-opacity": "0.94",
+        stroke: i === state.selected ? "#1c2833" : "#ffffff",
+        "stroke-width": i === state.selected ? "4" : "3",
+        "vector-effect": "non-scaling-stroke",
+        "stroke-linejoin": "round"
+      });
+      poly.dataset.id = String(i);
+      frag.appendChild(poly);
+    }
+  }
+
+  if (state.drag && state.drag.type === "cutline") {
+    frag.appendChild(cutLine(
+      [state.drag.a.x, state.drag.a.y],
+      [state.drag.b.x, state.drag.b.y],
+      false
+    ));
+  }
+
+  if (state.cut || !lv.needsCut) {
+    const piece = selectedPiece();
+    if (piece) {
+      const poly = polys[piece.id];
+      const top = Math.min(...poly.map(p => p[1]));
+      const c = centroid(poly);
+      const hx = c.x;
+      const hy = top - 0.62;
+      const handle = S("circle", {
+        cx: hx, cy: hy, r: "0.34",
+        fill: "#fff",
+        stroke: "#1f4e8c",
+        "stroke-width": "3",
+        "vector-effect": "non-scaling-stroke"
+      });
+      handle.dataset.role = "rot";
+      handle.dataset.id = String(piece.id);
+      frag.appendChild(handle);
+      const arm = S("line", {
+        x1: c.x, y1: top, x2: hx, y2: hy,
+        stroke: "#1f4e8c",
+        "stroke-width": "2",
+        "vector-effect": "non-scaling-stroke"
+      });
+      arm.style.pointerEvents = "none";
+      frag.appendChild(arm);
+    }
+  }
+
+  svg.replaceChildren(frag);
+}
+
+function cutLine(p, q, dashed) {
+  const line = S("line", {
+    x1: p[0], y1: p[1], x2: q[0], y2: q[1],
+    stroke: "#e0672f",
+    "stroke-width": "4",
+    "stroke-linecap": "round",
+    "vector-effect": "non-scaling-stroke"
+  });
+  if (dashed) line.setAttribute("stroke-dasharray", "7 6");
+  line.style.pointerEvents = "none";
+  return line;
+}
+
+function trySnap(piece) {
+  let best = null;
+  let bestD = 1e9;
+  for (const other of state.pieces) {
+    if (other.key !== piece.key || !other.solution) continue;
+    const slot = other.solution;
+    if (slot.flip !== piece.pose.flip) continue;
+    const posD = Math.hypot(piece.pose.x - slot.x, piece.pose.y - slot.y);
+    const rotD = angDiff(piece.pose.rot, slot.rot);
+    if (posD > 1.05 || rotD > 18) continue;
+    const taken = state.pieces.some(q =>
+      q !== piece &&
+      Math.hypot(q.pose.x - slot.x, q.pose.y - slot.y) < 0.35 &&
+      q.pose.flip === slot.flip &&
+      angDiff(q.pose.rot, slot.rot) < 12
+    );
+    if (taken) continue;
+    const d = posD + rotD / 40;
+    if (d < bestD) { bestD = d; best = slot; }
+  }
+  if (!best) return;
+  piece.pose.x = best.x;
+  piece.pose.y = best.y;
+  piece.pose.rot = best.rot;
+  piece.pose.flip = best.flip;
+}
+
+function checkWin() {
+  const blocked = (level().needsCut && !state.cut) || state.badCut;
+  const ok = !blocked && covers().ok;
+  bannerEl.disabled = !ok;
+  if (!ok) {
+    if (state.won) {
+      state.won = false;
+      state.done[state.index] = false;
+      bannerEl.textContent = "拼砌成功";
+      renderDots();
+      saveProgress();
+    }
+    return;
+  }
+  if (state.won) return;
+  state.won = true;
+  state.done[state.index] = true;
+  bannerEl.textContent = "拼砌成功";
+  setStatus(state.index === levels().length - 1
+    ? "拼好了。按「拼砌成功」。"
+    : "拼好了。按「拼砌成功」去下一關。", true);
+  renderDots();
+  saveProgress();
+}
+
+function pieceFromWorld(worldPts, color, id) {
+  const c = centroid(worldPts);
+  const local = worldPts.map(([x, y]) => [x - c.x, y - c.y]);
+  const piece = {
+    id,
+    color,
+    local,
+    pose: { x: c.x, y: c.y, rot: 0, flip: 0 },
+    solution: null,
+    key: ""
+  };
+  piece.key = shapeKey(piece);
+  return piece;
+}
+
+function separateCorrect() {
+  const gx = state.pieces.reduce((s, p) => s + p.pose.x, 0) / state.pieces.length;
+  const gy = state.pieces.reduce((s, p) => s + p.pose.y, 0) / state.pieces.length;
+  const from = state.pieces.map(p => ({ x: p.pose.x, y: p.pose.y }));
+  const to = state.pieces.map(p => {
+    let dx = p.pose.x - gx, dy = p.pose.y - gy;
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.pose.x + dx / len * 0.8, y: p.pose.y + dy / len * 0.8 };
+  });
+  state.badCut = false;
+  if (document.body.classList.contains("testing")) {
+    state.pieces.forEach((p, i) => { p.pose.x = to[i].x; p.pose.y = to[i].y; });
+    state.cut = true;
+    state.busy = false;
+    render();
+    setStatus("拖入右面的虛線框。可以旋轉或反轉。");
+    return;
+  }
+  state.busy = true;
+  const t0 = performance.now();
+  function frame(now) {
+    const k = Math.min(1, (now - t0) / 180);
+    state.pieces.forEach((p, i) => {
+      p.pose.x = from[i].x + (to[i].x - from[i].x) * k;
+      p.pose.y = from[i].y + (to[i].y - from[i].y) * k;
+    });
+    if (k >= 1) {
+      state.cut = true;
+      state.busy = false;
+    }
+    render();
+    if (k < 1) requestAnimationFrame(frame);
+    else setStatus("拖入右面的虛線框。可以旋轉或反轉。");
+  }
+  requestAnimationFrame(frame);
+}
+
+function acceptMatchedSplit(parts) {
+  const donors = state.pieces.map(p => ({ local: p.local, solution: p.solution, color: p.color }));
+  const used = new Set();
+  const built = [];
+  for (const part of parts) {
+    const c = centroid(part);
+    const local = part.map(([x, y]) => [x - c.x, y - c.y]);
+    let found = -1;
+    for (let i = 0; i < donors.length; i++) {
+      if (used.has(i) || !donors[i].solution) continue;
+      if (fitPose(local, donors[i].local)) { found = i; break; }
+    }
+    if (found < 0) return false;
+    used.add(found);
+    const piece = pieceFromWorld(part, donors[found].color, built.length);
+    piece.solution = donors[found].solution;
+    built.push(piece);
+  }
+  if (built.length !== donors.length) return false;
+  const gx = built.reduce((s, p) => s + p.pose.x, 0) / built.length;
+  const gy = built.reduce((s, p) => s + p.pose.y, 0) / built.length;
+  built.forEach(p => {
+    let dx = p.pose.x - gx, dy = p.pose.y - gy;
+    const len = Math.hypot(dx, dy) || 1;
+    p.pose.x += dx / len * 0.8;
+    p.pose.y += dy / len * 0.8;
+  });
+  state.pieces = built;
+  state.cut = true;
+  state.badCut = false;
+  state.selected = 0;
+  render();
+  setStatus("拖入右面的虛線框。可以旋轉或反轉。");
+  return true;
+}
+
+function finishCut(a, b) {
+  if (!level().needsCut || state.cut || state.busy) return;
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const polys = state.pieces.map(worldOf);
+  const outline = unionOutline(polys[0], polys[1]);
+  if (len < 1.15 || !strokeHits(a, b, outline)) {
+    setStatus("請畫一條穿過圖形的線。");
+    render();
+    return;
+  }
+  const edge = sharedEdge(polys[0], polys[1]);
+  const loose = !!level().looseCut;
+  const wide = !!level().wideCut;
+  const guides = [];
+  if (edge) guides.push(edge);
+  guideCuts(outline).forEach(g => {
+    if (!guides.some(h => sameSeg(h, g))) guides.push(g);
+  });
+  if (wide) {
+    edgePointGuides(outline).forEach(g => {
+      if (!guides.some(h => sameSeg(h, g))) guides.push(g);
+    });
+  }
+  let best = null;
+  let bestDeg = 1e9;
+  const sang = Math.atan2(b.y - a.y, b.x - a.x);
+  for (const g of guides) {
+    if (!lineNearEdge(a, b, g, outline, loose, wide)) continue;
+    const gang = Math.atan2(g[1][1] - g[0][1], g[1][0] - g[0][0]);
+    const deg = undirectedDeg(sang, gang);
+    if (deg < bestDeg) { bestDeg = deg; best = g; }
+  }
+  if (best) {
+    if (edge && sameSeg(best, edge)) {
+      separateCorrect();
+      return;
+    }
+    let guided = splitConvex(outline, { x: best[0][0], y: best[0][1] }, { x: best[1][0], y: best[1][1] })
+      .map(dedupePoly)
+      .filter(poly => poly.length >= 3);
+    if (wide) guided = guided.map(dropCollinear);
+    if (acceptMatchedSplit(guided)) return;
+  }
+  const parts = splitConvex(outline, a, b).map(dedupePoly).filter(p => p.length >= 3);
+  const wholeArea = centroid(outline).area;
+  const areas = parts.map(p => centroid(p).area);
+  if (parts.length !== 2 || areas.some(area => area < wholeArea * 0.12)) {
+    setStatus("請畫一條穿過圖形中間的線。");
+    render();
+    return;
+  }
+  if (acceptMatchedSplit(parts)) return;
+  const c0 = centroid(parts[0]);
+  const c1 = centroid(parts[1]);
+  let dx = c1.x - c0.x;
+  let dy = c1.y - c0.y;
+  const gap = Math.hypot(dx, dy) || 1;
+  dx /= gap;
+  dy /= gap;
+  parts[0] = parts[0].map(([x, y]) => [x - dx * 0.35, y - dy * 0.35]);
+  parts[1] = parts[1].map(([x, y]) => [x + dx * 0.35, y + dy * 0.35]);
+  const colors = state.pieces.map(p => p.color);
+  state.pieces = [
+    pieceFromWorld(parts[0], colors[0] || "#f2a007", 0),
+    pieceFromWorld(parts[1], colors[1] || "#1aa37a", 1)
+  ];
+  state.cut = true;
+  state.badCut = true;
+  state.selected = 0;
+  render();
+  setStatus("這條線不能拼成右面的圖形。按「重設」再來。");
+}
+
+function rotateSelected(delta) {
+  if (!ensureCut()) return;
+  const p = selectedPiece();
+  p.pose.rot = normDeg(p.pose.rot + delta);
+  trySnap(p);
+  render();
+  checkWin();
+}
+
+function flipSelected() {
+  if (!ensureCut()) return;
+  const p = selectedPiece();
+  p.pose.flip = p.pose.flip ? 0 : 1;
+  trySnap(p);
+  render();
+  checkWin();
+}
+
+function applyPose(piece, pose) {
+  piece.pose.x = pose.x;
+  piece.pose.y = pose.y;
+  piece.pose.rot = pose.rot;
+  piece.pose.flip = pose.flip;
+}
+
+function hint() {
+  if (level().needsCut && !state.cut) {
+    state.revealCut = true;
+    render();
+    setStatus("看一看虛線，再自己畫一條線分割。");
+    clearTimeout(state.hintTimer);
+    const idx = state.index;
+    state.hintTimer = setTimeout(() => {
+      if (state.index !== idx || state.cut) return;
+      state.revealCut = false;
+      render();
+    }, 2600);
+    return;
+  }
+  if (state.badCut) {
+    setStatus("這條線不能拼成右面的圖形。按「重設」再來。");
+    return;
+  }
+  if (!ensureCut()) return;
+  const pending = state.pieces.find(p => {
+    const s = p.solution;
+    if (!s) return false;
+    return Math.hypot(p.pose.x - s.x, p.pose.y - s.y) > 0.2 ||
+      angDiff(p.pose.rot, s.rot) > 2 || p.pose.flip !== s.flip;
+  });
+  if (!pending) {
+    setStatus("這關的圖形已經放在正確位置。");
+    checkWin();
+    return;
+  }
+  const from = { ...pending.pose };
+  const to = pending.solution;
+  const t0 = performance.now();
+  state.selected = pending.id;
+  function frame(now) {
+    const k = Math.min(1, (now - t0) / 220);
+    pending.pose.x = from.x + (to.x - from.x) * k;
+    pending.pose.y = from.y + (to.y - from.y) * k;
+    let d = to.rot - from.rot;
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    pending.pose.rot = normDeg(from.rot + d * k);
+    pending.pose.flip = k > 0.5 ? to.flip : from.flip;
+    render();
+    if (k < 1) requestAnimationFrame(frame);
+    else {
+      applyPose(pending, to);
+      render();
+      setStatus("已放好一塊。其餘的繼續拼。");
+      checkWin();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+svg.addEventListener("pointerdown", (e) => {
+  if (state.busy) return;
+  if (level().needsCut && !state.cut) {
+    const pt = clientToSvg(e);
+    state.drag = { type: "cutline", a: pt, b: { x: pt.x, y: pt.y } };
+    svg.setPointerCapture(e.pointerId);
+    render();
+    return;
+  }
+  const role = e.target.dataset.role;
+  const id = e.target.dataset.id;
+  if (role === "rot") {
+    state.selected = Number(id);
+    const p = state.pieces[Number(id)];
+    const pt = clientToSvg(e);
+    state.drag = {
+      type: "rot",
+      id: Number(id),
+      startAng: Math.atan2(pt.y - p.pose.y, pt.x - p.pose.x),
+      startRot: p.pose.rot
+    };
+    svg.setPointerCapture(e.pointerId);
+    return;
+  }
+  if (id == null || id === "") return;
+  state.selected = Number(id);
+  const pt = clientToSvg(e);
+  state.drag = {
+    type: "piece",
+    id: Number(id),
+    last: pt
+  };
+  svg.setPointerCapture(e.pointerId);
+  render();
+});
+
+svg.addEventListener("pointermove", (e) => {
+  if (!state.drag) return;
+  const pt = clientToSvg(e);
+  if (state.drag.type === "cutline") {
+    state.drag.b = pt;
+    render();
+    return;
+  }
+  if (state.drag.type === "rot") {
+    const p = state.pieces[state.drag.id];
+    const ang = Math.atan2(pt.y - p.pose.y, pt.x - p.pose.x);
+    let delta = (ang - state.drag.startAng) * 180 / Math.PI;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    p.pose.rot = normDeg(Math.round((state.drag.startRot + delta) / 15) * 15);
+    render();
+    return;
+  }
+  const dx = pt.x - state.drag.last.x;
+  const dy = pt.y - state.drag.last.y;
+  state.drag.last = pt;
+  const p = state.pieces[state.drag.id];
+  p.pose.x += dx;
+  p.pose.y += dy;
+  render();
+});
+
+function endDrag() {
+  if (!state.drag) return;
+  const drag = state.drag;
+  state.drag = null;
+  if (drag.type === "cutline") {
+    finishCut(drag.a, drag.b);
+    return;
+  }
+  if (drag.type === "piece" || drag.type === "rot") {
+    trySnap(state.pieces[drag.id]);
+    render();
+    checkWin();
+  }
+}
+svg.addEventListener("pointerup", endDrag);
+svg.addEventListener("pointercancel", endDrag);
+svg.addEventListener("contextmenu", (e) => e.preventDefault());
+
+document.getElementById("rot90").addEventListener("click", () => rotateSelected(90));
+document.getElementById("rot15").addEventListener("click", () => rotateSelected(15));
+document.getElementById("flip").addEventListener("click", flipSelected);
+document.getElementById("hint").addEventListener("click", hint);
+document.getElementById("reset").addEventListener("click", () => load(state.index));
+document.getElementById("prev").addEventListener("click", () => load(state.index - 1));
+document.getElementById("next").addEventListener("click", () => load(state.index + 1));
+bannerEl.addEventListener("click", () => {
+  if (bannerEl.disabled || !state.won) return;
+  if (state.index === levels().length - 1) {
+    const finished = packIndex === 0 ? "八關都完成了" : "五題都完成了";
+    bannerEl.disabled = true;
+    bannerEl.textContent = finished;
+    setStatus(finished + "。", true);
+    return;
+  }
+  load(state.index + 1);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.matches("input, textarea")) return;
+  const step = e.shiftKey ? 0.5 : 0.15;
+  if (e.key === "ArrowLeft") { if (ensureCut()) selectedPiece().pose.x -= step; }
+  else if (e.key === "ArrowRight") { if (ensureCut()) selectedPiece().pose.x += step; }
+  else if (e.key === "ArrowUp") { if (ensureCut()) selectedPiece().pose.y -= step; }
+  else if (e.key === "ArrowDown") { if (ensureCut()) selectedPiece().pose.y += step; }
+  else if (e.key === "r" || e.key === "R") { rotateSelected(e.shiftKey ? 90 : 15); return; }
+  else if (e.key === "f" || e.key === "F") { flipSelected(); return; }
+  else if (e.key === "h" || e.key === "H") { hint(); return; }
+  else return;
+  e.preventDefault();
+  trySnap(selectedPiece());
+  render();
+  checkWin();
+});
+
+function runAutotest() {
+  document.body.classList.add("testing");
+  const lines = [];
+  let pass = 0, fail = 0;
+  function expect(name, cond, extra) {
+    lines.push((cond ? "PASS " : "FAIL ") + name + (extra ? " " + extra : ""));
+    if (cond) pass++; else fail++;
+  }
+  LEVELS.forEach((def, i) => {
+    load(i);
+    const fitOk = state.pieces.every(p => p.solution);
+    expect("L" + (i + 1) + " fit", fitOk, state.pieces.map(p => p.solution ? (p.solution.rot.toFixed(1) + (p.solution.flip ? "F" : "")) : "null").join(","));
+    const areaPieces = def.pieces.reduce((s, p) => s + centroid(p.start).area, 0);
+    const areaTarget = centroid(def.target).area;
+    expect("L" + (i + 1) + " area", Math.abs(areaPieces - areaTarget) < 0.02, areaPieces.toFixed(3) + " vs " + areaTarget.toFixed(3));
+    state.cut = true;
+    state.pieces.forEach(p => applyPose(p, p.solution));
+    const exact = covers();
+    expect("L" + (i + 1) + " exact", exact.ok, JSON.stringify(exact));
+    state.pieces[0].pose.x += 1.6;
+    const miss = covers();
+    expect("L" + (i + 1) + " rejects shift", !miss.ok, JSON.stringify(miss));
+  });
+
+  load(7);
+  const before = state.pieces.map(p => ({ x: p.pose.x, y: p.pose.y }));
+  const gap0 = Math.hypot(before[0].x - before[1].x, before[0].y - before[1].y);
+  state.pieces.forEach((p, i) => {
+    const gx = (before[0].x + before[1].x) / 2;
+    const gy = (before[0].y + before[1].y) / 2;
+    let dx = before[i].x - gx, dy = before[i].y - gy;
+    const len = Math.hypot(dx, dy) || 1;
+    p.pose.x = before[i].x + dx / len * 0.8;
+    p.pose.y = before[i].y + dy / len * 0.8;
+  });
+  state.cut = true;
+  const gap1 = Math.hypot(state.pieces[0].pose.x - state.pieces[1].pose.x, state.pieces[0].pose.y - state.pieces[1].pose.y);
+  expect("cut spreads pieces", gap1 > gap0 + 0.5, gap0.toFixed(2) + " -> " + gap1.toFixed(2));
+
+  load(0);
+  state.selected = 0;
+  const rotBefore = state.pieces[0].pose.rot;
+  document.getElementById("rot90").click();
+  expect("rotate button", angDiff(state.pieces[0].pose.rot, rotBefore + 90) < 0.1, String(state.pieces[0].pose.rot));
+
+  load(7);
+  state.cut = true;
+  render();
+  const poly = svg.querySelector('[data-id="1"]');
+  const rect = poly.getBoundingClientRect();
+  const cx = rect.x + rect.width / 2;
+  const cy = rect.y + rect.height / 2;
+  const x0 = state.pieces[1].pose.x;
+  const y0 = state.pieces[1].pose.y;
+  poly.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: cx, clientY: cy, pointerId: 1, pointerType: "mouse" }));
+  svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: cx + 90, clientY: cy + 30, pointerId: 1, pointerType: "mouse" }));
+  svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: cx + 90, clientY: cy + 30, pointerId: 1, pointerType: "mouse" }));
+  expect("drag moves piece", Math.hypot(state.pieces[1].pose.x - x0, state.pieces[1].pose.y - y0) > 0.2, "dx " + (state.pieces[1].pose.x - x0).toFixed(3));
+
+  load(5);
+  document.getElementById("rot90").click();
+  expect("rotate blocked before cut", state.pieces[0].pose.rot === 0, String(state.pieces[0].pose.rot));
+
+  LEVELS.forEach((def, i) => {
+    if (!def.needsCut) return;
+    load(i);
+    const polys = state.pieces.map(worldOf);
+    const outline = unionOutline(polys[0], polys[1]);
+    const area = centroid(outline).area;
+    const sum = centroid(polys[0]).area + centroid(polys[1]).area;
+    expect("L" + (i + 1) + " outline", Math.abs(area - sum) < 0.05, area.toFixed(3) + " vs " + sum.toFixed(3));
+  });
+
+  load(3);
+  const viewBefore = svg.getAttribute("viewBox");
+  state.pieces[0].pose.x += 8;
+  state.pieces[0].pose.y -= 5;
+  render();
+  expect("view stays", svg.getAttribute("viewBox") === viewBefore, svg.getAttribute("viewBox"));
+
+  load(3);
+  const edge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  finishCut({ x: edge[0][0], y: edge[0][1] }, { x: edge[1][0], y: edge[1][1] });
+  expect("right cut", state.cut && !state.badCut && state.pieces.every(p => p.solution), String(state.badCut));
+
+  load(3);
+  finishCut({ x: 4, y: 3 }, { x: 4, y: -8 });
+  expect("wrong cut", state.cut && state.badCut && state.pieces.every(p => !p.solution), "bad " + state.badCut);
+
+  load(4);
+  finishCut({ x: 3.3, y: 1 }, { x: 3.3, y: -5 });
+  expect("shifted cut counts", state.cut && !state.badCut && state.pieces.every(p => p.solution), "bad " + state.badCut);
+  load(4);
+  finishCut({ x: 1.4, y: 0.8 }, { x: 2.8, y: -4.2 });
+  expect("crooked cut counts", state.cut && !state.badCut && state.pieces.every(p => p.solution), "bad " + state.badCut);
+  load(4);
+  finishCut({ x: -1, y: -1.5 }, { x: 10, y: -1.5 });
+  expect("crossways cut wrong", state.badCut, "bad " + state.badCut);
+  load(4);
+  finishCut({ x: -0.5, y: 0.8 }, { x: 2.8, y: -4.2 });
+  expect("L5 slant snaps", state.cut && !state.badCut && state.pieces.every(p => p.solution), "bad " + state.badCut + " cut " + state.cut);
+
+  function cutOk() {
+    return state.cut && !state.badCut && state.pieces.every(p => p.solution);
+  }
+  function strokeAbout(edge, deg, extra) {
+    const mx = (edge[0][0] + edge[1][0]) / 2;
+    const my = (edge[0][1] + edge[1][1]) / 2;
+    const rad = deg * Math.PI / 180;
+    const c = Math.cos(rad), s = Math.sin(rad);
+    const rot = (x, y) => {
+      const dx = x - mx, dy = y - my;
+      return { x: mx + dx * c - dy * s, y: my + dx * s + dy * c };
+    };
+    const a0 = rot(edge[0][0], edge[0][1]);
+    const b0 = rot(edge[1][0], edge[1][1]);
+    const dx = b0.x - a0.x, dy = b0.y - a0.y;
+    const span = Math.hypot(dx, dy) || 1;
+    const k = (extra || 1.2) / span;
+    return [
+      { x: a0.x - dx * k, y: a0.y - dy * k },
+      { x: b0.x + dx * k, y: b0.y + dy * k }
+    ];
+  }
+
+  load(3);
+  finishCut({ x: -1, y: 0 }, { x: 9, y: 0 });
+  expect("L4 along base not correct", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+
+  load(5);
+  let cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  let cutStroke = strokeAbout(cutEdge, 36, 1.4);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L6 crooked diagonal counts", cutOk(), "bad " + state.badCut);
+  load(5);
+  finishCut({ x: 4.4, y: 0.4 }, { x: -0.4, y: -4.4 });
+  expect("L6 other diagonal counts", cutOk(), "bad " + state.badCut);
+  load(5);
+  finishCut({ x: -1, y: -2 }, { x: 5, y: -2 });
+  expect("L6 crossways wrong", state.badCut, "bad " + state.badCut);
+
+  load(2);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  finishCut({ x: cutEdge[0][0], y: cutEdge[0][1] }, { x: cutEdge[1][0], y: cutEdge[1][1] });
+  expect("L3 seam cut counts", cutOk(), "bad " + state.badCut);
+  load(2);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 20, 1.2);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L3 crooked seam counts", cutOk(), "bad " + state.badCut);
+  load(2);
+  finishCut({ x: 2, y: -4 }, { x: 2, y: 4 });
+  expect("L3 other diagonal wrong", state.badCut, "bad " + state.badCut);
+  load(2);
+  finishCut({ x: -0.6, y: 0.9 }, { x: 2.6, y: -3.9 });
+  expect("L3 along side not correct", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+
+  load(4);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 48, 1.3);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L5 wide crooked counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 70, 1.2);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L5 steep cut counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  finishCut({ x: -0.6, y: 0.4 }, { x: 8.6, y: -3.4 });
+  expect("L5 long diagonal counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  finishCut({ x: 1.4, y: -3.6 }, { x: 6.6, y: 0.5 });
+  expect("L5 short diagonal counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 88, 1.2);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L5 almost flat still wrong", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+  load(4);
+  finishCut({ x: 6, y: 1 }, { x: 6, y: -5 });
+  expect("L5 other end counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  cutStroke = strokeAbout([[6, 0], [6, -3]], 36, 1.3);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L5 other end crooked counts", cutOk(), "bad " + state.badCut);
+  load(4);
+  finishCut({ x: 5.2, y: 1.2 }, { x: 8.8, y: -4.2 });
+  expect("L5 along right side not correct", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+
+  load(6);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 35, 1.2);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L7 crooked cut counts", cutOk(), "bad " + state.badCut);
+  load(6);
+  finishCut({ x: -1, y: -H }, { x: 1, y: H });
+  expect("L7 other diameter counts", cutOk(), "bad " + state.badCut);
+  load(6);
+  finishCut({ x: -3, y: -H }, { x: 3, y: -H });
+  expect("L7 along top not correct", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+  load(6);
+  finishCut({ x: -2.6, y: 0.6 * H }, { x: -0.4, y: -1.6 * H });
+  expect("L7 along side not correct", !cutOk(), "bad " + state.badCut + " cut " + state.cut);
+  load(6);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 48, 1.5);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L7 wide crooked counts", cutOk(), "bad " + state.badCut);
+  load(6);
+  finishCut({ x: -3, y: -1.45 }, { x: 3, y: -1.45 });
+  expect("L7 high cut counts", cutOk(), "bad " + state.badCut);
+  load(6);
+  cutStroke = strokeAbout([[-1, -H], [1, H]], 22, 1.3);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L7 crooked other diameter counts", cutOk(), "bad " + state.badCut);
+  load(6);
+  finishCut({ x: 0, y: -3 }, { x: 0, y: 3 });
+  expect("L7 vertical counts", cutOk(), "bad " + state.badCut);
+
+  load(7);
+  cutEdge = sharedEdge(worldOf(state.pieces[0]), worldOf(state.pieces[1]));
+  cutStroke = strokeAbout(cutEdge, 38, 1.6);
+  finishCut(cutStroke[0], cutStroke[1]);
+  expect("L8 crooked cut counts", cutOk(), "bad " + state.badCut);
+  load(7);
+  finishCut({ x: -1, y: -1 }, { x: 9, y: -1 });
+  expect("L8 crossways wrong", state.badCut, "bad " + state.badCut);
+
+  load(0);
+  state.pieces.forEach(p => applyPose(p, p.solution));
+  checkWin();
+  expect("success button", state.won && bannerEl.disabled === false && state.index === 0, String(bannerEl.disabled));
+  bannerEl.click();
+  expect("success goes next", state.index === 1, String(state.index));
+
+  packIndex = 1;
+  state.done = LEVEL2.map(() => false);
+  LEVEL2.forEach((def, i) => {
+    load(i);
+    const fitOk = state.pieces.every(p => p.solution);
+    expect("P2 L" + (i + 1) + " fit", fitOk, state.pieces.map(p => p.solution ? (p.solution.rot.toFixed(1) + (p.solution.flip ? "F" : "")) : "null").join(","));
+    const areaPieces = def.pieces.reduce((s, p) => s + centroid(p.start).area, 0);
+    const areaTarget = centroid(def.target).area;
+    expect("P2 L" + (i + 1) + " area", Math.abs(areaPieces - areaTarget) < 0.02, areaPieces.toFixed(3) + " vs " + areaTarget.toFixed(3));
+    state.cut = true;
+    state.pieces.forEach(p => applyPose(p, p.solution));
+    const exact = covers();
+    expect("P2 L" + (i + 1) + " exact", exact.ok, JSON.stringify(exact));
+    state.pieces[0].pose.x += 1.6;
+    const miss = covers();
+    expect("P2 L" + (i + 1) + " rejects shift", !miss.ok, JSON.stringify(miss));
+  });
+  packIndex = 0;
+  state.done = LEVELS.map(() => false);
+
+  const summary = pass + " pass, " + fail + " fail";
+  lines.push(summary);
+  document.getElementById("report").textContent = lines.join("\n");
+  document.title = fail ? "FAIL " + summary : "PASS " + summary;
+}
+
+const ROSTER = {"4A":{"1":"鄭子霖","2":"張希臣","3":"周子樂","4":"黃文晴","5":"黃曉晴","6":"洪子軒","7":"關正朗","8":"郭宇欣","9":"鄺一喬","10":"林舒漫","11":"劉祖盛","12":"吳馨悦","13":"蘇凱楓","14":"蘇凱楠","15":"蘇培愷","16":"謝以晴","17":"蔡思玥","18":"楊芷情"},"4B":{"1":"蔡尚芝","2":"陳卓豐","3":"陳智愷","4":"鄭雅渟","5":"肖梓浠","6":"蔡梓浩","7":"蔡煜楠","8":"朱棋楓","9":"關誠熙","10":"郭映樂","11":"劉曜丞","12":"梁凱銘","13":"石傑丞","14":"譚穎琳","15":"温嘉媛","16":"謝思嵐","17":"葉輝宏","18":"張瑾良","19":"鍾紫馨"},"4C":{"1":"蔡博年","2":"陳栢軒","3":"陳宇軒","4":"陳裕升","5":"陳靜思","6":"鄭愷桐","7":"鄧德弸","8":"顧晨飛","9":"甘子墨","10":"郭銥潼","11":"林心曈","12":"羅睿","13":"麥潤宸","14":"吳柏勤","15":"曾子圻","16":"謝凱喬","17":"王曦","18":"喻雅芝","19":"張皓然"}};
+
+const params = new URLSearchParams(location.search);
+const direct = params.has("autotest") || params.has("shot") || params.has("solved");
+
+function showOnly(id) {
+  ["gate", "menu", "quiz", "play"].forEach(name => {
+    document.getElementById(name).hidden = name !== id;
+  });
+}
+
+function whoText() {
+  return group ? group.cls + "　組長　" + group.name : "";
+}
+
+let pickedClass = "";
+const leaderNo = document.getElementById("leaderNo");
+
+function clearLeader() {
+  document.getElementById("leaderBox").hidden = true;
+  document.getElementById("leaderName").textContent = "";
+}
+
+function lookupLeader() {
+  clearLeader();
+  const msg = document.getElementById("gateMsg");
+  const raw = leaderNo.value.replace(/\D/g, "").slice(0, 2);
+  if (leaderNo.value !== raw) leaderNo.value = raw;
+  if (!raw) { msg.textContent = ""; return; }
+  if (!pickedClass) { msg.textContent = "請先選班別。"; return; }
+  const no = String(parseInt(raw, 10));
+  const name = (ROSTER[pickedClass] || {})[no];
+  if (!name) { msg.textContent = "這班沒有這個學號。"; return; }
+  group = { cls: pickedClass, no: no, name: name };
+  msg.textContent = "";
+  document.getElementById("leaderName").textContent = "組長：" + name;
+  document.getElementById("leaderBox").hidden = false;
+  try { sessionStorage.setItem("shape-cut-group", JSON.stringify(group)); } catch (err) {}
+}
+
+function enterMenu() {
+  document.getElementById("menuWho").textContent = whoText();
+  showOnly("menu");
+}
+
+function enterPack(pack) {
+  if (pack === 2) { openQuiz(); return; }
+  packIndex = pack;
+  state.done = readDone(pack);
+  let start = 0;
+  try {
+    const tag = groupTag();
+    if (tag) {
+      const saved = sessionStorage.getItem("shape-cut-level-" + tag + "-" + pack);
+      if (saved != null && !Number.isNaN(Number(saved))) start = Number(saved) || 0;
+    }
+  } catch (err) {}
+  showOnly("play");
+  load(start);
+}
+
+let quizIndex = 0;
+let quizLocked = false;
+
+function openQuiz() {
+  document.getElementById("quizWho").textContent = whoText();
+  showOnly("quiz");
+  showQuiz(0);
+}
+
+function pathOf(pts, s, pad) {
+  return pts.map((pt, i) => (i ? "L" : "M") + (pad + pt[0] * s) + "," + (pad + pt[1] * s)).join("") + "Z";
+}
+
+function showQuiz(index) {
+  quizIndex = index;
+  quizLocked = false;
+  const q = QUIZ[index];
+  document.getElementById("quizGoal").textContent = "第 " + (index + 1) + " 題　拼成" + q.title;
+  const prompt = document.getElementById("quizPrompt");
+  prompt.textContent = q.prompt;
+  prompt.classList.remove("ok");
+  document.getElementById("quizAnswer").hidden = true;
+  document.getElementById("quizAnswer").textContent = "";
+  const next = document.getElementById("quizNext");
+  next.hidden = true;
+  const s = 42;
+  const pad = 14;
+  const w = q.cols * s + pad * 2;
+  const h = q.rows * s + pad * 2;
+  let lines = "";
+  for (let i = 0; i <= q.cols; i++) {
+    lines += '<line x1="' + (pad + i * s) + '" y1="' + pad + '" x2="' + (pad + i * s) + '" y2="' + (pad + q.rows * s) + '" stroke="#c5d0da" stroke-width="1.5"/>';
+  }
+  for (let i = 0; i <= q.rows; i++) {
+    lines += '<line x1="' + pad + '" y1="' + (pad + i * s) + '" x2="' + (pad + q.cols * s) + '" y2="' + (pad + i * s) + '" stroke="#c5d0da" stroke-width="1.5"/>';
+  }
+  document.getElementById("quizFig").innerHTML =
+    '<svg viewBox="0 0 ' + w + ' ' + h + '">' + lines +
+    '<path d="' + pathOf(q.given, s, pad) + '" fill="' + q.color + '" stroke="#1c2833" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path id="quizMissing" d="' + pathOf(q.missing, s, pad) + '" fill="#f2a007" stroke="#1c2833" stroke-width="3" stroke-linejoin="round" opacity="0"/>' +
+    '</svg>';
+  const box = document.getElementById("quizNames");
+  box.innerHTML = "";
+  QUIZ_NAMES.forEach(name => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = name;
+    b.addEventListener("click", () => answerQuiz(name));
+    box.appendChild(b);
+  });
+}
+
+function answerQuiz(name) {
+  if (quizLocked) return;
+  const q = QUIZ[quizIndex];
+  const prompt = document.getElementById("quizPrompt");
+  if (name !== q.answer) {
+    prompt.textContent = "再試一次。";
+    prompt.classList.remove("ok");
+    return;
+  }
+  quizLocked = true;
+  const missing = document.getElementById("quizMissing");
+  if (missing) missing.setAttribute("opacity", "1");
+  document.querySelectorAll("#quizNames button").forEach(b => { b.disabled = true; });
+  const ans = document.getElementById("quizAnswer");
+  ans.hidden = false;
+  ans.textContent = q.answer;
+  prompt.textContent = "填補的圖形是" + q.answer + "。";
+  prompt.classList.add("ok");
+  const next = document.getElementById("quizNext");
+  next.hidden = false;
+  next.textContent = quizIndex === QUIZ.length - 1 ? "返回目錄" : "下一題";
+}
+
+document.getElementById("classRow").addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  pickedClass = btn.dataset.class;
+  document.querySelectorAll("#classRow button").forEach(b => b.classList.toggle("on", b === btn));
+  lookupLeader();
+});
+leaderNo.addEventListener("input", lookupLeader);
+leaderNo.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  lookupLeader();
+  if (!document.getElementById("leaderBox").hidden) enterMenu();
+});
+document.getElementById("enterBtn").addEventListener("click", enterMenu);
+document.getElementById("changeGroup").addEventListener("click", () => {
+  group = null;
+  pickedClass = "";
+  leaderNo.value = "";
+  clearLeader();
+  document.querySelectorAll("#classRow button").forEach(b => b.classList.remove("on"));
+  document.getElementById("gateMsg").textContent = "";
+  try { sessionStorage.removeItem("shape-cut-group"); } catch (err) {}
+  showOnly("gate");
+});
+document.querySelectorAll(".level-pick").forEach(b => {
+  b.addEventListener("click", () => enterPack(Number(b.dataset.pack)));
+});
+document.getElementById("toMenu").addEventListener("click", enterMenu);
+document.getElementById("quizMenu").addEventListener("click", enterMenu);
+document.getElementById("quizNext").addEventListener("click", () => {
+  if (!quizLocked) return;
+  if (quizIndex >= QUIZ.length - 1) enterMenu();
+  else showQuiz(quizIndex + 1);
+});
+
+if (direct) {
+  packIndex = 0;
+  showOnly("play");
+  let startIndex = 0;
+  try {
+    const savedDone = sessionStorage.getItem("shape-cut-done");
+    if (savedDone) {
+      const parsed = JSON.parse(savedDone);
+      if (Array.isArray(parsed) && parsed.length === LEVELS.length) state.done = parsed;
+    }
+  } catch (err) {}
+  if (params.has("shot")) startIndex = Math.max(0, Number(params.get("shot")) - 1);
+  load(startIndex);
+  if (params.has("solved")) {
+    state.cut = true;
+    state.pieces.forEach(p => { if (p.solution) applyPose(p, p.solution); });
+    render();
+    checkWin();
+  }
+  if (params.has("autotest")) runAutotest();
+} else {
+  showOnly("gate");
+}
+</script>
+</body>
+</html>

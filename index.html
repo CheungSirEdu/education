@@ -223,7 +223,7 @@
   <script>
     const AREAS = [
       { id: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲", subject: "pre1" },
-      { id: "math", title: "數學", emoji: "➕", blurb: "乘數表練習" },
+      { id: "math", title: "數學", emoji: "➕", blurb: "乘數表、圖形拼砌" },
       { id: "pe", title: "體育", emoji: "⚽", blurb: "手握力龍虎榜", subject: "pe" },
       { id: "sci", title: "科學", emoji: "🔬", blurb: "PDIR 單車、二年級、四年級、科學教具" },
       { id: "ict", title: "資訊科技", emoji: "💻", blurb: "四年級、五年級" },
@@ -234,7 +234,7 @@
 
     const FOLDERS = [
       { id: "pre1", area: "pre1", title: "準小一入學", emoji: "🎒", blurb: "入學準備小遊戲" },
-      { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表練習" },
+      { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表同圖形拼砌" },
       { id: "pe", area: "pe", title: "體育", emoji: "💪", blurb: "手握力龍虎榜" },
       { id: "pdir", area: "sci", title: "PDIR 單車", emoji: "🚲", blurb: "砌單車工程室，一、二年級" },
       { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
@@ -407,6 +407,18 @@
         description: "練習二至九的乘數表：快速答題、四揀一、填表、一分鐘挑戰。",
         play: "https://cheungsiredu.github.io/education/times/",
         qr: "qrs/times.png"
+      },
+      {
+        id: "shapes",
+        subject: "p4-math",
+        type: "game",
+        emoji: "🧩",
+        blurb: "把圖形分割，再拼成指定的圖形。",
+        title: "圖形拼砌",
+        description: "把圖形分割，再拼成指定的圖形。Level 1 分割再拼，Level 2 拼砌，Level 3 填補圖形。",
+        play: "https://cheungsiredu.github.io/education/shapes/",
+        qr: "qrs/shapes.png",
+        noScore: true
       },
       {
         id: "grip",

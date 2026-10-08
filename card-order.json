@@ -57,7 +57,8 @@
       "kits"
     ],
     "p4-math": [
-      "times"
+      "times",
+      "shapes"
     ],
     "pe": [
       "grip"
