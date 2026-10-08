@@ -977,65 +977,6 @@ function shipScene() {
   </svg>`;
 }
 
-function homeScene() {
-  const r = state.room;
-  if (r === "smoke") {
-    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
-      <rect width="640" height="220" fill="#d7ecf8"/>
-      <rect x="70" y="40" width="220" height="110" rx="6" fill="#c5e4f5" stroke="#9cc3d6"/>
-      <rect x="300" y="120" width="200" height="70" rx="16" fill="#ffe08a"/>
-      <circle cx="390" cy="108" r="22" fill="#f2c1a8"/>
-      <rect x="360" y="124" width="70" height="40" rx="8" fill="#495057"/>
-      ${state.smoke ? '<rect x="430" y="112" width="22" height="5" rx="2" fill="white"/><circle cx="454" cy="114" r="3" fill="#f25c05"/><circle cx="470" cy="96" r="10" fill="#9aa3ab"/><circle cx="488" cy="78" r="14" fill="#6b7280"/>' : ""}
-    </svg>`;
-  }
-  if (r === "cook") {
-    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
-      <rect width="640" height="220" fill="#e7f6e4"/>
-      <rect x="80" y="120" width="460" height="70" fill="#e7cba0"/>
-      <rect x="230" y="96" width="120" height="28" rx="4" fill="#d6d6d6"/>
-      <circle cx="180" cy="100" r="20" fill="#f2c1a8"/>
-      ${state.cook ? '<path d="M280 90 q10 -30 0 -8 q12 -24 0 6" fill="none" stroke="#c5cdd4" stroke-width="4"/><path d="M310 88 q8 -26 0 -6" fill="none" stroke="#c5cdd4" stroke-width="4"/>' : ""}
-    </svg>`;
-  }
-  if (r === "paint") {
-    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
-      <rect width="640" height="220" fill="#fde2e4"/>
-      <rect x="70" y="70" width="180" height="110" fill="#f6e7b4" stroke="#e0c97a"/>
-      <circle cx="250" cy="120" r="18" fill="#f2c1a8"/>
-      <rect x="232" y="136" width="36" height="40" fill="#f4a261"/>
-      <rect x="300" y="100" width="16" height="36" fill="#c1121f"/>
-      <circle cx="360" cy="100" r="18" fill="#f2c1a8"/>
-      <rect x="344" y="118" width="40" height="46" fill="#2a9d8f"/>
-      <rect x="390" y="70" width="14" height="70" fill="#6c757d"/>
-      ${state.paint ? '<circle cx="200" cy="90" r="8" fill="#d1d5db"/><path d="M430 60 q8 -16 0 -4 q10 -18 0 8" fill="none" stroke="#9aa3ab" stroke-width="3"/>' : ""}
-    </svg>`;
-  }
-  if (r === "scraps") {
-    return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
-      <rect width="640" height="220" fill="#fff6e4"/>
-      <rect x="70" y="150" width="500" height="16" fill="#c5ccd3"/>
-      <circle cx="170" cy="108" r="20" fill="#f2c1a8"/>
-      <rect x="150" y="126" width="46" height="50" fill="#e76f51"/>
-      <rect x="250" y="96" width="70" height="40" rx="6" fill="#f4a261"/>
-      <ellipse cx="284" cy="96" rx="24" ry="8" fill="#e9c46a"/>
-      ${state.scraps
-        ? '<path d="M300 140 q40 24 20 48" fill="none" stroke="#8d6e4c" stroke-width="8" stroke-linecap="round"/><circle cx="330" cy="186" r="6" fill="#6b705c"/>'
-        : '<rect x="360" y="96" width="46" height="58" rx="4" fill="#52b788"/><rect x="352" y="88" width="62" height="12" rx="3" fill="#2d6a4f"/>'}
-    </svg>`;
-  }
-  return `<svg class="mini" viewBox="0 0 640 220" aria-hidden="true">
-    <rect width="640" height="220" fill="#fff6e4"/>
-    <rect x="80" y="110" width="480" height="24" fill="#e7cba0"/>
-    <rect x="300" y="134" width="150" height="50" fill="#f8f9fa"/>
-    <ellipse cx="360" cy="128" rx="28" ry="10" fill="#bde0fe"/>
-    <circle cx="180" cy="108" r="20" fill="#f2c1a8"/>
-    <rect x="160" y="126" width="46" height="50" fill="#52b788"/>
-    <rect x="430" y="92" width="18" height="40" fill="#2d6a4f"/>
-    ${state.dishes ? '<path d="M470 150 q30 20 10 40" fill="none" stroke="#6e6248" stroke-width="6"/>' : ""}
-  </svg>`;
-}
-
 function renderSheet() {
   const sheet = $("sheet");
   if (!state.place) {
@@ -1054,7 +995,7 @@ function renderSheet() {
     lead.textContent = state[room.key] ? room.leadOn : room.leadOff;
     extra.innerHTML = `<div class="tabs">${Object.entries(rooms).map(([id, r]) =>
       `<button type="button" data-act="room" data-room="${id}" aria-pressed="${state.room === id ? "true" : "false"}">${r.title}</button>`
-    ).join("")}</div>${homeScene()}`;
+    ).join("")}</div>`;
     body.innerHTML = `<div class="choices">${choice(room.off, "set", { key: room.key, val: "0" }, !state[room.key], false, room.offPic)}${choice(room.on, "set", { key: room.key, val: "1" }, state[room.key], true, room.onPic)}</div>`;
     return;
   }
