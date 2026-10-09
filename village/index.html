@@ -181,9 +181,17 @@
     margin: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
   :fullscreen body.is-overview .stage-wrap,
-  :-webkit-full-screen body.is-overview .stage-wrap { margin: 0; }
+  :-webkit-full-screen body.is-overview .stage-wrap,
+  body.is-fill.is-overview .stage-wrap { margin: 0; }
   :fullscreen .stage,
-  :-webkit-full-screen .stage { border-radius: 0; box-shadow: none; }
+  :-webkit-full-screen .stage,
+  body.is-fill .stage { border-radius: 0; box-shadow: none; }
+  body.is-fill {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+  }
   .panel {
     flex: 1 1 auto;
     min-height: 0;
@@ -312,9 +320,11 @@
   }
   .full-btn:active { background: var(--red); opacity: 1; }
   @media (max-width: 700px) {
-    body.is-overview .full-btn {
-      top: auto;
-      bottom: max(12px, env(safe-area-inset-bottom));
+    .full-btn {
+      min-width: 88px;
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 18px;
     }
   }
 
@@ -402,7 +412,7 @@ const REGIONS = [
     id: "windmill",
     name: "大風車",
     x: 77, y: 2, w: 23, h: 30,
-    tagX: 88, tagY: 20,
+    tagX: 76, tagY: 24,
     lines: [
       "右上角有一座黑白色的大風車，立在稻田旁邊。",
       "風一吹，風車葉片便轉動，幫助農夫車水灌田。",
@@ -500,6 +510,7 @@ let autoSpeak = sessionStorage.getItem("village-auto-speak") !== "0";
 let speaking = false;
 let speakToken = 0;
 let drag = null;
+let fillMode = false;
 
 function markMode() {
   document.body.classList.toggle("is-overview", !current);
@@ -972,29 +983,50 @@ if (window.speechSynthesis) {
   }, 4000);
 }
 
-function isFullscreen() {
+function nativeFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function isFullscreen() {
+  return nativeFullscreen() || fillMode;
+}
+
+function setFillMode(on) {
+  fillMode = on;
+  document.body.classList.toggle("is-fill", on);
+  syncFullBtn();
+  layout(false);
 }
 
 function enterFullscreen() {
   if (isFullscreen()) return;
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!req) return;
+  if (!req) {
+    setFillMode(true);
+    return;
+  }
   try {
     const result = req.call(el);
-    if (result && result.catch) result.catch(function () {});
-  } catch (err) {}
+    if (result && result.then) {
+      result.then(function () {}, function () { setFillMode(true); });
+    }
+  } catch (err) {
+    setFillMode(true);
+  }
 }
 
 function exitFullscreen() {
-  if (!isFullscreen()) return;
-  const exit = document.exitFullscreen || document.webkitExitFullscreen;
-  if (!exit) return;
-  try {
-    const result = exit.call(document);
-    if (result && result.catch) result.catch(function () {});
-  } catch (err) {}
+  if (nativeFullscreen()) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (exit) {
+      try {
+        const result = exit.call(document);
+        if (result && result.catch) result.catch(function () {});
+      } catch (err) {}
+    }
+  }
+  if (fillMode) setFillMode(false);
 }
 
 function syncFullBtn() {
@@ -1004,9 +1036,6 @@ function syncFullBtn() {
 }
 
 const fullBtn = document.getElementById("full-btn");
-if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
-  fullBtn.hidden = true;
-}
 fullBtn.addEventListener("click", function (event) {
   event.stopPropagation();
   if (isFullscreen()) exitFullscreen();
