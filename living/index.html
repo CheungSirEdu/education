@@ -142,6 +142,23 @@
     .choice.picked { outline: 4px solid #fff59d; }
     .navs { display: flex; gap: 8px; }
     .navs button { flex: 1; }
+    .navs button.is-submit {
+      border: 0;
+      background: var(--green);
+      color: #fff;
+      font-size: 22px;
+      box-shadow: 0 6px 0 var(--green-dark);
+    }
+    .navs button.is-submit:disabled {
+      background: #9aaa9a;
+      color: #fff;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .navs button.is-submit:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 4px 0 var(--green-dark);
+    }
 
     .score-big {
       text-align: center; font-size: clamp(40px, 12vw, 64px); font-weight: 900;
@@ -165,11 +182,6 @@
       width: 100%; margin-top: 10px; border: 4px solid #1565c0; background: #fff;
       color: #0d47a1; font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
     }
-    .del-btn {
-      width: 100%; margin-top: 10px; border: 4px solid #c62828; background: #fff;
-      color: #c62828; font-weight: 900; font-size: 16px; padding: 10px; border-radius: 14px;
-    }
-    .del-btn:disabled { border-color: #ef9a9a; color: #ef9a9a; }
     .modal {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
       display: flex; align-items: center; justify-content: center;
@@ -200,7 +212,7 @@
         <img src="assets/girl.png" alt="" />
       </div>
       <div class="how">
-        一共 10 題。先看相片，再選「生物」或「非生物」。最後一題是挑戰題。
+        一共 10 題。先看相片，再選「生物」或「非生物」。最後一題是挑戰題。答完第 10 題，要按「提交」先算完成。
       </div>
       <div class="ids">
         <label>班別
@@ -217,7 +229,6 @@
       </div>
       <div class="name-chip" id="nameChip">請選擇班別和學號</div>
       <button class="primary" id="startBtn" disabled>開始評估</button>
-      <button class="del-btn" id="delBtn" type="button" disabled>刪除成績，再做一次</button>
       <button class="teacher-btn" id="teacherBtn" type="button">老師檢查成績</button>
     </section>
 
@@ -247,7 +258,6 @@
       <div class="review" id="review"></div>
       <p class="save-note" id="saveNote">正在把分數記入老師的成績表…</p>
       <button class="primary" id="againBtn" style="margin-top:12px">返回開始頁</button>
-      <button class="del-btn" id="delBtnDone" type="button">刪除成績，再做一次</button>
       <button class="teacher-btn" id="teacherBtnDone" type="button">老師檢查成績</button>
     </section>
   </div>
@@ -315,7 +325,6 @@
     function refreshId() {
       const id = identity();
       $("startBtn").disabled = !id.ok;
-      $("delBtn").disabled = !id.ok;
       if (!id.ok) $("nameChip").textContent = "請選擇班別和學號";
       else if (id.name) $("nameChip").textContent = id.class + "班　" + id.no + "號　" + id.name;
       else $("nameChip").textContent = id.class + "班　" + id.no + "號　（未在名單內）";
@@ -340,21 +349,18 @@
       document.querySelectorAll(".choice").forEach(function (btn) {
         btn.classList.toggle("picked", state.picks[state.i] === btn.getAttribute("data-ans"));
       });
+      const last = state.i === QUESTIONS.length - 1;
       $("prevBtn").disabled = state.i === 0;
-      $("nextBtn").textContent = state.i === QUESTIONS.length - 1 ? "交卷" : "下一題";
+      $("nextBtn").textContent = last ? "提交" : "下一題";
+      $("nextBtn").classList.toggle("is-submit", last);
       $("nextBtn").disabled = !state.picks[state.i];
     }
 
     document.querySelectorAll(".choice").forEach(function (btn) {
       btn.addEventListener("click", function () {
         state.picks[state.i] = btn.getAttribute("data-ans");
-        if (state.i < QUESTIONS.length - 1) {
-          state.i += 1;
-          showQ();
-        } else {
-          showQ();
-          finish();
-        }
+        if (state.i < QUESTIONS.length - 1) state.i += 1;
+        showQ();
       });
     });
 
@@ -428,9 +434,9 @@
         body: JSON.stringify(payload)
       }).then(function (r) { return r.json(); }).then(function (d) {
         if (d && d.ok) $("saveNote").textContent = "已記入成績：" + payload.class + "班　" + payload.no + "號　" + payload.text;
-        else $("saveNote").textContent = "已交卷：" + payload.class + "班　" + payload.no + "號　" + payload.text;
+        else $("saveNote").textContent = "已提交：" + payload.class + "班　" + payload.no + "號　" + payload.text;
       }).catch(function () {
-        $("saveNote").textContent = "已交卷：" + payload.class + "班　" + payload.no + "號　" + payload.text;
+        $("saveNote").textContent = "已提交：" + payload.class + "班　" + payload.no + "號　" + payload.text;
       });
     }
 
@@ -440,28 +446,12 @@
       refreshId();
     });
 
-    let pinMode = "scores";
-
-    function whoLabel(id) {
-      return id.class + "班　" + id.no + "號" + (id.name ? "　" + id.name : "");
-    }
-
-    function openPin(mode) {
-      pinMode = mode || "scores";
+    function openPin() {
       $("pin").value = "";
       $("pinErr").textContent = "";
-      if (pinMode === "scores") {
-        $("pinTitle").textContent = "老師檢查成績";
-        $("pinHint").textContent = "請輸入密碼，然後可以查看各班分數。";
-        $("pinGo").textContent = "進入";
-      } else {
-        const id = pinMode === "deleteRedo"
-          ? { class: state.class, no: state.no, name: state.name }
-          : identity();
-        $("pinTitle").textContent = "刪除成績，再做一次";
-        $("pinHint").textContent = "輸入密碼後會刪除 " + whoLabel(id) + " 的成績，然後可以立刻再做。";
-        $("pinGo").textContent = "刪除成績";
-      }
+      $("pinTitle").textContent = "老師檢查成績";
+      $("pinHint").textContent = "請輸入密碼，然後可以查看各班分數。";
+      $("pinGo").textContent = "進入";
       $("teacherModal").classList.remove("hidden");
       setTimeout(function () { $("pin").focus(); }, 50);
     }
@@ -502,29 +492,6 @@
       $("whoChip").textContent = id.class + " " + id.no + "號" + (id.name ? " " + id.name : "");
       showQ();
     }
-    function afterDelete(id, thenRedo) {
-      try { localStorage.removeItem("p2-living-" + id.class + "-" + id.no); } catch (e) {}
-      if (thenRedo) beginQuiz(id);
-      else $("nameChip").textContent = whoLabel(id) + "　已刪除，可以再開始評估";
-    }
-    function deleteScore(id, thenRedo) {
-      postSheet({
-        class: id.class,
-        no: id.no,
-        level: "ALL",
-        result: "DELETE",
-        stars: "DEL"
-      });
-      fetch("/api/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: TEACHER_PIN, class: id.class, no: id.no })
-      }).then(function (r) { return r.json(); }).then(function () {
-        afterDelete(id, thenRedo);
-      }).catch(function () {
-        afterDelete(id, thenRedo);
-      });
-    }
     function tryPin() {
       if ($("pin").value !== TEACHER_PIN) {
         $("pinErr").textContent = "密碼不正確";
@@ -533,28 +500,11 @@
         return;
       }
       try { sessionStorage.setItem("p2-living-teacher", "1"); } catch (e) {}
-      const mode = pinMode;
       closePin();
-      if (mode === "scores") {
-        location.href = "teacher.html";
-        return;
-      }
-      const id = mode === "deleteRedo"
-        ? { class: state.class, no: state.no, name: state.name }
-        : identity();
-      if (!id.class || !id.no) {
-        $("nameChip").textContent = "請先選擇班別和學號";
-        return;
-      }
-      deleteScore(id, mode === "deleteRedo");
+      location.href = "teacher.html";
     }
-    $("teacherBtn").addEventListener("click", function () { openPin("scores"); });
-    $("teacherBtnDone").addEventListener("click", function () { openPin("scores"); });
-    $("delBtn").addEventListener("click", function () {
-      if (!identity().ok) return;
-      openPin("deleteStart");
-    });
-    $("delBtnDone").addEventListener("click", function () { openPin("deleteRedo"); });
+    $("teacherBtn").addEventListener("click", function () { openPin(); });
+    $("teacherBtnDone").addEventListener("click", function () { openPin(); });
     $("pinGo").addEventListener("click", tryPin);
     $("pinCancel").addEventListener("click", closePin);
     $("pin").addEventListener("keydown", function (e) {
