@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="鄉村豐收圖">
+<meta name="theme-color" content="#16110e">
 <title>鄉村豐收圖</title>
 <style>
   :root {
@@ -17,7 +20,7 @@
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; max-width: 100%; overscroll-behavior: none; }
-  html { touch-action: manipulation; }
+  html { touch-action: manipulation; background: #16110e; }
   body {
     margin: 0;
     width: 100%;
@@ -87,6 +90,7 @@
   .stage-wrap {
     flex: 0 0 auto;
     position: relative;
+    z-index: 1;
     height: 220px;
     margin: 0 10px;
   }
@@ -188,9 +192,17 @@
   body.is-fill .stage { border-radius: 0; box-shadow: none; }
   body.is-fill {
     position: fixed;
-    inset: 0;
+    margin: 0;
+    overflow: hidden;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100dvh;
+    touch-action: none;
+  }
+  html.is-bar-hide,
+  html.is-bar-hide body {
+    max-height: none;
   }
   .panel {
     flex: 1 1 auto;
@@ -347,13 +359,20 @@
       background: var(--red-dark);
     }
     body.is-fill .full-btn,
-    body.is-detail .full-btn {
+    body.is-detail .full-btn,
+    :fullscreen .full-btn,
+    :-webkit-full-screen .full-btn {
       position: fixed;
-      left: 12px;
-      right: 12px;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
       bottom: max(12px, env(safe-area-inset-bottom));
       width: auto;
       margin: 0;
+      z-index: 40;
+    }
+    body.is-fill .full-btn {
+      position: fixed;
+      z-index: 80;
     }
   }
 
@@ -540,6 +559,8 @@ let speaking = false;
 let speakToken = 0;
 let drag = null;
 let fillMode = false;
+let fillTimer = 0;
+let lastPin = "";
 
 function markMode() {
   document.body.classList.toggle("is-overview", !current);
@@ -548,11 +569,14 @@ function markMode() {
 
 function resizeWrap() {
   const wrap = document.getElementById("stage-wrap");
-  const avail = Math.max(220, window.innerHeight - 16);
+  const viewH = viewHeight();
+  const phoneFill = fillMode && !nativeFullscreen() && window.matchMedia("(max-width: 900px)").matches;
+  const chromeH = phoneFill ? 88 : 0;
+  const avail = Math.max(220, viewH - 16 - chromeH);
   let h;
   if (!current) {
     if (isFullscreen()) {
-      h = window.innerHeight;
+      h = Math.max(160, viewH - chromeH);
     } else {
       const stageWGuess = Math.max(280, window.innerWidth - 36);
       const imageH = stageWGuess / ASPECT;
@@ -1020,28 +1044,170 @@ function isFullscreen() {
   return nativeFullscreen() || fillMode;
 }
 
-function setFillMode(on) {
-  fillMode = on;
-  document.body.classList.toggle("is-fill", on);
-  syncFullBtn();
+function viewHeight() {
+  if (fillMode && !nativeFullscreen()) {
+    const pinned = parseFloat(document.body.style.height);
+    if (pinned > 0) return pinned;
+    if (window.visualViewport) return Math.round(window.visualViewport.height);
+  }
+  return window.innerHeight;
+}
+
+function touchScreen() {
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const shortSide = Math.min(window.screen.width || 9999, window.screen.height || 9999);
+  return coarse && shortSide <= 1200;
+}
+
+function alreadyStandalone() {
+  return window.navigator.standalone === true
+    || window.matchMedia("(display-mode: standalone)").matches
+    || window.matchMedia("(display-mode: fullscreen)").matches;
+}
+
+function clearPin() {
+  if (fillTimer) {
+    window.clearTimeout(fillTimer);
+    fillTimer = 0;
+  }
+  const html = document.documentElement;
+  html.classList.remove("is-bar-hide");
+  html.style.height = "";
+  html.style.overflow = "";
+  document.body.style.overflow = "";
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.width = "";
+  document.body.style.height = "";
+  lastPin = "";
+  clearFullBtnStyle();
+  try { window.scrollTo(0, 0); } catch (err) {}
+}
+
+function pinFill() {
+  if (!fillMode || nativeFullscreen()) return;
+  const vv = window.visualViewport;
+  const top = Math.round(vv ? vv.offsetTop : 0);
+  const left = Math.round(vv ? vv.offsetLeft : 0);
+  const width = Math.round(vv ? vv.width : window.innerWidth);
+  const height = Math.round(vv ? vv.height : window.innerHeight);
+  const key = top + "," + left + "," + width + "," + height;
+  document.body.style.top = top + "px";
+  document.body.style.left = left + "px";
+  document.body.style.width = width + "px";
+  document.body.style.height = height + "px";
+  placeFullBtn(top, left, width, height);
+  if (key === lastPin) return;
+  lastPin = key;
   layout(false);
 }
 
-function enterFullscreen() {
-  if (isFullscreen()) return;
-  const el = document.documentElement;
-  const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (!req) {
+function placeFullBtn(top, left, width, height) {
+  if (!window.matchMedia("(max-width: 900px)").matches) return;
+  const btnH = 64;
+  const gap = alreadyStandalone() ? 36 : 12;
+  fullBtn.style.position = "fixed";
+  fullBtn.style.zIndex = "80";
+  fullBtn.style.top = Math.round(top + height - btnH - gap) + "px";
+  fullBtn.style.bottom = "auto";
+  fullBtn.style.left = Math.round(left + 12) + "px";
+  fullBtn.style.right = "auto";
+  fullBtn.style.width = Math.max(120, Math.round(width - 24)) + "px";
+  fullBtn.style.margin = "0";
+}
+
+function clearFullBtnStyle() {
+  fullBtn.style.position = "";
+  fullBtn.style.zIndex = "";
+  fullBtn.style.top = "";
+  fullBtn.style.bottom = "";
+  fullBtn.style.left = "";
+  fullBtn.style.right = "";
+  fullBtn.style.width = "";
+  fullBtn.style.margin = "";
+}
+
+function setFillMode(on) {
+  fillMode = on;
+  document.body.classList.toggle("is-fill", on);
+  if (!on) clearPin();
+  syncFullBtn();
+  if (on) pinFill();
+  else layout(false);
+}
+
+// iPhone Safari 收唔到個時鐘。先將頁面捲低，等下面條工具列收起，再將畫面鎖喺睇到嗰一截。
+function collapseThenPin() {
+  if (fillTimer || fillMode || nativeFullscreen()) return;
+  if (alreadyStandalone()) {
     setFillMode(true);
     return;
   }
+  const html = document.documentElement;
+  const body = document.body;
+  const extra = Math.round(Math.max(window.screen.height || 0, window.innerHeight) + 180);
+  html.classList.add("is-bar-hide");
+  html.style.overflow = "auto";
+  html.style.height = extra + "px";
+  body.style.position = "relative";
+  body.style.overflow = "visible";
+  body.style.height = extra + "px";
+  void body.offsetHeight;
+  try { window.scrollTo(0, 100); } catch (err) {}
+  fillTimer = window.setTimeout(function () {
+    fillTimer = 0;
+    html.classList.remove("is-bar-hide");
+    body.style.overflow = "";
+    body.style.position = "";
+    body.style.height = "";
+    if (nativeFullscreen()) {
+      html.style.height = "";
+      html.style.overflow = "";
+      try { window.scrollTo(0, 0); } catch (err) {}
+      syncFullBtn();
+      return;
+    }
+    setFillMode(true);
+  }, 360);
+  syncFullBtn();
+}
+
+function enterFullscreen() {
+  if (isFullscreen() || fillTimer) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  let settled = false;
+  function fallback() {
+    if (settled || nativeFullscreen() || fillMode) return;
+    settled = true;
+    if (touchScreen()) collapseThenPin();
+    else setFillMode(true);
+  }
+  if (!req) {
+    fallback();
+    return;
+  }
   try {
-    const result = req.call(el);
+    let result;
+    try {
+      result = req.call(el, { navigationUI: "hide" });
+    } catch (err) {
+      result = req.call(el);
+    }
     if (result && result.then) {
-      result.then(function () {}, function () { setFillMode(true); });
+      result.then(function () {
+        settled = true;
+        if (fillMode) setFillMode(false);
+      }, fallback);
+      window.setTimeout(function () {
+        if (!settled && !nativeFullscreen()) fallback();
+      }, 400);
+    } else if (!nativeFullscreen()) {
+      fallback();
     }
   } catch (err) {
-    setFillMode(true);
+    fallback();
   }
 }
 
@@ -1055,36 +1221,47 @@ function exitFullscreen() {
       } catch (err) {}
     }
   }
-  if (fillMode) setFillMode(false);
+  if (fillMode || fillTimer) setFillMode(false);
 }
 
 function syncFullBtn() {
-  const on = isFullscreen();
+  const on = isFullscreen() || !!fillTimer;
   fullBtn.textContent = on ? "退出" : "全螢幕";
   fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function onViewportChange() {
+  if (nativeFullscreen() && fillMode) setFillMode(false);
+  if (fillMode && !nativeFullscreen()) pinFill();
+  else layout(false);
 }
 
 const fullBtn = document.getElementById("full-btn");
 fullBtn.addEventListener("click", function (event) {
   event.stopPropagation();
-  if (isFullscreen()) exitFullscreen();
+  if (isFullscreen() || fillTimer) exitFullscreen();
   else enterFullscreen();
 });
-document.addEventListener("fullscreenchange", function () {
-  syncFullBtn();
-  layout(false);
-});
-document.addEventListener("webkitfullscreenchange", function () {
-  syncFullBtn();
-  layout(false);
-});
+document.addEventListener("fullscreenchange", onViewportChange);
+document.addEventListener("webkitfullscreenchange", onViewportChange);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", function () {
+    if (fillMode && !nativeFullscreen()) pinFill();
+  });
+  window.visualViewport.addEventListener("scroll", function () {
+    if (fillMode && !nativeFullscreen()) pinFill();
+  });
+}
 stage.addEventListener("contextmenu", function (event) { event.preventDefault(); });
 
 renderHotspots();
 syncAuto();
 syncFullBtn();
 showOverview(false);
-window.addEventListener("resize", function () { layout(false); });
+window.addEventListener("resize", function () {
+  if (fillMode && !nativeFullscreen()) pinFill();
+  else layout(false);
+});
 
 const startId = (location.hash || "").replace("#", "") || new URLSearchParams(location.search).get("part");
 if (startId) {
