@@ -159,6 +159,28 @@
   }
   .tag.edge { transform: translate(-100%, 0); }
   .stage.is-detail .hotspot { display: none; }
+  .pick-hint {
+    position: fixed;
+    z-index: 25;
+    left: max(16px, env(safe-area-inset-left));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    max-width: min(720px, calc(100vw - 32px));
+    margin: 0;
+    padding: 12px 18px;
+    border-radius: 14px;
+    background: rgba(22, 17, 14, .78);
+    color: #fff6e6;
+    font-size: clamp(22px, 2vw, 40px);
+    font-weight: 800;
+    line-height: 1.45;
+    pointer-events: none;
+  }
+  body.is-detail .pick-hint { display: none; }
+  @media (max-width: 900px) {
+    body.is-fill.is-overview .pick-hint {
+      bottom: calc(96px + env(safe-area-inset-bottom));
+    }
+  }
 
   .pan {
     position: absolute;
@@ -401,7 +423,7 @@
   <div class="stage-wrap" id="stage-wrap">
     <div class="stage" id="stage">
       <div class="zoom" id="zoom">
-        <img src="painting.jpg" alt="一幅彩色的鄉村圖，畫有稻田、耕田的牛、河流、村屋、風車和草地上的人" draggable="false">
+        <img src="painting.jpg" alt="一幅彩色的鄉村圖，畫有春耕、插秧、風車、牧鵝、放炮仗、舞獅紙鷂和藍印花布" draggable="false">
       </div>
       <button type="button" class="pan left" id="pan-left" aria-label="向左睇">左</button>
       <button type="button" class="pan right" id="pan-right" aria-label="向右睇">右</button>
@@ -421,12 +443,14 @@
       <button type="button" class="back" id="back-btn" hidden>返回全圖</button>
     </div>
   </section>
+  <p class="pick-hint" id="pick-hint">請選擇有關中華文化的生活細節。</p>
   <button type="button" class="full-btn" id="full-btn" aria-pressed="false">全螢幕</button>
 
 <script>
 /*
-  七個部份：牛耕田、稻田、大風車、河邊、村屋、草地、洗衫。
-  洗衫放最後，範圍細，先會蓋住草地同村屋重疊嘅一忽。
+  七個部份：春耕、插秧、風車車水、牧鵝、放炮仗、舞獅紙鷂、藍印花布。
+  藍印花布放最後，範圍細，先會蓋住草地同村屋重疊嘅一忽。
+  第一版唔顯示紅色名牌，左下角先有選擇提示。
   加一個部份就抄一段，改 id、name、x、y、w、h 同 lines。
   x y w h 係成幅畫嘅百分比，左上角係 0, 0。
   tagX tagY 係個紅色名牌嘅位置。
@@ -434,86 +458,86 @@
 const REGIONS = [
   {
     id: "ox",
-    name: "牛耕田",
+    name: "春耕",
     x: 0, y: 3, w: 38, h: 36,
     tagX: 2, tagY: 6,
     lines: [
-      "左上角有一塊藍色的水田。",
-      "農夫戴着斗笠，有人在田裡耕作，有人趕着黑牛耕田。",
-      "牛把泥土翻開，就可以種稻。",
-      "旁邊開滿粉色的花朵，還有白色的鳥兒飛過。"
+      "左上角是一片藍色的水田，農夫正在春耕。",
+      "他們戴着斗笠，有人耕作，有人趕着黑牛把泥土翻開。",
+      "牛耕是中華農耕的傳統，翻好的田才可以種稻。",
+      "稻米是中國人世代相傳的主要糧食。"
     ]
   },
   {
     id: "fields",
-    name: "稻田",
+    name: "插秧",
     x: 38, y: 4, w: 39, h: 28,
     tagX: 52, tagY: 7,
     lines: [
       "上面這一片金黃色的地方，就是稻田。",
-      "農夫穿着鮮豔的衣服，彎着腰插秧、除草。",
-      "田邊有一個水塘，白鴨在水面游水，還有一艘小船。",
-      "稻米就是這樣種出來的。"
+      "農夫彎着腰插秧、除草，把秧苗一棵一棵插進田裡。",
+      "插秧是中國種稻的重要工序，之後才有稻米收成。",
+      "田邊有一個水塘，白鴨在游水，還有一艘小船。"
     ]
   },
   {
     id: "windmill",
-    name: "大風車",
+    name: "風車車水",
     x: 77, y: 2, w: 23, h: 30,
     tagX: 98, tagY: 16,
     lines: [
       "右上角有一座黑白色的大風車，立在稻田旁邊。",
-      "風一吹，風車葉片便轉動，幫助農夫車水灌田。",
-      "田裡有了水，才可以種米。",
+      "風一吹，葉片便轉動，幫助農夫車水灌田。",
+      "這是中國農村傳統的水利方法，田裡有水，才可以種米。",
       "風車下面有人坐着船，抱着一隻白鵝。"
     ]
   },
   {
     id: "river",
-    name: "河邊",
+    name: "牧鵝",
     x: 0, y: 40, w: 32, h: 26,
     tagX: 2, tagY: 43,
     lines: [
-      "左邊有一條河。",
-      "許多白鵝排着隊，在水裡游泳。",
+      "左邊有一條河，許多白鵝排着隊在水裡游泳。",
       "有人趕着小鵝，走過紅色的橋。",
-      "村屋就建在河邊。"
+      "養鵝、牧鵝是中國農村常見的傳統。",
+      "村屋就建在河邊，人和鵝都靠這條河生活。"
     ]
   },
   {
     id: "houses",
-    name: "村屋",
+    name: "放炮仗",
     x: 64, y: 31, w: 36, h: 33,
     tagX: 72, tagY: 36,
     lines: [
-      "右邊是一排村屋，紅燈籠都亮着。",
-      "大人和小朋友站在騎樓和窗口，看着下面。",
-      "屋子前面，大家一起放煙花，火花灑滿一地。",
-      "門口也有鄰居聚在一起聊天。"
+      "放炮仗是中華文化裡重要的習俗。",
+      "春節、結婚、新店開張，還有豐收的日子，人們都會放炮仗。",
+      "炮仗又響又亮，用來熱烈祝賀，也有驅邪迎祥的意思。",
+      "村屋掛着紅燈籠，大家站在騎樓和窗口，看着滿地火花。"
     ]
   },
   {
     id: "grass",
-    name: "草地",
+    name: "舞獅紙鷂",
     x: 0, y: 62, w: 100, h: 38,
     tagX: 40, tagY: 66,
     lines: [
-      "下面是一大片草地，十分熱鬧。",
-      "小朋友放着風箏，有燕子風箏，也有人在跳繩。",
-      "中間有人舞獅，周圍有人拿着扇子觀看。",
+      "下面的草地上，大家正在玩中華傳統的遊藝。",
+      "中間有人舞獅，周圍的人拿着扇子觀看。舞獅用來賀歲和慶祝節日。",
+      "小朋友放着紙鷂，有燕子形狀的。紙鷂又叫風箏，是中國古老的手藝。",
       "右邊有兩隊人在拔河，左邊有人用扁擔挑着籃子。"
     ]
   },
   {
     id: "laundry",
-    name: "洗衫",
+    name: "藍印花布",
     x: 32, y: 33, w: 33, h: 27,
     tagX: 35, tagY: 36,
     lines: [
-      "橙色屋子前面，有人在洗衣服，旁邊放着一個籃子。",
-      "竹竿上晾着衣服，有深藍色的，也有紅色的。",
-      "一位小朋友坐在白色的長凳上。",
-      "長凳旁邊有一隻白狗，身上有黑色斑點。"
+      "竹竿上晾着深藍色的花布，也有紅色的衣服。",
+      "這種藍白花布叫藍印花布，是中國傳統的手工布料。",
+      "人們用它做衣服、頭巾和門簾，花紋多是花草和點子。",
+      "屋子前面有一位小朋友坐在白色長凳上，旁邊有一隻帶黑斑的白狗。"
     ]
   }
 ];
@@ -525,7 +549,7 @@ const INTRO = {
     "撳紅色嘅名，就可以放大睇。",
     "下面有字，部機亦都會用廣東話讀出嚟。"
   ],
-  hint: "有七個地方：牛耕田、稻田、大風車、河邊、村屋、草地、洗衫。"
+  hint: "請選擇有關中華文化的生活細節。"
 };
 
 const ASPECT = 2000 / 1189;
@@ -604,8 +628,6 @@ function layout(animate) {
   }
   zoom.style.width = baseW + "px";
   zoom.style.height = baseH + "px";
-  const tagFloor = baseW < 720 ? 16 : 22;
-  document.documentElement.style.setProperty("--tag-size", Math.max(tagFloor, Math.min(48, baseW * 0.03)) + "px");
   zoom.style.transition = animate ? "transform .55s cubic-bezier(.22,.8,.24,1)" : "none";
   if (current) {
     centerOn(current, animate ? fitScale(current) : Math.max(scale, 1));
@@ -729,15 +751,7 @@ function renderHotspots() {
     btn.style.top = region.y + "%";
     btn.style.width = region.w + "%";
     btn.style.height = region.h + "%";
-    btn.setAttribute("aria-label", "放大" + region.name);
-    const tag = document.createElement("span");
-    tag.className = "tag" + (region.tagX > 72 ? " edge" : "");
-    tag.textContent = region.name;
-    const left = ((region.tagX - region.x) / region.w) * 100;
-    const top = ((region.tagY - region.y) / region.h) * 100;
-    tag.style.left = left + "%";
-    tag.style.top = top + "%";
-    btn.appendChild(tag);
+    btn.setAttribute("aria-label", "睇" + region.name);
     btn.addEventListener("click", function (event) {
       event.stopPropagation();
       enterFullscreen();
