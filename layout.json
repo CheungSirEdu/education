@@ -7,7 +7,8 @@
     "ict",
     "lang",
     "bett",
-    "media"
+    "media",
+    "culture"
   ],
   "folders": {
     "pre1": [
@@ -31,6 +32,9 @@
     ],
     "lang": [
       "lang"
+    ],
+    "culture": [
+      "culture"
     ]
   },
   "labels": {
@@ -66,6 +70,9 @@
       "jp",
       "fr",
       "ko"
+    ],
+    "culture": [
+      "village"
     ]
   }
 }

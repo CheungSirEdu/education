@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>鄉村豐收圖</title>
+<style>
+  :root {
+    --ink: #2a2118;
+    --cream: #fff8ec;
+    --red: #b42318;
+    --red-dark: #8c1c14;
+    --gold: #e7c27a;
+    --line: #ead8b8;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; max-width: 100%; overscroll-behavior: none; }
+  html { touch-action: manipulation; }
+  body {
+    margin: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    color: var(--ink);
+    font-family: "PingFang HK", "PingFang TC", "Heiti TC", "Noto Sans HK", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background:
+      radial-gradient(1100px 520px at 50% 18%, #4e3d2c 0%, #2a211a 52%, #16110e 100%);
+    overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, img { font-family: inherit; }
+  button { -webkit-tap-highlight-color: transparent; }
+
+  .top {
+    display: none;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    padding: max(8px, env(safe-area-inset-top)) 14px 8px;
+    color: #fff6e6;
+  }
+  .seal {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: var(--red);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    letter-spacing: 0;
+    box-shadow: inset 0 0 0 2px rgba(255, 236, 210, .45);
+  }
+  .top h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .top p {
+    margin: 1px 0 0;
+    font-size: 13px;
+    opacity: .85;
+  }
+  @media (max-width: 720px) {
+    .top p { display: none; }
+    .top h1 { font-size: 18px; }
+  }
+  .top .grow { flex: 1; }
+  .ghost {
+    border: 1px solid rgba(255, 236, 210, .45);
+    background: transparent;
+    color: #fff6e6;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-weight: 700;
+    min-height: 40px;
+  }
+  .ghost[aria-pressed="true"] {
+    background: rgba(255, 236, 210, .16);
+  }
+
+  .stage-wrap {
+    flex: 0 0 auto;
+    position: relative;
+    height: 220px;
+    margin: 0 10px;
+  }
+  .stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    background: #1a140f;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
+    touch-action: none;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .stage.can-pan { cursor: grab; }
+  .stage.dragging { cursor: grabbing; }
+  .zoom {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  .zoom img {
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  .hotspot {
+    position: absolute;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 2px rgba(255, 248, 236, .55);
+    cursor: pointer;
+  }
+  .hotspot:focus-visible {
+    outline: 3px solid #ffe08a;
+    outline-offset: 2px;
+  }
+  .hotspot:hover,
+  .hotspot:focus-visible,
+  .hotspot:active {
+    background: rgba(255, 214, 120, .22);
+  }
+  .tag {
+    position: absolute;
+    transform: translate(0, 0);
+    background: var(--red);
+    color: white;
+    font-weight: 800;
+    font-size: var(--tag-size, 22px);
+    line-height: 1;
+    padding: 0.45em 0.75em;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .tag.edge { transform: translate(-100%, 0); }
+  .stage.is-detail .hotspot { display: none; }
+
+  .pan {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    transform: translateY(-50%);
+    width: 72px;
+    height: 96px;
+    border: 0;
+    border-radius: 16px;
+    background: rgba(28, 18, 12, .62);
+    color: white;
+    font-size: 26px;
+    font-weight: 800;
+    display: none;
+  }
+  .pan.show { display: grid; place-items: center; }
+  .pan.left { left: 8px; }
+  .pan.right { right: 8px; }
+  .pan:active { background: rgba(180, 35, 24, .9); }
+
+  body.is-overview .panel { display: none; }
+  body.is-overview .stage-wrap {
+    margin: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+  :fullscreen body.is-overview .stage-wrap,
+  :-webkit-full-screen body.is-overview .stage-wrap { margin: 0; }
+  :fullscreen .stage,
+  :-webkit-full-screen .stage { border-radius: 0; box-shadow: none; }
+  .panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    margin: 8px 10px max(8px, env(safe-area-inset-bottom));
+    padding: 12px 14px 12px;
+    background: var(--cream);
+    border-radius: 18px;
+    box-shadow: inset 0 0 0 1px var(--line), 0 8px 20px rgba(0, 0, 0, .18);
+    -webkit-overflow-scrolling: touch;
+  }
+  .chips,
+  #speak-btn,
+  .hint,
+  .voice-hint { display: none; }
+  .chips {
+    display: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+  }
+  @media (min-width: 900px) {
+    .chips { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
+  .chip {
+    min-width: 0;
+    border: 1px solid #e4d0b0;
+    background: white;
+    color: var(--ink);
+    border-radius: 999px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+  }
+  .panel h2 {
+    order: 1;
+    margin: 0 0 6px;
+    font-size: clamp(28px, 2.8vw, 56px);
+    line-height: 1.25;
+  }
+  .story { order: 2; }
+  .hint { order: 5; }
+  .voice-hint { order: 6; }
+  .story span {
+    display: block;
+    font-size: clamp(22px, 2.1vw, 46px);
+    line-height: 1.65;
+    margin: 0 0 2px;
+  }
+  .hint {
+    margin: 6px 0 0;
+    color: #7a6248;
+    font-size: 15px;
+  }
+  .voice-hint {
+    margin: 6px 0 0;
+    color: var(--red-dark);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .voice-hint:empty { display: none; }
+  .actions {
+    order: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 4px;
+  }
+  .actions button {
+    min-height: 64px;
+    padding: 12px 22px;
+    border-radius: 14px;
+    font-size: clamp(22px, 1.8vw, 34px);
+    font-weight: 800;
+    border: 1px solid #e4d0b0;
+    background: white;
+    color: var(--ink);
+  }
+  .actions .primary {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+    flex: 1 1 140px;
+  }
+  .actions .primary:active { background: var(--red-dark); }
+  .actions .back {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+  }
+  .actions .back:active { background: var(--red-dark); }
+  .actions button[hidden] { display: none; }
+
+  .full-btn {
+    position: fixed;
+    z-index: 30;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    min-width: 112px;
+    min-height: 64px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 16px;
+    background: rgba(28, 18, 12, .78);
+    color: #fff6e6;
+    font-size: 24px;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+  }
+  .full-btn[aria-pressed="true"] {
+    opacity: .45;
+    min-width: 84px;
+    min-height: 52px;
+    font-size: 18px;
+  }
+  .full-btn:active { background: var(--red); opacity: 1; }
+  @media (max-width: 700px) {
+    body.is-overview .full-btn {
+      top: auto;
+      bottom: max(12px, env(safe-area-inset-bottom));
+    }
+  }
+
+  @media (orientation: landscape) and (max-height: 520px) {
+    .panel { max-height: 44dvh; }
+    .top h1 { font-size: 17px; }
+    .seal { width: 30px; height: 30px; }
+    .story span { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zoom { transition: none !important; }
+  }
+</style>
+</head>
+<body class="is-overview">
+  <header class="top">
+    <div class="seal" aria-hidden="true">鄉</div>
+    <div>
+      <h1>鄉村豐收圖</h1>
+      <p>撳一個地方，放大睇，再聽故事</p>
+    </div>
+    <div class="grow"></div>
+    <button type="button" class="ghost" id="auto-btn" aria-pressed="true">自動讀開</button>
+  </header>
+
+  <div class="stage-wrap" id="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="zoom" id="zoom">
+        <img src="painting.jpg" alt="一幅彩色的鄉村圖，畫有稻田、耕田的牛、河流、村屋、風車和草地上的人" draggable="false">
+      </div>
+      <button type="button" class="pan left" id="pan-left" aria-label="向左睇">左</button>
+      <button type="button" class="pan right" id="pan-right" aria-label="向右睇">右</button>
+    </div>
+  </div>
+
+  <section class="panel" id="panel" aria-live="polite">
+    <div class="chips" id="chips"></div>
+    <h2 id="title">揀一個地方</h2>
+    <div class="story" id="story"></div>
+    <p class="hint" id="hint"></p>
+    <p class="voice-hint" id="voice-hint"></p>
+    <div class="actions">
+      <button type="button" class="primary" id="speak-btn" hidden>讀出嚟</button>
+      <button type="button" id="zoom-in">放大</button>
+      <button type="button" id="zoom-out">縮細</button>
+      <button type="button" class="back" id="back-btn" hidden>返回全圖</button>
+    </div>
+  </section>
+  <button type="button" class="full-btn" id="full-btn" aria-pressed="false">全螢幕</button>
+
+<script>
+/*
+  七個部份：牛耕田、稻田、大風車、河邊、村屋、草地、洗衫。
+  洗衫放最後，範圍細，先會蓋住草地同村屋重疊嘅一忽。
+  加一個部份就抄一段，改 id、name、x、y、w、h 同 lines。
+  x y w h 係成幅畫嘅百分比，左上角係 0, 0。
+  tagX tagY 係個紅色名牌嘅位置。
+*/
+const REGIONS = [
+  {
+    id: "ox",
+    name: "牛耕田",
+    x: 0, y: 3, w: 38, h: 36,
+    tagX: 2, tagY: 6,
+    lines: [
+      "左上角有一塊藍色的水田。",
+      "農夫戴着斗笠，有人在田裡耕作，有人趕着黑牛耕田。",
+      "牛把泥土翻開，就可以種稻。",
+      "旁邊開滿粉色的花朵，還有白色的鳥兒飛過。"
+    ]
+  },
+  {
+    id: "fields",
+    name: "稻田",
+    x: 38, y: 4, w: 39, h: 28,
+    tagX: 52, tagY: 7,
+    lines: [
+      "上面這一片金黃色的地方，就是稻田。",
+      "農夫穿着鮮豔的衣服，彎着腰插秧、除草。",
+      "田邊有一個水塘，白鴨在水面游水，還有一艘小船。",
+      "稻米就是這樣種出來的。"
+    ]
+  },
+  {
+    id: "windmill",
+    name: "大風車",
+    x: 77, y: 2, w: 23, h: 30,
+    tagX: 88, tagY: 20,
+    lines: [
+      "右上角有一座黑白色的大風車，立在稻田旁邊。",
+      "風一吹，風車葉片便轉動，幫助農夫車水灌田。",
+      "田裡有了水，才可以種米。",
+      "風車下面有人坐着船，抱着一隻白鵝。"
+    ]
+  },
+  {
+    id: "river",
+    name: "河邊",
+    x: 0, y: 40, w: 32, h: 26,
+    tagX: 2, tagY: 43,
+    lines: [
+      "左邊有一條河。",
+      "許多白鵝排着隊，在水裡游泳。",
+      "有人趕着小鵝，走過紅色的橋。",
+      "村屋就建在河邊。"
+    ]
+  },
+  {
+    id: "houses",
+    name: "村屋",
+    x: 64, y: 31, w: 36, h: 33,
+    tagX: 72, tagY: 36,
+    lines: [
+      "右邊是一排村屋，紅燈籠都亮着。",
+      "大人和小朋友站在騎樓和窗口，看着下面。",
+      "屋子前面，大家一起放煙花，火花灑滿一地。",
+      "門口也有鄰居聚在一起聊天。"
+    ]
+  },
+  {
+    id: "grass",
+    name: "草地",
+    x: 0, y: 62, w: 100, h: 38,
+    tagX: 40, tagY: 66,
+    lines: [
+      "下面是一大片草地，十分熱鬧。",
+      "小朋友放着風箏，有燕子風箏，也有人在跳繩。",
+      "中間有人舞獅，周圍有人拿着扇子觀看。",
+      "右邊有兩隊人在拔河，左邊有人用扁擔挑着籃子。"
+    ]
+  },
+  {
+    id: "laundry",
+    name: "洗衫",
+    x: 32, y: 33, w: 33, h: 27,
+    tagX: 35, tagY: 36,
+    lines: [
+      "橙色屋子前面，有人在洗衣服，旁邊放着一個籃子。",
+      "竹竿上晾着衣服，有深藍色的，也有紅色的。",
+      "一位小朋友坐在白色的長凳上。",
+      "長凳旁邊有一隻白狗，身上有黑色斑點。"
+    ]
+  }
+];
+
+const INTRO = {
+  title: "揀一個地方",
+  lines: [
+    "呢幅畫住咗一條村。",
+    "撳紅色嘅名，就可以放大睇。",
+    "下面有字，部機亦都會用廣東話讀出嚟。"
+  ],
+  hint: "有七個地方：牛耕田、稻田、大風車、河邊、村屋、草地、洗衫。"
+};
+
+const ASPECT = 2000 / 1189;
+const MAX_SCALE = 6;
+
+const stage = document.getElementById("stage");
+const zoom = document.getElementById("zoom");
+const titleEl = document.getElementById("title");
+const storyEl = document.getElementById("story");
+const hintEl = document.getElementById("hint");
+const voiceHint = document.getElementById("voice-hint");
+const speakBtn = document.getElementById("speak-btn");
+const backBtn = document.getElementById("back-btn");
+const zoomInBtn = document.getElementById("zoom-in");
+const zoomOutBtn = document.getElementById("zoom-out");
+const autoBtn = document.getElementById("auto-btn");
+const panLeft = document.getElementById("pan-left");
+const panRight = document.getElementById("pan-right");
+const chips = document.getElementById("chips");
+
+let baseW = 1;
+let baseH = 1;
+let stageW = 1;
+let stageH = 1;
+let px = 0;
+let py = 0;
+let scale = 1;
+let current = null;
+let autoSpeak = sessionStorage.getItem("village-auto-speak") !== "0";
+let speaking = false;
+let speakToken = 0;
+let drag = null;
+
+function markMode() {
+  document.body.classList.toggle("is-overview", !current);
+  document.body.classList.toggle("is-detail", !!current);
+}
+
+function resizeWrap() {
+  const wrap = document.getElementById("stage-wrap");
+  const avail = Math.max(220, window.innerHeight - 16);
+  let h;
+  if (!current) {
+    if (isFullscreen()) {
+      h = window.innerHeight;
+    } else {
+      const stageWGuess = Math.max(280, window.innerWidth - 36);
+      const imageH = stageWGuess / ASPECT;
+      h = imageH < avail * 0.72 ? Math.max(200, imageH) : avail;
+    }
+  } else {
+    const minPanel = Math.max(220, Math.min(560, avail * 0.4));
+    h = Math.max(160, avail - minPanel);
+  }
+  wrap.style.height = Math.round(h) + "px";
+}
+
+function layout(animate) {
+  resizeWrap();
+  const rect = stage.getBoundingClientRect();
+  stageW = Math.max(1, rect.width);
+  stageH = Math.max(1, rect.height);
+  const stageAspect = stageW / stageH;
+  if (stageAspect > ASPECT) {
+    baseH = stageH;
+    baseW = stageH * ASPECT;
+  } else {
+    baseW = stageW;
+    baseH = stageW / ASPECT;
+  }
+  zoom.style.width = baseW + "px";
+  zoom.style.height = baseH + "px";
+  const tagFloor = baseW < 720 ? 16 : 22;
+  document.documentElement.style.setProperty("--tag-size", Math.max(tagFloor, Math.min(48, baseW * 0.03)) + "px");
+  zoom.style.transition = animate ? "transform .55s cubic-bezier(.22,.8,.24,1)" : "none";
+  if (current) {
+    centerOn(current, animate ? fitScale(current) : Math.max(scale, 1));
+  } else {
+    scale = 1;
+    px = (stageW - baseW) / 2;
+    py = (stageH - baseH) / 2;
+  }
+  apply();
+  updatePans();
+}
+
+function apply() {
+  zoom.style.transform = "translate(" + px + "px," + py + "px) scale(" + scale + ")";
+}
+
+function fitScale(region) {
+  const fitW = stageW / ((region.w / 100) * baseW);
+  const fitH = stageH / ((region.h / 100) * baseH);
+  const contain = Math.min(fitW, fitH);
+  const cover = Math.max(fitW, fitH);
+  // 個部份已經好大，就成個睇到。太闊嘅部份就鋪滿畫面，左右撥。
+  const s = contain >= 2.2 ? contain : cover;
+  return Math.max(1, Math.min(MAX_SCALE, s));
+}
+
+function regionBounds(region) {
+  const padX = baseW * 0.015;
+  const padY = baseH * 0.015;
+  return {
+    left: Math.max(0, (region.x / 100) * baseW - padX),
+    right: Math.min(baseW, ((region.x + region.w) / 100) * baseW + padX),
+    top: Math.max(0, (region.y / 100) * baseH - padY),
+    bottom: Math.min(baseH, ((region.y + region.h) / 100) * baseH + padY)
+  };
+}
+
+function clampAxis(pos, view, start, end, s) {
+  const shown = view / s;
+  const size = end - start;
+  if (shown >= size) {
+    const mid = (start + end) / 2;
+    return view / 2 - mid * s;
+  }
+  const maxPos = -start * s;
+  const minPos = view - end * s;
+  return Math.min(maxPos, Math.max(minPos, pos));
+}
+
+function clamp() {
+  if (!current) {
+    px = (stageW - baseW * scale) / 2;
+    py = (stageH - baseH * scale) / 2;
+    if (baseW * scale <= stageW) px = (stageW - baseW * scale) / 2;
+    else px = Math.min(0, Math.max(stageW - baseW * scale, px));
+    if (baseH * scale <= stageH) py = (stageH - baseH * scale) / 2;
+    else py = Math.min(0, Math.max(stageH - baseH * scale, py));
+    return;
+  }
+  const b = regionBounds(current);
+  px = clampAxis(px, stageW, b.left, b.right, scale);
+  py = clampAxis(py, stageH, b.top, b.bottom, scale);
+}
+
+function centerOn(region, s) {
+  const cx = ((region.x + region.w / 2) / 100) * baseW;
+  const cy = ((region.y + region.h / 2) / 100) * baseH;
+  scale = s;
+  px = stageW / 2 - cx * scale;
+  py = stageH / 2 - cy * scale;
+  clamp();
+}
+
+function updatePans() {
+  if (!current) {
+    panLeft.classList.remove("show");
+    panRight.classList.remove("show");
+    stage.classList.remove("can-pan");
+    return;
+  }
+  const b = regionBounds(current);
+  const minPx = clampAxis(-1e9, stageW, b.left, b.right, scale);
+  const maxPx = clampAxis(1e9, stageW, b.left, b.right, scale);
+  const room = maxPx - minPx > 24;
+  panLeft.classList.toggle("show", room && px < maxPx - 12);
+  panRight.classList.toggle("show", room && px > minPx + 12);
+  stage.classList.toggle("can-pan", room);
+}
+
+function setText(item) {
+  titleEl.textContent = item.title || item.name;
+  storyEl.replaceChildren();
+  item.lines.forEach(function (line) {
+    const span = document.createElement("span");
+    span.textContent = line;
+    storyEl.appendChild(span);
+  });
+  hintEl.textContent = item.hint || "";
+}
+
+function renderChips() {
+  chips.replaceChildren();
+  REGIONS.forEach(function (region) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip";
+    btn.textContent = region.name;
+    btn.setAttribute("aria-pressed", current && current.id === region.id ? "true" : "false");
+    btn.addEventListener("click", function () { openRegion(region, true); });
+    chips.appendChild(btn);
+  });
+}
+
+function renderHotspots() {
+  REGIONS.forEach(function (region) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hotspot";
+    btn.dataset.id = region.id;
+    btn.style.left = region.x + "%";
+    btn.style.top = region.y + "%";
+    btn.style.width = region.w + "%";
+    btn.style.height = region.h + "%";
+    btn.setAttribute("aria-label", "放大" + region.name);
+    const tag = document.createElement("span");
+    tag.className = "tag" + (region.tagX > 72 ? " edge" : "");
+    tag.textContent = region.name;
+    const left = ((region.tagX - region.x) / region.w) * 100;
+    const top = ((region.tagY - region.y) / region.h) * 100;
+    tag.style.left = left + "%";
+    tag.style.top = top + "%";
+    btn.appendChild(tag);
+    btn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      enterFullscreen();
+      openRegion(region, true);
+    });
+    zoom.appendChild(btn);
+  });
+}
+
+function openRegion(region, withSpeech) {
+  current = region;
+  markMode();
+  stage.classList.add("is-detail");
+  backBtn.hidden = false;
+  zoomInBtn.hidden = false;
+  zoomOutBtn.hidden = false;
+  layout(true);
+  setText({
+    name: region.name,
+    lines: region.lines
+  });
+  renderChips();
+  if (withSpeech) speak(region.lines);
+  else stopSpeak();
+}
+
+function panHint(region) {
+  const s = fitScale(region);
+  const b = {
+    left: (region.x / 100) * baseW,
+    right: ((region.x + region.w) / 100) * baseW
+  };
+  const shown = stageW / s;
+  if (b.right - b.left > shown + 20) return "用手指左右撥，或者撳左、右，可以睇晒呢度。";
+  return "可以再撳放大，睇清楚啲。";
+}
+
+function showOverview(withMotion) {
+  stopSpeak();
+  current = null;
+  markMode();
+  stage.classList.remove("is-detail");
+  backBtn.hidden = true;
+  zoomInBtn.hidden = true;
+  zoomOutBtn.hidden = true;
+  layout(withMotion);
+  setText({ title: "", lines: [] });
+  renderChips();
+}
+
+function zoomBy(factor, clientX, clientY) {
+  if (!current) return;
+  const rect = stage.getBoundingClientRect();
+  const localX = (clientX == null ? rect.left + stageW / 2 : clientX) - rect.left;
+  const localY = (clientY == null ? rect.top + stageH / 2 : clientY) - rect.top;
+  const ix = (localX - px) / scale;
+  const iy = (localY - py) / scale;
+  const fit = fitScale(current);
+  const next = Math.max(fit * 0.98, Math.min(MAX_SCALE, scale * factor));
+  scale = next;
+  px = localX - ix * scale;
+  py = localY - iy * scale;
+  clamp();
+  zoom.style.transition = "transform .25s ease";
+  apply();
+  updatePans();
+}
+
+function panBy(dx) {
+  if (!current) return;
+  px += dx;
+  clamp();
+  zoom.style.transition = "transform .35s ease";
+  apply();
+  updatePans();
+}
+
+function pickVoice() {
+  const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  let best = null;
+  let bestScore = 0;
+  voices.forEach(function (voice) {
+    const name = (voice.name + " " + voice.lang).toLowerCase();
+    let score = 0;
+    if (/zh[-_]hk|yue/.test(name)) score += 5;
+    if (/sinji|sin-ji|善怡/.test(name)) score += 8;
+    if (/cantonese|粵語|廣東話/.test(name)) score += 6;
+    if (/hong kong/.test(name)) score += 4;
+    if (score > bestScore) {
+      best = voice;
+      bestScore = score;
+    }
+  });
+  return bestScore > 0 ? best : null;
+}
+
+function refreshVoiceHint() {
+  if (!window.speechSynthesis) {
+    voiceHint.textContent = "呢個瀏覽器讀唔到聲，文字仍然睇到。";
+    return;
+  }
+  const voices = window.speechSynthesis.getVoices();
+  if (pickVoice()) {
+    voiceHint.textContent = "";
+    return;
+  }
+  if (!voices.length) return;
+  voiceHint.textContent = "呢部機未見粵語聲音。iPad：設定 → 輔助使用 → 語音內容 → 聲音 → 中文，下載粵語。";
+}
+
+function stopSpeak() {
+  speakToken += 1;
+  speaking = false;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+function speak(lines) {
+  if (!window.speechSynthesis) return;
+  stopSpeak();
+  const token = speakToken;
+  const queue = lines.slice();
+  speaking = true;
+  const backup = setTimeout(function () {
+    if (token !== speakToken) return;
+    showOverview(true);
+  }, 3000 + lines.join("").length * 450);
+  const step = function () {
+    if (token !== speakToken) return;
+    if (!queue.length) {
+      clearTimeout(backup);
+      speaking = false;
+      setTimeout(function () {
+        if (token !== speakToken) return;
+        showOverview(true);
+      }, 700);
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(queue.shift());
+    utter.lang = "zh-HK";
+    utter.rate = 0.9;
+    const voice = pickVoice();
+    if (voice) utter.voice = voice;
+    utter.onend = function () { step(); };
+    utter.onerror = function () {
+      speaking = false;
+    };
+    window.speechSynthesis.resume();
+    window.speechSynthesis.speak(utter);
+  };
+  window.speechSynthesis.resume();
+  step();
+}
+
+function syncAuto() {
+  autoBtn.textContent = autoSpeak ? "自動讀開" : "自動讀關";
+  autoBtn.setAttribute("aria-pressed", autoSpeak ? "true" : "false");
+}
+
+autoBtn.addEventListener("click", function () {
+  autoSpeak = !autoSpeak;
+  sessionStorage.setItem("village-auto-speak", autoSpeak ? "1" : "0");
+  syncAuto();
+  if (!autoSpeak) stopSpeak();
+});
+
+speakBtn.addEventListener("click", function () {
+  if (speaking) {
+    stopSpeak();
+    return;
+  }
+  const lines = current ? current.lines : INTRO.lines;
+  speak(lines);
+});
+
+backBtn.addEventListener("click", function () { showOverview(true); });
+zoomInBtn.addEventListener("click", function () { zoomBy(1.25); });
+zoomOutBtn.addEventListener("click", function () { zoomBy(0.8); });
+panLeft.addEventListener("click", function (event) {
+  event.stopPropagation();
+  panBy(stageW * 0.62);
+});
+panRight.addEventListener("click", function (event) {
+  event.stopPropagation();
+  panBy(-stageW * 0.62);
+});
+
+stage.addEventListener("pointerdown", function (event) {
+  if (event.target.closest(".hotspot") || event.target.closest(".pan")) return;
+  if (!current) return;
+  drag = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    px: px,
+    py: py,
+    moved: false,
+    pointers: new Map()
+  };
+  stage.setPointerCapture(event.pointerId);
+  stage.classList.add("dragging");
+  zoom.style.transition = "none";
+});
+
+const pinches = new Map();
+stage.addEventListener("pointerdown", function (event) {
+  pinches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (pinches.size === 2 && current) {
+    const pair = Array.from(pinches.values());
+    drag = {
+      pinch: true,
+      dist: Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1,
+      s: scale,
+      px: px,
+      py: py,
+      midX: (pair[0].x + pair[1].x) / 2,
+      midY: (pair[0].y + pair[1].y) / 2
+    };
+    zoom.style.transition = "none";
+  }
+});
+stage.addEventListener("pointermove", function (event) {
+  if (pinches.has(event.pointerId)) {
+    pinches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  }
+  if (drag && drag.pinch && pinches.size >= 2 && current) {
+    const pair = Array.from(pinches.values());
+    const dist = Math.hypot(pair[0].x - pair[1].x, pair[0].y - pair[1].y) || 1;
+    const rect = stage.getBoundingClientRect();
+    const localX = drag.midX - rect.left;
+    const localY = drag.midY - rect.top;
+    const ix = (localX - drag.px) / drag.s;
+    const iy = (localY - drag.py) / drag.s;
+    const fit = fitScale(current);
+    scale = Math.max(fit * 0.98, Math.min(MAX_SCALE, drag.s * (dist / drag.dist)));
+    px = localX - ix * scale;
+    py = localY - iy * scale;
+    clamp();
+    apply();
+    updatePans();
+    return;
+  }
+  if (!drag || drag.pinch || drag.id !== event.pointerId) return;
+  const dx = event.clientX - drag.x;
+  const dy = event.clientY - drag.y;
+  if (Math.hypot(dx, dy) > 6) drag.moved = true;
+  px = drag.px + dx;
+  py = drag.py + dy;
+  clamp();
+  apply();
+});
+function endPointer(event) {
+  pinches.delete(event.pointerId);
+  if (drag && drag.id === event.pointerId && !drag.pinch) {
+    drag = null;
+    stage.classList.remove("dragging");
+    updatePans();
+  }
+  if (pinches.size < 2 && drag && drag.pinch) {
+    drag = null;
+    updatePans();
+  }
+}
+stage.addEventListener("pointerup", endPointer);
+stage.addEventListener("pointercancel", endPointer);
+
+stage.addEventListener("wheel", function (event) {
+  if (!current) return;
+  event.preventDefault();
+  zoomBy(event.deltaY < 0 ? 1.08 : 0.92, event.clientX, event.clientY);
+}, { passive: false });
+
+stage.addEventListener("click", function (event) {
+  if (event.target.closest(".hotspot") || event.target.closest(".pan")) return;
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") showOverview(true);
+  if (!current) {
+    const n = Number(event.key);
+    if (n >= 1 && n <= REGIONS.length) openRegion(REGIONS[n - 1], true);
+    return;
+  }
+  if (event.key === "ArrowLeft") panBy(stageW * 0.25);
+  if (event.key === "ArrowRight") panBy(-stageW * 0.25);
+  if (event.key === "ArrowUp") { py += stageH * 0.2; clamp(); apply(); }
+  if (event.key === "ArrowDown") { py -= stageH * 0.2; clamp(); apply(); }
+  if (event.key === "+" || event.key === "=") zoomBy(1.2);
+  if (event.key === "-" || event.key === "_") zoomBy(0.84);
+});
+
+if (window.speechSynthesis) {
+  window.speechSynthesis.addEventListener("voiceschanged", refreshVoiceHint);
+  refreshVoiceHint();
+  window.setInterval(function () {
+    if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
+  }, 4000);
+}
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function enterFullscreen() {
+  if (isFullscreen()) return;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try {
+    const result = req.call(el);
+    if (result && result.catch) result.catch(function () {});
+  } catch (err) {}
+}
+
+function exitFullscreen() {
+  if (!isFullscreen()) return;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!exit) return;
+  try {
+    const result = exit.call(document);
+    if (result && result.catch) result.catch(function () {});
+  } catch (err) {}
+}
+
+function syncFullBtn() {
+  const on = isFullscreen();
+  fullBtn.textContent = on ? "退出" : "全螢幕";
+  fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+const fullBtn = document.getElementById("full-btn");
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
+  fullBtn.hidden = true;
+}
+fullBtn.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (isFullscreen()) exitFullscreen();
+  else enterFullscreen();
+});
+document.addEventListener("fullscreenchange", function () {
+  syncFullBtn();
+  layout(false);
+});
+document.addEventListener("webkitfullscreenchange", function () {
+  syncFullBtn();
+  layout(false);
+});
+stage.addEventListener("contextmenu", function (event) { event.preventDefault(); });
+
+renderHotspots();
+syncAuto();
+syncFullBtn();
+showOverview(false);
+window.addEventListener("resize", function () { layout(false); });
+
+const startId = (location.hash || "").replace("#", "") || new URLSearchParams(location.search).get("part");
+if (startId) {
+  const found = REGIONS.find(function (region) { return region.id === startId; });
+  if (found) openRegion(found, false);
+}
+</script>
+</body>
+</html>
