@@ -974,6 +974,8 @@
             <img src="${it.qr}" alt="二維碼：${plainText(it.title)}">
             <p>${it.qrCaption || ("請用相機掃描二維碼即可" + (it.noScore ? "開啟" : "遊玩") + "。")}</p>
           </div>
+          <a class="btn btn-dl" href="https://github.com/CheungSirEdu/education/archive/refs/heads/main.zip">下載全部教材</a>
+          <p class="url-line">此按鈕下載所有已放上網的遊戲及網頁，換電腦或回復原廠設定後仍可取回。成績仍在 Google 試算表，不在此檔案內。</p>
           ${it.noScore ? "" : `<p class="label-bit">${it.scoreLabel || "成績"}</p>
           <div class="note">
             ${it.scoreNote || "開始前請填寫班別及學號（例如：4A、12）。無須填寫姓名。<br>完成後，分數會自動交給老師。本頁不顯示成績，學生及家長亦不會看到其他同學的分數。"}
