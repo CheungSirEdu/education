@@ -3,6 +3,7 @@
 <script>document.documentElement.classList.add("js");</script>
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#2f7d32" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -193,6 +194,14 @@
       border-right-color: #fff;
     }
     .vtl li.open .card { box-shadow: 0 0 0 3px var(--green), 4px 6px 11px -2px #adadad; }
+    .vtl .day-panel {
+      margin: 12px 0 8px 42px;
+    }
+    .vtl .day-panel .item { margin-bottom: 10px; }
+    .vtl .day-panel .item:last-child { margin-bottom: 0; }
+    @media (min-width: 64rem) {
+      .vtl .day-panel { margin-left: 0; }
+    }
     .vtl .what,
     .vtl .note,
     .vtl .when {
@@ -298,68 +307,7 @@ img.zhang-sir-mark {
               <span class="when">2026年9月28日</span>
             </span>
           </button>
-        </li>
-        <li data-date="2026-10-03">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-1003">
-            <span class="card">
-              <span class="what">比賽</span>
-              <span class="note">上午 8:40 集合<br>香港聖公會何明華會督中學</span>
-              <span class="when">2026年10月3日</span>
-            </span>
-          </button>
-        </li>
-        <li data-date="2026-10-08">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-1008">
-            <span class="card">
-              <span class="what">公布成績</span>
-              <span class="note">香港電腦教育學會 Facebook</span>
-              <span class="when">2026年10月8日</span>
-            </span>
-          </button>
-        </li>
-        <li data-date="2026-10-23">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-1023">
-            <span class="card">
-              <span class="what">繳交團費</span>
-              <span class="when">2026年10月23日</span>
-            </span>
-          </button>
-        </li>
-        <li data-date="2026-11-03">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-1103">
-            <span class="card">
-              <span class="what">交特區護照副本</span>
-              <span class="when">2026年11月3日或之前</span>
-            </span>
-          </button>
-        </li>
-        <li data-date="2027-01-15">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-0115">
-            <span class="card">
-              <span class="what">機場集合</span>
-              <span class="note">晚上</span>
-              <span class="when">2027年1月15日</span>
-            </span>
-          </button>
-        </li>
-        <li data-until="2027-02-01">
-          <span class="dot" aria-hidden="true"></span>
-          <button type="button" class="day" aria-expanded="false" aria-controls="day-uk">
-            <span class="card">
-              <span class="what">前往英國</span>
-              <span class="when">2027年1月中</span>
-            </span>
-          </button>
-        </li>
-      </ol>
-      <p class="tl-hint">撳日期，睇當日內容。</p>
-    </div>
-    <div class="day-panel" id="day-0928">
+        <div class="day-panel" id="day-0928">
       <div class="item">
         <h2>沿着黑色線</h2>
         <p>撳下面打開積木程式，下載到 micro:bit。</p>
@@ -371,7 +319,17 @@ img.zhang-sir-mark {
         <a class="btn" href="教學.docx" download="教學.docx">下載教學 Word</a>
       </div>
     </div>
-    <div class="day-panel" id="day-1003">
+        </li>
+        <li data-date="2026-10-03">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1003">
+            <span class="card">
+              <span class="what">比賽</span>
+              <span class="note">上午 8:40 集合<br>香港聖公會何明華會督中學</span>
+              <span class="when">2026年10月3日</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-1003">
       <div class="item">
         <h2>10月3日上午 8:40 集合</h2>
         <p>香港聖公會何明華會督中學<br>九龍秀茂坪曉光街 82 號</p>
@@ -382,23 +340,23 @@ img.zhang-sir-mark {
         <p>嗰日比賽嘅六位同學：5A 陳彥彬、潘韻而、蔡知妍、江翊希、關耀笙、袁岱潼。</p>
         <div class="shots">
           <figure class="wide">
-            <a href="比賽相片/03.jpg"><img src="比賽相片/03.jpg" alt="六位同學合照：陳彥彬、潘韻而、蔡知妍、江翊希、關耀笙、袁岱潼"></a>
+            <a href="比賽相片/03.jpg?v=2"><img src="比賽相片/03.jpg?v=2" alt="六位同學合照：陳彥彬、潘韻而、蔡知妍、江翊希、關耀笙、袁岱潼"></a>
             <figcaption>六位同學</figcaption>
           </figure>
           <figure>
-            <a href="比賽相片/04.jpg"><img src="比賽相片/04.jpg" alt="第一組：陳彥彬、潘韻而、蔡知妍"></a>
+            <a href="比賽相片/04.jpg?v=2"><img src="比賽相片/04.jpg?v=2" alt="第一組：陳彥彬、潘韻而、蔡知妍"></a>
             <figcaption>第一組　陳彥彬、潘韻而、蔡知妍</figcaption>
           </figure>
           <figure>
-            <a href="比賽相片/05.jpg"><img src="比賽相片/05.jpg" alt="第二組：江翊希、關耀笙、袁岱潼"></a>
+            <a href="比賽相片/05.jpg?v=2"><img src="比賽相片/05.jpg?v=2" alt="第二組：江翊希、關耀笙、袁岱潼"></a>
             <figcaption>第二組　江翊希、關耀笙、袁岱潼</figcaption>
           </figure>
           <figure>
-            <a href="比賽相片/01.jpg"><img src="比賽相片/01.jpg" alt="第一組匯報：陳彥彬、潘韻而、蔡知妍"></a>
+            <a href="比賽相片/01.jpg?v=2"><img src="比賽相片/01.jpg?v=2" alt="第一組匯報：陳彥彬、潘韻而、蔡知妍"></a>
             <figcaption>第一組匯報</figcaption>
           </figure>
           <figure>
-            <a href="比賽相片/02.jpg"><img src="比賽相片/02.jpg" alt="第二組準備：江翊希、關耀笙、袁岱潼"></a>
+            <a href="比賽相片/02.jpg?v=2"><img src="比賽相片/02.jpg?v=2" alt="第二組準備：江翊希、關耀笙、袁岱潼"></a>
             <figcaption>第二組準備</figcaption>
           </figure>
         </div>
@@ -424,36 +382,87 @@ img.zhang-sir-mark {
       </div>
     </div>
     </div>
-    <div class="day-panel" id="day-1008">
+        </li>
+        <li data-date="2026-10-08">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1008">
+            <span class="card">
+              <span class="what">公布成績</span>
+              <span class="note">香港電腦教育學會 Facebook</span>
+              <span class="when">2026年10月8日</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-1008">
       <div class="item">
         <h2>公布成績</h2>
         <p>正式結果已於香港電腦教育學會 Facebook 公布。</p>
         <a class="btn" href="https://www.facebook.com/share/p/1E3MJ3ECmQ/" target="_blank" rel="noopener noreferrer">打開公布成績</a>
       </div>
     </div>
-    <div class="day-panel" id="day-1023">
+        </li>
+        <li data-date="2026-10-23">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1023">
+            <span class="card">
+              <span class="what">繳交團費</span>
+              <span class="when">2026年10月23日</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-1023">
       <div class="item">
         <h2>繳交團費</h2>
         <p>2026年10月23日繳交團費。</p>
       </div>
     </div>
-    <div class="day-panel" id="day-1103">
+        </li>
+        <li data-date="2026-11-03">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-1103">
+            <span class="card">
+              <span class="what">交特區護照副本</span>
+              <span class="when">2026年11月3日或之前</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-1103">
       <div class="item">
         <h2>交特區護照副本</h2>
         <p>請於2026年11月3日或之前交特區護照副本給老師。</p>
       </div>
     </div>
-    <div class="day-panel" id="day-0115">
+        </li>
+        <li data-date="2027-01-15">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-0115">
+            <span class="card">
+              <span class="what">機場集合</span>
+              <span class="note">晚上</span>
+              <span class="when">2027年1月15日</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-0115">
       <div class="item">
         <h2>機場集合</h2>
         <p>2027年1月15日晚上機場集合。</p>
       </div>
     </div>
-    <div class="day-panel" id="day-uk">
+        </li>
+        <li data-until="2027-02-01">
+          <span class="dot" aria-hidden="true"></span>
+          <button type="button" class="day" aria-expanded="false" aria-controls="day-uk">
+            <span class="card">
+              <span class="what">前往英國</span>
+              <span class="when">2027年1月中</span>
+            </span>
+          </button>
+        <div class="day-panel" id="day-uk">
       <div class="item">
         <h2>前往英國</h2>
         <p>2027年1月中前往英國。</p>
       </div>
+    </div>
+        </li>
+      </ol>
+      <p class="tl-hint">撳日期，睇當日內容。</p>
     </div>
     <div class="item">
       <h2>5A 袁岱潼</h2>
@@ -606,7 +615,7 @@ img.zhang-sir-mark {
             btn.setAttribute("aria-expanded", "true");
             btn.parentElement.classList.add("open");
             panel.classList.add("show");
-            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+            panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
         });
       });
