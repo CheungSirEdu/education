@@ -418,6 +418,11 @@
     .plant-top .kicker { color: #f4d35e; }
     .bean-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
     .bean-top .kicker { color: #f4d35e; }
+    body.space-on header.hub, body.space-on #shell, body.space-on #hubFoot, body.space-on #dash, body.space-on #bean, body.space-on #times, body.space-on #plant, body.space-on #lang, body.space-on #jump { display: none !important; }
+    body.space-on #space { display: block; }
+    #space { display: none; }
+    .space-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
+    .space-top .kicker { color: #f4d35e; }
     .photo-wall {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
@@ -566,6 +571,42 @@
       <p class="status" id="beanStatus">正在讀取相片…</p>
     </div>
     <section class="panel" id="beanMain"></section>
+  </div>
+</div>
+
+<div id="space">
+  <header class="top space-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　科學 · 成績後台</p>
+      <h1>種植太空植物</h1>
+      <p class="sub">一眼睇晒各班種植相片</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a id="spacePlay" href="../spaceplant/">學生輸入頁</a>
+        <button type="button" id="spaceReload">重新整理</button>
+        <button type="button" id="spaceDownload">下載相片</button>
+        <button type="button" id="spaceCsv">匯出 Excel</button>
+        <button type="button" id="spaceEdit">編輯</button>
+        <button type="button" id="spaceLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="spaceStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="spaceTabs">
+        <button type="button" data-stab="photos" class="on">全部相片</button>
+        <button type="button" data-stab="miss">未交班別</button>
+      </div>
+      <div class="classes" id="spaceClassChips"></div>
+      <div class="dates" id="spaceDayChips"></div>
+      <div class="search">
+        <input id="spaceQ" type="search" placeholder="搜尋班別、日子或生長情況" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="spaceCsvBar" type="button">匯出 Excel</button>
+      </div>
+      <p class="status" id="spaceStatus">正在讀取相片…</p>
+    </div>
+    <section class="panel" id="spaceMain"></section>
   </div>
 </div>
 
@@ -755,6 +796,7 @@
     { id: "p2jump", subject: "p2-sci", emoji: "⭐", title: "二年班科學志蓮跳跳小遊戲", blurb: "跳跳小遊戲。左右移動、跳躍、蹲低，食星星答題。", noScore: true },
     { id: "mungbean", subject: "p2-sci", emoji: "🌱", title: "第三課 動手種植物", blurb: "種綠豆，綠豆幼苗會對光的方向作出反應嗎？" },
     { id: "beanlog", subject: "p2-sci", emoji: "📷", title: "第三課 家中種綠豆", blurb: "每日拍攝綠豆盆栽，記錄生長情況。" },
+    { id: "spaceplant", subject: "p2-sci", emoji: "🚀", title: "種植太空植物", blurb: "種植從太空帶回學校的種子或幼苗，拍照記錄生長。" },
     { id: "engineer", subject: "p4-sci", emoji: "🔧", title: "小小工程師跳跳關", blurb: "小小工程師跳跳關，溫習相關科學課題。" },
     { id: "drift", subject: "p4-sci", emoji: "🏎️", title: "第八單元 摩擦力", blurb: "賽車挑戰，比較不同路面的摩擦力。" },
     { id: "foodchain", subject: "p4-sci", emoji: "🐰", title: "食物鏈", blurb: "調節草、兔仔和狼的數量，看看食物鏈怎樣保持平衡。", noScore: true },
@@ -801,6 +843,12 @@
     beanDay: "all",
     beanNo: "all",
     beanQ: "",
+    spaceRecords: [],
+    spaceLoaded: false,
+    spaceTab: "photos",
+    spaceFilter: "all",
+    spaceDay: "all",
+    spaceQ: "",
     timesRecords: [],
     timesLoaded: false,
     timesTab: "class",
@@ -1429,6 +1477,7 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
@@ -1439,6 +1488,7 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1454,11 +1504,27 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
       state.beanLoaded = true;
       loadBean();
+    }
+  }
+  function showSpaceDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
+    document.body.classList.add("space-on");
+    renderSpace();
+    if (!state.spaceLoaded) {
+      state.spaceLoaded = true;
+      loadSpace();
     }
   }
   function showTimesDash() {
@@ -1468,6 +1534,7 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("times-on");
     renderTimes();
     if (!state.timesLoaded) {
@@ -1482,6 +1549,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("plant-on");
     renderPlant();
     if (!state.plantLoaded) {
@@ -1503,6 +1571,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("lang-on");
     $("langTitle").textContent = langGame().emoji + " " + langGame().title;
     $("langPlay").href = langGame().play;
@@ -1705,6 +1774,7 @@
     document.body.classList.remove("times-on");
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
+    document.body.classList.remove("space-on");
     document.body.classList.add("jump-on");
     const g = jumpGame();
     $("jumpTitle").textContent = g.emoji + " " + g.title;
@@ -2958,6 +3028,405 @@
       });
     });
   };
+  const SPACE_CLASSES = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+  function spaceDayLabel(day) {
+    const n = parseInt(String(day || "").replace(/[^\d]/g, ""), 10);
+    return n >= 1 ? ("第" + n + "日") : String(day || "").trim();
+  }
+  function spaceZhDate(ymd) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ""));
+    if (!m) return "";
+    return Number(m[2]) + "月" + Number(m[3]) + "日";
+  }
+  function spaceNorm(raw) {
+    const klass = String(raw.klass || raw.class || "").trim().toUpperCase().replace(/\s+/g, "");
+    const day = spaceDayLabel(raw.day);
+    let ymd = String(raw.ymd || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) ymd = ymdFromGviz(raw.ymd, raw.ymdText || "");
+    const note = String(raw.note || "").trim();
+    const photo = String(raw.photo || "");
+    const srcIn = String(raw.src || "");
+    const imgId = parseImgurId(srcIn) || parseImgurId(photo) || parseImgurId(note);
+    const driveId = raw.driveId || raw.fileId || driveFileId(photo) || driveFileId(srcIn);
+    const http = imgId ? imgurFull(imgId) : ([srcIn, photo].find(isGoodPhotoUrl) || "");
+    const src = srcIn.indexOf("data:") === 0 ? srcIn : http;
+    return {
+      klass, day, ymd,
+      stage: String(raw.stage || "").trim(),
+      note, photo, src, driveId, ts: Number(raw.ts || 0)
+    };
+  }
+  function spaceHasPhoto(r) {
+    return !!(r && (r.driveId || beanThumb(r) || (r.src && String(r.src).indexOf("data:image") === 0)));
+  }
+  function spacePassQ(r) {
+    const q = state.spaceQ.trim().toLowerCase();
+    if (!q) return true;
+    return (r.klass + " " + r.day + " " + spaceZhDate(r.ymd) + " " + r.ymd + " " + r.stage + " " + r.note).toLowerCase().indexOf(q) >= 0;
+  }
+  function spaceMatch(r) {
+    if (state.spaceFilter === "all") {
+      if (SPACE_CLASSES.indexOf(r.klass) < 0) return false;
+    } else if (r.klass !== state.spaceFilter) return false;
+    if (state.spaceDay !== "all" && r.day !== state.spaceDay) return false;
+    return spacePassQ(r);
+  }
+  function spaceLive(rows) {
+    const map = {};
+    (rows || []).forEach(r => {
+      if (!r.klass || (!r.ymd && !r.day)) return;
+      const k = r.klass + "\t" + (r.ymd || r.day);
+      const cur = map[k];
+      if (!cur || r.ts >= cur.ts) map[k] = r;
+    });
+    return Object.keys(map).map(k => map[k]);
+  }
+  function spaceClasses() {
+    return state.spaceFilter === "all" ? SPACE_CLASSES.slice() : [state.spaceFilter];
+  }
+  function spaceMissing() {
+    const have = {};
+    spaceLive(state.spaceRecords).forEach(r => {
+      if (!spaceHasPhoto(r)) return;
+      if (state.spaceDay !== "all" && r.day !== state.spaceDay) return;
+      if (spaceClasses().indexOf(r.klass) < 0) return;
+      have[r.klass] = true;
+    });
+    return spaceClasses().filter(c => !have[c] && spacePassQ({ klass: c, day: "", ymd: "", stage: "", note: "" }));
+  }
+  function spaceFileName(r) {
+    return String(r.klass || "") + "-" + String(r.ymd || "未記日期") + "-" + String(r.day || "").replace(/\s+/g, "") + ".jpg";
+  }
+  async function fetchSpaceGviz() {
+    const cb = "space_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("太空種子") +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iClass = idx("班別"), iDay = idx("第幾日"), iYmd = idx("日期");
+    const iStage = idx("生長情況"), iNote = idx("觀察"), iUrl = idx("相片連結");
+    const iTime = idx("時間");
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+      const day = String(gvizCell(row, iDay) || "").trim();
+      const dateCell = row.c && iYmd >= 0 ? row.c[iYmd] : null;
+      const ymd = ymdFromGviz(dateCell && dateCell.v, dateCell && (dateCell.f || dateCell.v));
+      const url = String(gvizCell(row, iUrl) || "");
+      if (!klass || (!day && !ymd)) return;
+      out.push(spaceNorm({
+        klass, day, ymd,
+        stage: iStage >= 0 ? gvizCell(row, iStage) : "",
+        note: iNote >= 0 ? gvizCell(row, iNote) : "",
+        photo: url,
+        ts: gvizTs(gvizCell(row, iTime))
+      }));
+    });
+    return out;
+  }
+  function loadLocalSpacePhotos() {
+    return new Promise(function (resolve) {
+      const out = [];
+      let req;
+      try { req = indexedDB.open("spaceplant-v1", 1); }
+      catch (e) { return resolve(out); }
+      req.onerror = function () { resolve(out); };
+      req.onsuccess = function () {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("recs")) return resolve(out);
+        const tx = db.transaction("recs", "readonly");
+        const cur = tx.objectStore("recs").openCursor();
+        cur.onerror = function () { resolve(out); };
+        cur.onsuccess = function (ev) {
+          const c = ev.target.result;
+          if (!c) return resolve(out);
+          const klass = String(c.key || "").replace(/^class\|/i, "").toUpperCase();
+          const recs = c.value || {};
+          Object.keys(recs).forEach(function (ymd) {
+            const rec = recs[ymd];
+            if (!rec || !rec.photo) return;
+            out.push(spaceNorm({
+              klass: klass,
+              day: rec.day ? ("第" + rec.day + "日") : "",
+              ymd: rec.ymd || ymd,
+              stage: rec.stage || "",
+              note: rec.note || "",
+              src: rec.photo,
+              photo: rec.photo,
+              ts: rec.at || 0
+            }));
+          });
+          c.continue();
+        };
+      };
+    });
+  }
+  async function loadSpace() {
+    $("spaceStatus").textContent = "正在讀取相片…";
+    try {
+      state.spaceRecords = await fetchSpaceGviz();
+    } catch (e) {
+      state.spaceRecords = [];
+    }
+    function mergeSpace(list) {
+      const byKey = {};
+      state.spaceRecords.forEach(r => { byKey[r.klass + "\t" + (r.ymd || r.day)] = r; });
+      (list || []).forEach(p => {
+        if (!p.klass) return;
+        const k = p.klass + "\t" + (p.ymd || p.day);
+        const cur = byKey[k];
+        if (!cur) {
+          state.spaceRecords.push(p);
+          byKey[k] = p;
+          return;
+        }
+        const newer = !cur.ts || (p.ts && p.ts >= cur.ts);
+        if (spaceHasPhoto(p) && (!spaceHasPhoto(cur) || newer)) {
+          cur.src = p.src;
+          cur.photo = p.photo || p.src;
+          cur.driveId = p.driveId || cur.driveId;
+          if (newer) cur.ts = p.ts || cur.ts;
+        }
+        if (!cur.stage && p.stage) cur.stage = p.stage;
+        if (!cur.note && p.note) cur.note = p.note;
+        if (!cur.day && p.day) cur.day = p.day;
+        if (!cur.ymd && p.ymd) cur.ymd = p.ymd;
+      });
+    }
+    try { mergeSpace(await loadLocalSpacePhotos()); } catch (e2) {}
+    const total = spaceLive(state.spaceRecords).length;
+    const n = state.spaceRecords.filter(spaceHasPhoto).length;
+    $("spaceStatus").textContent = total
+      ? ("已更新　" + total + " 筆紀錄，" + n + " 張相片。撳相片可以放大。")
+      : "暫時未有紀錄。學生儲存後請撳重新整理。";
+    renderSpace();
+  }
+  function renderSpaceChips() {
+    const cls = ["all"].concat(SPACE_CLASSES);
+    $("spaceClassChips").innerHTML = cls.map(c =>
+      `<button class="chip${state.spaceFilter === c ? " on" : ""}" type="button" data-sclass="${c}">${c === "all" ? "全部班別" : c}</button>`
+    ).join("");
+    const days = {};
+    spaceLive(state.spaceRecords).filter(r =>
+      state.spaceFilter === "all" ? SPACE_CLASSES.indexOf(r.klass) >= 0 : r.klass === state.spaceFilter
+    ).forEach(r => { if (r.day) days[r.day] = true; });
+    const dayList = Object.keys(days).sort((a, b) => {
+      const na = parseInt(String(a).replace(/[^\d]/g, ""), 10) || 0;
+      const nb = parseInt(String(b).replace(/[^\d]/g, ""), 10) || 0;
+      return na - nb;
+    });
+    $("spaceDayChips").innerHTML = [`<button class="chip${state.spaceDay === "all" ? " on" : ""}" type="button" data-sday="all">全部日子</button>`]
+      .concat(dayList.map(d => `<button class="chip${state.spaceDay === d ? " on" : ""}" type="button" data-sday="${esc(d)}">${esc(d)}</button>`)).join("");
+  }
+  function renderSpaceStats() {
+    const live = spaceLive(state.spaceRecords).filter(r =>
+      (state.spaceFilter === "all" ? SPACE_CLASSES.indexOf(r.klass) >= 0 : r.klass === state.spaceFilter)
+    );
+    const photos = live.filter(r => spaceHasPhoto(r) && (state.spaceDay === "all" || r.day === state.spaceDay));
+    const missing = spaceMissing();
+    const submitted = spaceClasses().length - missing.length;
+    $("spaceStats").innerHTML = `
+      <div class="stat ok"><div class="lab">相片</div><div class="big num">${photos.length}</div><div class="tiny">一目了然</div></div>
+      <div class="stat"><div class="lab">已交</div><div class="big num">${submitted}</div><div class="tiny">至少一張相片</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${spaceClasses().length} 班</div></div>
+      <div class="stat"><div class="lab">日子</div><div class="big num">${state.spaceDay === "all" ? "全部" : state.spaceDay.replace("第","").replace("日","")}</div><div class="tiny">${state.spaceFilter === "all" ? "全部班別" : state.spaceFilter}</div></div>`;
+  }
+  function openSpaceLight(r) {
+    const src = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+    const note = String(r.note || "").replace(/IMG:[A-Za-z0-9]+/g, "").replace(/📷https?:\/\/\S+/g, "").trim();
+    const when = spaceZhDate(r.ymd);
+    $("beanLight").innerHTML = `
+      <img src="${esc(src)}" alt="" referrerpolicy="no-referrer">
+      <div class="cap">${esc(r.klass)}　${esc(r.day)}${when ? "　" + esc(when) : ""}${r.stage ? "　" + esc(r.stage) : ""}${note ? "<br>" + esc(note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>
+      <div class="actions">
+        <button type="button" id="lightSave" style="background:#2f7d32;color:#fff">下載這張相片</button>
+        ${state.editing ? `<button class="danger" type="button" id="lightDel">刪除這張相片</button>` : ""}
+      </div>`;
+    $("beanLight").classList.remove("hidden");
+    const img = $("beanLight").querySelector("img");
+    if (img) img.onerror = function () {
+      const alt = beanFullUrl(r.src || r.photo || r.note);
+      if (alt && img.getAttribute("src") !== alt) img.src = alt;
+    };
+    const save = $("lightSave");
+    if (save) save.onclick = function (ev) { ev.stopPropagation(); downloadSpaceFile(r); };
+    const del = $("lightDel");
+    if (del) del.onclick = function (ev) { ev.stopPropagation(); deleteSpacePhoto(r); };
+  }
+  function renderSpace() {
+    if (!$("spaceMain")) return;
+    renderSpaceChips();
+    renderSpaceStats();
+    document.querySelectorAll("#spaceTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-stab") === state.spaceTab));
+    const order = SPACE_CLASSES;
+    if (state.spaceTab === "miss") {
+      const missing = spaceMissing();
+      $("spaceMain").innerHTML = editBanner() + `<h2 class="h2">未交班別　${missing.length}</h2>
+        <div class="pills">${missing.map(c => `<span class="pill">${esc(c)}</span>`).join("") || `<p class="empty">這範圍的班別已經交過相片。</p>`}</div>`;
+      return;
+    }
+    const photos = spaceLive(state.spaceRecords).filter(spaceMatch).filter(spaceHasPhoto).slice().sort((a, b) => {
+      const ca = order.indexOf(a.klass), cb = order.indexOf(b.klass);
+      if (ca !== cb) return (ca < 0 ? 99 : ca) - (cb < 0 ? 99 : cb);
+      if (a.ymd !== b.ymd) return String(a.ymd).localeCompare(String(b.ymd));
+      return String(a.day).localeCompare(String(b.day), "zh-Hant");
+    });
+    if (!photos.length) {
+      $("spaceMain").innerHTML = editBanner() + `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
+      return;
+    }
+    let heading = "全部相片　" + photos.length;
+    if (state.spaceFilter !== "all") heading = state.spaceFilter + "　" + photos.length + " 張";
+    $("spaceMain").innerHTML = editBanner() + `<h2 class="h2">${esc(heading)}</h2>
+      <div class="photo-wall">${photos.map((r, i) => `
+        <button class="photo-card" type="button" data-space="${i}">
+          ${state.editing ? `<span class="photo-del" data-space-del="${i}">刪除</span>` : ""}
+          <span class="photo-ph" style="display:block;min-height:140px;background:#e8f5e9"></span>
+          <div class="cap"><div class="who">${esc(r.klass)}</div>
+          <div class="meta">${esc(r.day)}${r.ymd ? "　" + esc(spaceZhDate(r.ymd)) : ""}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
+        </button>`).join("")}</div>`;
+    $("spaceMain")._photos = photos;
+    const cards = $("spaceMain").querySelectorAll("button[data-space]");
+    photos.forEach(function (r, i) {
+      const card = cards[i];
+      if (!card) return;
+      makePreviewSrc(beanCardUrl(r)).then(function (src) {
+        if (!src) return;
+        const img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.src = src;
+        img.style.width = "100%";
+        img.style.aspectRatio = "1";
+        img.style.objectFit = "cover";
+        img.style.display = "block";
+        const ph = card.querySelector(".photo-ph");
+        if (ph) ph.replaceWith(img);
+      });
+    });
+  }
+  function exportSpaceExcel() {
+    const headers = ["班別", "第幾日", "日期", "生長情況", "觀察", "相片"];
+    const rows = spaceLive(state.spaceRecords).filter(spaceMatch).map(r => [
+      r.klass, r.day, r.ymd, r.stage,
+      String(r.note || "").replace(/IMG:[A-Za-z0-9]+/g, "").replace(/📷https?:\/\/\S+/g, "").trim(),
+      spaceHasPhoto(r) ? "有" : "無"
+    ]);
+    downloadExcel("種植太空植物紀錄-" + state.today, headers, rows);
+  }
+  async function downloadSpaceFile(r) {
+    const url = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+    if (!url) { toast("這張相片未能下載"); return; }
+    toast("正在下載清晰相片…");
+    try {
+      const res = await fetch(url, { referrerPolicy: "no-referrer" });
+      if (!res.ok) throw new Error("fetch");
+      saveBlob(await res.blob(), spaceFileName(r));
+      toast("已下載 " + spaceFileName(r));
+    } catch (e) {
+      toast("未能下載這張相片");
+    }
+  }
+  async function downloadSpacePhotos() {
+    const list = spaceLive(state.spaceRecords).filter(spaceMatch).filter(r => spaceHasPhoto(r) && (beanClearUrl(r) || (r.photo && String(r.photo).indexOf("data:image") === 0)));
+    if (!list.length) { toast("這個範圍未有相片"); return; }
+    const btn = $("spaceDownload");
+    if (btn) btn.disabled = true;
+    $("spaceStatus").textContent = "正在下載 " + list.length + " 張清晰相片…";
+    const files = [];
+    const used = {};
+    const names = list.map(r => {
+      let name = spaceFileName(r);
+      if (used[name]) name = name.replace(/\.jpg$/i, "-" + (++used[name]) + ".jpg");
+      else used[name] = 1;
+      return name;
+    });
+    let done = 0;
+    async function one(r, name) {
+      try {
+        const url = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+        const res = await fetch(url, { referrerPolicy: "no-referrer" });
+        if (!res.ok) return;
+        files.push({ name: name, data: new Uint8Array(await res.arrayBuffer()) });
+      } catch (e) {}
+      done += 1;
+      $("spaceStatus").textContent = "正在下載清晰相片… " + done + " / " + list.length;
+    }
+    let cursor = 0;
+    async function worker() {
+      while (cursor < list.length) {
+        const i = cursor++;
+        await one(list[i], names[i]);
+      }
+    }
+    try {
+      await Promise.all([worker(), worker(), worker()]);
+      if (!files.length) { toast("未能下載相片"); return; }
+      saveBlob(buildZip(files), "種植太空植物相片.zip");
+      toast("已下載 " + files.length + " 張相片");
+      $("spaceStatus").textContent = "已下載 " + files.length + " 張清晰相片";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function deleteLocalSpace(klass, ymd) {
+    const key = "class|" + klass;
+    try {
+      const recs = await new Promise(function (resolve) {
+        const req = indexedDB.open("spaceplant-v1", 1);
+        req.onerror = () => resolve(null);
+        req.onsuccess = function () {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("recs")) return resolve(null);
+          const tx = db.transaction("recs", "readonly");
+          const q = tx.objectStore("recs").get(key);
+          q.onsuccess = () => resolve(q.result || {});
+          q.onerror = () => resolve(null);
+        };
+      });
+      if (!recs) return;
+      delete recs[ymd];
+      await new Promise(function (resolve) {
+        const req = indexedDB.open("spaceplant-v1", 1);
+        req.onsuccess = function () {
+          const db = req.result;
+          const tx = db.transaction("recs", "readwrite");
+          tx.objectStore("recs").put(recs, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        };
+        req.onerror = () => resolve();
+      });
+    } catch (e) {}
+  }
+  async function deleteSpacePhoto(r) {
+    if (!r) return;
+    const who = r.klass + "　" + (r.day || "") + (r.ymd ? "　" + spaceZhDate(r.ymd) : "");
+    if (!confirm("確定刪除這張相片？\n" + who + "\n刪除後可以重新拍攝。")) return;
+    await postScore({
+      token: SCORE_TOKEN,
+      kind: "spaceplant",
+      activity: "太空種子",
+      class: r.klass,
+      day: parseInt(String(r.day || "").replace(/[^\d]/g, ""), 10) || 1,
+      ymd: r.ymd,
+      level: r.day,
+      op: "delete",
+      photo: ""
+    });
+    if (r.ymd) await deleteLocalSpace(r.klass, r.ymd);
+    state.spaceRecords = (state.spaceRecords || []).filter(x =>
+      !(x.klass === r.klass && x.ymd === r.ymd && x.day === r.day)
+    );
+    $("beanLight").classList.add("hidden");
+    renderSpace();
+    toast("已刪除相片");
+  }
   function renderLogin() {
     hideDash();
     $("lockBtn").classList.add("hidden");
@@ -2970,14 +3439,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/",jump:"https://cheungsiredu.github.io/chilin-jump-game/",engineer:"../engineer/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",spaceplant:"../spaceplant/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/",jump:"https://cheungsiredu.github.io/chilin-jump-game/",engineer:"../engineer/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit", "timesEdit", "plantEdit", "langEdit", "jumpEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "spaceEdit", "timesEdit", "plantEdit", "langEdit", "jumpEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -2988,6 +3457,7 @@
     syncEditButtons();
     if (document.body.classList.contains("dash-on")) render();
     if (document.body.classList.contains("bean-on")) renderBean();
+    if (document.body.classList.contains("space-on")) renderSpace();
     if (document.body.classList.contains("times-on")) renderTimes();
     if (document.body.classList.contains("plant-on")) renderPlant();
     if (document.body.classList.contains("lang-on")) renderLang();
@@ -3124,6 +3594,7 @@
     if (!it) return renderHome();
     if (it.id === "grip") { showDash(); return; }
     if (it.id === "beanlog") { showBeanDash(); return; }
+    if (it.id === "spaceplant") { showSpaceDash(); return; }
     if (it.id === "times") { showTimesDash(); return; }
     if (it.id === "living") { location.href = "../living/teacher.html"; return; }
     if (it.id === "pdir") { location.href = "../pdir/teacher.html"; return; }
@@ -3242,6 +3713,49 @@
       $("beanLight").classList.add("hidden");
     };
     $("beanDownload").onclick = () => downloadBeanPhotos();
+    $("spaceLock").onclick = lock;
+    $("spaceReload").onclick = () => loadSpace();
+    $("spaceCsv").onclick = exportSpaceExcel;
+    $("spaceCsvBar").onclick = exportSpaceExcel;
+    $("spaceEdit").onclick = toggleEdit;
+    $("spaceDownload").onclick = () => downloadSpacePhotos();
+    $("spaceTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-stab]");
+      if (!b) return;
+      state.spaceTab = b.getAttribute("data-stab");
+      renderSpace();
+    };
+    $("spaceClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-sclass]");
+      if (!b) return;
+      state.spaceFilter = b.getAttribute("data-sclass");
+      renderSpace();
+    };
+    $("spaceDayChips").onclick = (e) => {
+      const b = e.target.closest("button[data-sday]");
+      if (!b) return;
+      state.spaceDay = b.getAttribute("data-sday");
+      renderSpace();
+    };
+    $("spaceQ").addEventListener("input", () => {
+      state.spaceQ = $("spaceQ").value;
+      renderSpace();
+    });
+    $("spaceMain").onclick = (e) => {
+      const photos = $("spaceMain")._photos || [];
+      const del = e.target.closest("[data-space-del]");
+      if (del) {
+        e.preventDefault();
+        e.stopPropagation();
+        const r = photos[Number(del.getAttribute("data-space-del"))];
+        if (r) deleteSpacePhoto(r);
+        return;
+      }
+      const card = e.target.closest("button[data-space]");
+      if (!card) return;
+      const r = photos[Number(card.getAttribute("data-space"))];
+      if (r) openSpaceLight(r);
+    };
     $("editBtn").onclick = toggleEdit;
     $("dashEdit").onclick = toggleEdit;
     $("beanEdit").onclick = toggleEdit;

@@ -267,7 +267,7 @@
       <p class="hint">各班儲存的相片會顯示在這裡。只顯示有拍照的日子。掃碼或者撳「立即遊玩」，都是這一頁。</p>
       <div class="wall" id="classWall"><p class="hint" style="grid-column:1/-1">正在讀取全班相片…</p></div>
       <button class="ghost" id="wallRefresh" type="button">重新整理全班相片</button>
-      <button class="ghost" id="adminBtn" type="button">成績後台</button>
+      <a class="ghost" id="adminBtn" href="https://cheungsiredu.github.io/education/grip/admin.html?from=spaceplant#/i/spaceplant" style="display:flex;align-items:center;justify-content:center;text-decoration:none">成績後台</a>
     </div>
   </section>
 
@@ -1276,11 +1276,6 @@
       $("app").classList.add("hidden");
       $("start").classList.remove("hidden");
       window.scrollTo(0, 0);
-    };
-    $("adminBtn").onclick = function () {
-      $("teacherPin").value = "";
-      $("teacherModal").classList.remove("hidden");
-      setTimeout(function () { $("teacherPin").focus(); }, 50);
     };
     $("teacherNo").onclick = function () { $("teacherModal").classList.add("hidden"); };
     $("teacherYes").onclick = function () {
