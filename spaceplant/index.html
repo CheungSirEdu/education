@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="太空種子返校" />
+  <meta name="theme-color" content="#2f7d32" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>太空種子返校　生長觀察</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #2f7d32;
+      --green-dark: #1b5e20;
+      --yellow: #f4d35e;
+      --ink: #1d2b1f;
+      --muted: #3d5c40;
+      --card: #fffef6;
+      --safe-t: env(safe-area-inset-top);
+      --safe-b: env(safe-area-inset-bottom);
+      --safe-l: env(safe-area-inset-left);
+      --safe-r: env(safe-area-inset-right);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    img, video { max-width: 100%; }
+    .plant-pic img { min-width: 0; }
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    html, body {
+      margin: 0; min-height: 100%; min-height: 100dvh; max-width: 100%;
+      overflow-x: hidden;
+      font-family: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(#8fd3f0, #c8f0c0) fixed;
+    }
+    button, .btn {
+      appearance: none; border: 0; font: inherit; font-weight: 900;
+      border-radius: 16px; cursor: pointer; touch-action: manipulation;
+    }
+    button:disabled { opacity: .45; }
+    .hidden { display: none !important; }
+    .panel {
+      width: 100%;
+      max-width: 100%;
+      min-height: 100dvh;
+      padding: 16px 16px 24px;
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      padding-right: calc(16px + env(safe-area-inset-right, 0px));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      padding-left: calc(16px + env(safe-area-inset-left, 0px));
+    }
+    .card {
+      background: var(--card);
+      border: 5px solid var(--green);
+      border-radius: 24px;
+      padding: 18px 16px 20px;
+      box-shadow: 0 8px 0 var(--green-dark);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0 0 6px; text-align: center; color: var(--green-dark); font-size: clamp(22px, 6vw, 28px); }
+    .sub { text-align: center; font-weight: 700; color: var(--muted); margin: 0 0 10px; }
+    .id-note, .how {
+      font-weight: 800; line-height: 1.5; text-align: center;
+    }
+    .how {
+      background: #fff; border: 4px solid #c5dcc6; border-radius: 18px;
+      padding: 12px 14px; margin: 0 0 14px; font-size: clamp(16px, 4.4vw, 20px);
+    }
+    .care {
+      background: #fff8e1; border: 4px solid #f4d35e; border-radius: 18px;
+      padding: 12px 14px; margin: 0 0 12px;
+      font-size: clamp(16px, 4.4vw, 20px); font-weight: 800; line-height: 1.5; text-align: center;
+      color: var(--ink);
+    }
+    .one { display: block; font-size: 14px; font-weight: 700; color: var(--green-dark); margin: 12px 0; }
+    .one select, #teacherPin {
+      width: 100%; margin-top: 4px; font: inherit; font-weight: 700; font-size: 18px;
+      min-height: 48px; padding: 12px; border: 3px solid #c5dcc6; border-radius: 12px;
+      color: var(--ink); background: #fff;
+    }
+    .one select { padding-right: 36px; }
+    .one select:focus, #teacherPin:focus { outline: 0; border-color: var(--green); background: #e8f5e9; }
+    #teacherPin { margin: 8px 0 12px; font-size: 22px; text-align: center; letter-spacing: .25em; }
+    .plant-pic { text-align: center; margin: 0 0 12px; }
+    .plant-pic img {
+      width: min(100%, 520px); max-height: 46dvh; height: auto; object-fit: contain;
+      border-radius: 16px; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12));
+    }
+    .primary {
+      width: 100%; background: var(--green); color: #fff; font-size: 20px;
+      min-height: 54px; padding: 14px; box-shadow: 0 5px 0 var(--green-dark);
+    }
+    .ghost {
+      width: 100%; background: #fff; color: var(--green-dark);
+      border: 4px solid var(--green); min-height: 48px; padding: 12px; margin-top: 8px;
+    }
+    .topbar {
+      max-width: 720px; margin: 0 auto 12px; display: flex; gap: 8px; align-items: center;
+      padding-right: 56px;
+    }
+    .who { flex: 1; font-weight: 900; color: var(--green-dark); font-size: clamp(16px, 4.5vw, 20px); line-height: 1.3; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    #dayTitle { margin: 0; text-align: center; font-size: clamp(28px, 8vw, 40px); color: var(--green-dark); }
+    .daydate {
+      margin: 0 0 4px; text-align: center; font-weight: 900;
+      font-size: clamp(18px, 5vw, 22px); color: var(--green-dark);
+    }
+    .photo {
+      background: #fff; border: 5px solid var(--green); border-radius: 22px;
+      min-height: 180px; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; position: relative; margin-bottom: 12px;
+    }
+    .photo img, .photo video {
+      width: 100%; height: min(42dvh, 280px); object-fit: cover; display: block; background: #e8f5e9;
+    }
+    .photo .ph {
+      text-align: center; font-weight: 800; color: var(--muted); padding: 24px;
+      font-size: 18px;
+    }
+    .row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .row .btn, .row button, .row .cam, .row .album { flex: 1; min-width: 0; }
+    .cam, .album {
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; text-decoration: none;
+      font: inherit; font-weight: 900; cursor: pointer; touch-action: manipulation;
+      font-size: clamp(16px, 4.5vw, 18px); line-height: 1.25; padding: 12px 8px;
+    }
+    .cam { background: var(--green); color: #fff; min-height: 52px; border-radius: 16px; }
+    .album { background: #fff; color: var(--green-dark); border: 4px solid var(--green); min-height: 52px; border-radius: 16px; }
+    .danger {
+      width: 100%; background: #fff; color: #b71c1c; border: 4px solid #c62828;
+      min-height: 52px; font-size: 18px; margin: 0 0 12px; border-radius: 16px;
+    }
+    .confirm {
+      position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(20px + var(--safe-t)) 20px calc(20px + var(--safe-b));
+    }
+    .confirm .card { max-width: 420px; width: 100%; }
+    .confirm .row { margin-top: 12px; margin-bottom: 0; }
+    .sr-file {
+      position: absolute; left: 0; top: 0; width: 1px; height: 1px;
+      opacity: 0; overflow: hidden;
+    }
+    h2 {
+      margin: 8px 0 8px; font-size: 18px; color: var(--green-dark);
+    }
+    .stages {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px;
+    }
+    .stage {
+      text-align: left; background: #fff; border: 3px solid #c5dcc6;
+      min-height: 52px; padding: 10px 12px; font-size: 15px;
+      white-space: normal; line-height: 1.3;
+    }
+    .stage.on { background: #e8f5e9; border-color: var(--green); box-shadow: 0 0 0 3px #c8e6c9; }
+    .voice {
+      width: 100%; background: #6a1b9a; color: #fff; min-height: 52px; font-size: 18px;
+      margin-bottom: 8px; white-space: normal; line-height: 1.35; padding: 12px;
+    }
+    .voice.live { background: #c62828; }
+    textarea {
+      width: 100%; min-height: 88px; font: inherit; font-weight: 700; font-size: 16px;
+      padding: 12px; border: 3px solid #c5dcc6; border-radius: 14px; resize: vertical;
+      margin-bottom: 12px;
+    }
+    .hint { font-weight: 700; color: var(--muted); margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+    .toast {
+      position: fixed; left: calc(16px + var(--safe-l)); right: calc(16px + var(--safe-r));
+      bottom: calc(16px + var(--safe-b));
+      background: #1b5e20; color: #fff; padding: 12px 16px; border-radius: 16px;
+      font-weight: 800; text-align: center; z-index: 40;
+    }
+    .toast.bad { background: #b71c1c; }
+    .gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+    .gallery button {
+      padding: 0; background: #fff; border: 3px solid #c5dcc6; border-radius: 12px; overflow: hidden;
+      min-height: 48px;
+    }
+    .gallery img { width: 100%; height: 72px; object-fit: cover; display: block; }
+    .gallery span { display: block; font-size: 12px; padding: 4px 2px 6px; line-height: 1.25; }
+    .wall {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px;
+    }
+    .wall figure {
+      margin: 0; background: #fff; border: 3px solid #c5dcc6; border-radius: 14px; overflow: hidden;
+    }
+    .wall img {
+      width: 100%; height: 132px; object-fit: cover; display: block; background: #e8f5e9;
+    }
+    .wall figcaption {
+      display: block; font-size: 13px; font-weight: 800; text-align: center;
+      padding: 6px 4px 8px; color: var(--green-dark); line-height: 1.35;
+    }
+    @media (min-width: 700px) {
+      .topbar { padding-right: 64px; }
+      .wall { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .wall img { height: 160px; }
+      .gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .photo img, .photo video { height: min(46dvh, 360px); }
+    }
+    @media (min-width: 1024px) {
+      .wall { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 360px) {
+      .stages { grid-template-columns: 1fr; }
+    }
+    @media (orientation: landscape) and (max-height: 520px) {
+      .plant-pic img { max-height: 30dvh; }
+      .photo img, .photo video { height: min(46dvh, 200px); }
+      .panel { padding-top: calc(8px + var(--safe-t)); }
+    }
+    img.zhang-sir-mark {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top));
+      right: max(8px, env(safe-area-inset-right));
+      width: 48px;
+      height: 48px;
+      z-index: 1000;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    @media (min-width: 700px) {
+      img.zhang-sir-mark { width: 56px; height: 56px; }
+    }
+  </style>
+</head>
+<body>
+<img class="zhang-sir-mark" src="zhang-sir-gold.png" alt="張Sir" width="48" height="48">
+<script src="zhang-sir.js"></script>
+
+  <section id="start" class="panel">
+    <div class="card">
+      <h1>太空種子返校</h1>
+      <p class="sub">把太空實驗的種子或幼苗帶回學校種植</p>
+      <p class="id-note">開始前請選擇班別，無須填寫學號或姓名。</p>
+      <label class="one">班別
+        <select id="klass" autocomplete="off">
+          <option value="">請選擇</option>
+          <optgroup label="一年班">
+            <option value="1A">1A</option>
+            <option value="1B">1B</option>
+          </optgroup>
+          <optgroup label="二年班">
+            <option value="2A">2A</option>
+            <option value="2B">2B</option>
+            <option value="2C">2C</option>
+          </optgroup>
+          <optgroup label="四年班">
+            <option value="4A">4A</option>
+            <option value="4B">4B</option>
+            <option value="4C">4C</option>
+          </optgroup>
+        </select>
+      </label>
+      <div class="care">請拍攝返校種植的太空種子或幼苗。同學可以一齊入鏡。<br>相片會給老師和同學看見。</div>
+      <div class="plant-pic">
+        <img src="assets/plant.jpg" alt="兩名同學在課室看著花盆裏的幼苗" draggable="false">
+      </div>
+      <div class="how">選擇班別後就可以拍照。第一次拍照是第 1 日。<br>例如 10月1日拍第一張，10月5日再拍，會自動寫成第 5 日。<br>中間沒有拍照的日子不會列出。亦可用語音記錄。</div>
+      <button class="primary" id="startBtn" type="button" disabled>開始拍照</button>
+      <h2>全班相片</h2>
+      <p class="hint">各班儲存的相片會顯示在這裡。只顯示有拍照的日子。掃碼或者撳「立即遊玩」，都是這一頁。</p>
+      <div class="wall" id="classWall"><p class="hint" style="grid-column:1/-1">正在讀取全班相片…</p></div>
+      <button class="ghost" id="wallRefresh" type="button">重新整理全班相片</button>
+      <button class="ghost" id="adminBtn" type="button">成績後台</button>
+    </div>
+  </section>
+
+  <section id="app" class="panel hidden">
+    <div class="topbar">
+      <div class="who" id="who"></div>
+      <button class="ghost" id="logout" type="button" style="width:auto;padding:8px 12px;margin:0;min-height:44px;font-size:16px">離開</button>
+    </div>
+    <div class="wrap">
+      <h2 id="dayTitle">第 1 日</h2>
+      <p class="daydate" id="dayDate"></p>
+      <p class="hint" id="dayMeta"></p>
+      <button class="ghost hidden" id="backToday" type="button">返回今天拍照</button>
+      <div class="photo" id="photoBox">
+        <div class="ph" id="photoPh">尚未拍照<br>請對準種子或幼苗</div>
+        <img id="photoImg" class="hidden" alt="太空種子相片">
+        <video id="live" class="hidden" autoplay playsinline muted webkit-playsinline></video>
+      </div>
+      <p class="hint" id="camHint">電話及平板電腦會開啟相機。電腦會先開啟鏡頭，對準後再按「拍攝」。</p>
+      <div class="row">
+        <label class="cam" id="camLabel" for="fileCam">拍照</label>
+        <button class="cam hidden" id="btnCam" type="button">拍照</button>
+        <label class="album" id="albumLabel" for="fileAlbum">從相簿選擇</label>
+      </div>
+      <div class="row hidden" id="liveRow">
+        <button class="album" id="btnCloseLive" type="button">關閉鏡頭</button>
+      </div>
+      <input id="fileCam" class="sr-file" type="file" accept="image/*" capture="environment">
+      <input id="fileAlbum" class="sr-file" type="file" accept="image/*">
+      <button class="danger hidden" id="btnDel" type="button">刪除這日相片</button>
+
+      <h2>生長情況</h2>
+      <div class="stages" id="stages"></div>
+
+      <h2>語音紀錄</h2>
+      <p class="hint" id="voiceHint">按下後，請說出種子或幼苗的生長情況，系統會轉換為書面語。</p>
+      <button class="voice" id="btnVoice" type="button">開始錄音</button>
+      <textarea id="note" maxlength="400" placeholder="轉換後的書面語會顯示於此，亦可自行修改。"></textarea>
+
+      <button class="primary" id="btnSave" type="button">儲存這日紀錄</button>
+      <p class="hint" id="saveHint">儲存後會交給老師。同一日再次儲存，會取代這班當日的舊紀錄。生長情況和語音可以選填。</p>
+
+      <h2>已紀錄的日子</h2>
+      <p class="hint">只列出有拍照的日子。</p>
+      <div class="gallery" id="gallery"></div>
+      <h2>全班相片</h2>
+      <p class="hint">這是各班共用的相片。掃碼同「立即遊玩」都讀取這裡。</p>
+      <div class="wall" id="classWallApp"></div>
+      <button class="ghost" id="wallRefreshApp" type="button">重新整理全班相片</button>
+    </div>
+  </section>
+
+  <div class="confirm hidden" id="teacherModal">
+    <div class="card">
+      <h2 style="text-align:center;margin-top:0">老師查看紀錄</h2>
+      <p class="hint" style="text-align:center">請輸入密碼，然後開啟成績表的「太空種子」分頁。</p>
+      <input id="teacherPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="密碼">
+      <div class="row">
+        <button class="album" id="teacherNo" type="button">取消</button>
+        <button class="primary" id="teacherYes" type="button" style="margin:0;box-shadow:none">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm hidden" id="delModal">
+    <div class="card">
+      <h2 style="text-align:center;margin-top:0">確定刪除這日相片嗎？</h2>
+      <p class="hint" style="text-align:center">刪除後，老師亦不會再見到這張相片。可以重新拍照。</p>
+      <div class="row">
+        <button class="album" id="btnDelNo" type="button">取消</button>
+        <button class="danger" id="btnDelYes" type="button" style="margin:0">確定刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCORE_URL = "https://script.google.com/macros/s/AKfycbwJhLSC1iWTjyRENsVvlQTcrTJVA8IHW3KZXQC2PsoHPetI8P40-0ZMI88RQUxwNXvu/exec";
+    const SCORE_TOKEN = "chilin-edu-2026";
+    const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
+    const TEACHER_PIN = "22463959";
+    const TEACHER_SHEET = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit";
+    const ACTIVITY = "太空種子";
+    const MAX_DAY = 400;
+    const STAGES = [
+      "未發芽",
+      "開始發芽",
+      "長出白色的芽",
+      "開始長高",
+      "長出真葉",
+      "開始倒向有光的一邊",
+      "開始枯萎",
+      "已經死亡"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      class: "",
+      day: 1,
+      viewingYmd: "",
+      stage: "",
+      photo: "",
+      publicUrl: "",
+      recs: {},
+      wall: [],
+      wallReady: false,
+      pending: null,
+      stream: null,
+      listening: false,
+      dirty: false
+    };
+
+    const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+    function identityOk() {
+      const klass = ($("klass").value || "").trim();
+      return { ok: CLASS_OPTIONS.indexOf(klass) !== -1, class: klass };
+    }
+    function refreshStart() { $("startBtn").disabled = !identityOk().ok; }
+    $("klass").addEventListener("input", refreshStart);
+    $("klass").addEventListener("change", refreshStart);
+
+    function toast(msg, bad) {
+      document.querySelectorAll(".toast").forEach(function (n) { n.remove(); });
+      const n = document.createElement("div");
+      n.className = "toast" + (bad ? " bad" : "");
+      n.textContent = msg;
+      document.body.append(n);
+      setTimeout(function () { n.remove(); }, 2800);
+    }
+
+    function hkToday() {
+      try {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Hong_Kong",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(new Date());
+      } catch (e) {
+        const d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      }
+    }
+    function daySpan(start, ymd) {
+      const a = Date.parse(start + "T00:00:00Z");
+      const b = Date.parse(ymd + "T00:00:00Z");
+      if (!a || !b || b < a) return 1;
+      return Math.round((b - a) / 86400000) + 1;
+    }
+    function zhDate(ymd) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ""));
+      if (!m) return "";
+      return Number(m[2]) + "月" + Number(m[3]) + "日";
+    }
+    function cellYmd(v) {
+      const s = String(v || "").trim();
+      const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return iso[1] + "-" + iso[2] + "-" + iso[3];
+      const g = s.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (!g) return "";
+      return g[1] + "-" + String(Number(g[2]) + 1).padStart(2, "0") + "-" + String(g[3]).padStart(2, "0");
+    }
+    function ymdFromTs(ts) {
+      const n = Number(ts || 0);
+      if (!n) return "";
+      try {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Hong_Kong",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(new Date(n));
+      } catch (e) {
+        return "";
+      }
+    }
+    function savedDates() {
+      const dates = [];
+      Object.keys(state.recs).forEach(function (k) {
+        const rec = state.recs[k];
+        if (rec && rec.photo && /^\d{4}-\d{2}-\d{2}$/.test(k)) dates.push(k);
+      });
+      (state.wall || []).forEach(function (r) {
+        if (r.klass === state.class && r.ymd && r.url) dates.push(r.ymd);
+      });
+      dates.sort();
+      return dates;
+    }
+    function startYmd() {
+      const dates = savedDates();
+      return dates.length ? dates[0] : hkToday();
+    }
+    function dayOf(ymd) {
+      const n = daySpan(startYmd(), ymd);
+      return n >= 1 && n <= MAX_DAY ? n : 1;
+    }
+
+    function dbOpen() {
+      return new Promise(function (resolve, reject) {
+        const req = indexedDB.open("spaceplant-v1", 1);
+        req.onupgradeneeded = function () { req.result.createObjectStore("recs"); };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error); };
+      });
+    }
+    function dbGet(key) {
+      return dbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          const tx = db.transaction("recs", "readonly");
+          const q = tx.objectStore("recs").get(key);
+          q.onsuccess = function () { resolve(q.result || {}); };
+          q.onerror = function () { reject(q.error); };
+        });
+      });
+    }
+    function dbSet(key, val) {
+      return dbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          const tx = db.transaction("recs", "readwrite");
+          tx.objectStore("recs").put(val, key);
+          tx.oncomplete = function () { resolve(); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      });
+    }
+    function recKey() { return "class|" + state.class; }
+
+    function esc(s) {
+      return String(s || "").replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function scriptJsonp(src, cb, ms) {
+      return new Promise(function (resolve, reject) {
+        const s = document.createElement("script");
+        const timer = setTimeout(function () { cleanup(); reject(new Error("timeout")); }, ms || 12000);
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+          if (s.parentNode) s.parentNode.removeChild(s);
+        }
+        window[cb] = function (data) { cleanup(); resolve(data); };
+        s.onerror = function () { cleanup(); reject(new Error("network")); };
+        s.src = src;
+        document.head.appendChild(s);
+      });
+    }
+    function gvizCell(row, i) {
+      const c = row && row.c && row.c[i];
+      if (!c) return "";
+      if (c.v === null || c.v === undefined) return c.f || "";
+      return c.v;
+    }
+    function gvizYmd(row, i) {
+      const c = row && row.c && row.c[i];
+      if (!c) return "";
+      return cellYmd(c.f) || cellYmd(c.v) || cellYmd(gvizCell(row, i));
+    }
+    function gvizTs(v) {
+      const m = String(v || "").match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+      if (!m) return 0;
+      return new Date(+m[1], +m[2], +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)).getTime();
+    }
+    function cleanNote(note) {
+      return String(note || "")
+        .replace(/\n?IMG:[A-Za-z0-9]+/gi, "")
+        .replace(/📷https?:\/\/\S+/g, "")
+        .trim();
+    }
+    function imgurIdFromText(s) {
+      const m = String(s || "").match(/(?:IMG:|im:|imgur\.com\/)([A-Za-z0-9]{5,8})/i);
+      return m ? m[1] : "";
+    }
+    function driveIdFromText(s) {
+      const m = String(s || "").match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+        String(s || "").match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : "";
+    }
+    function dayNumOf(day) {
+      const n = parseInt(String(day || "").replace(/[^\d]/g, ""), 10);
+      return n >= 1 && n <= MAX_DAY ? n : 0;
+    }
+    function fetchGviz(sheetName) {
+      const cb = "spacewall_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+      const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+      const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+        "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent(sheetName) +
+        "&headers=1&t=" + Date.now();
+      return scriptJsonp(src, cb, 12000).then(function (data) {
+        if (!data || data.status === "error" || !data.table) return null;
+        return data.table;
+      });
+    }
+    function colIndex(table, name) {
+      const cols = (table.cols || []).map(function (c) { return String(c.label || c.id || ""); });
+      return cols.indexOf(name);
+    }
+    function putWall(map, item) {
+      if (!item.klass || !item.ymd || !item.url) return;
+      const k = item.klass + "\t" + item.ymd;
+      const cur = map[k];
+      if (!cur || item.ts >= cur.ts) map[k] = item;
+    }
+    function rowsToWall(table) {
+      const out = [];
+      if (!table) return out;
+      const iClass = colIndex(table, "班別");
+      const iDay = colIndex(table, "第幾日");
+      const iYmd = colIndex(table, "日期");
+      const iTime = colIndex(table, "時間");
+      const iStage = colIndex(table, "生長情況");
+      const iNote = colIndex(table, "觀察");
+      const iLink = colIndex(table, "相片連結");
+      (table.rows || []).forEach(function (row) {
+        const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        const dayRaw = String(gvizCell(row, iDay) || "").trim();
+        const note = iNote >= 0 ? String(gvizCell(row, iNote) || "").trim() : "";
+        const link = iLink >= 0 ? String(gvizCell(row, iLink) || "").trim() : "";
+        const ts = gvizTs(gvizCell(row, iTime));
+        let ymd = iYmd >= 0 ? gvizYmd(row, iYmd) : "";
+        if (!ymd) ymd = ymdFromTs(ts);
+        const imgur = imgurIdFromText(note + " " + link);
+        const drive = driveIdFromText(link);
+        const url = imgur
+          ? ("https://i.imgur.com/" + imgur + ".jpg")
+          : (drive ? ("https://lh3.googleusercontent.com/d/" + drive) : "");
+        if (!klass || !ymd || !url) return;
+        out.push({
+          klass: klass,
+          ymd: ymd,
+          dayNum: dayNumOf(dayRaw) || 1,
+          day: dayRaw || "",
+          stage: iStage >= 0 ? String(gvizCell(row, iStage) || "").trim() : "",
+          note: note,
+          id: imgur || drive,
+          url: url,
+          ts: ts
+        });
+      });
+      return out;
+    }
+    function numberWallDays(list) {
+      const first = {};
+      list.forEach(function (r) {
+        if (!r.ymd) return;
+        if (!first[r.klass] || r.ymd < first[r.klass]) first[r.klass] = r.ymd;
+      });
+      list.forEach(function (r) {
+        if (r.ymd && first[r.klass]) r.dayNum = daySpan(first[r.klass], r.ymd);
+        r.day = "第" + r.dayNum + "日";
+      });
+      return list;
+    }
+    function sortedWall(list) {
+      const order = ["2A", "2B", "2C", "1A", "1B", "4A", "4B", "4C"];
+      return list.slice().sort(function (a, b) {
+        const ra = order.indexOf(a.klass);
+        const rb = order.indexOf(b.klass);
+        const ca = ra < 0 ? 99 : ra;
+        const cb = rb < 0 ? 99 : rb;
+        if (ca !== cb) return ca - cb;
+        if (a.ymd !== b.ymd) return a.ymd < b.ymd ? -1 : 1;
+        return a.dayNum - b.dayNum;
+      });
+    }
+    function upsertPending() {
+      const p = state.pending;
+      if (!p) return;
+      const i = state.wall.findIndex(function (r) { return r.klass === p.klass && r.ymd === p.ymd; });
+      if (i < 0) state.wall.push(p);
+      else if (p.ts >= (state.wall[i].ts || 0)) state.wall[i] = Object.assign({}, state.wall[i], p);
+      else state.pending = null;
+      numberWallDays(state.wall);
+    }
+    function renderClassWall() {
+      const items = sortedWall(state.wall || []);
+      const html = items.length
+        ? items.map(function (r) {
+          const stage = r.stage ? "<br>" + esc(r.stage) : "";
+          const shown = r.id && String(r.url).indexOf("imgur.com") >= 0
+            ? ("https://i.imgur.com/" + r.id + "l.jpg")
+            : r.url;
+          return "<figure><img alt=\"" + esc(r.klass + " " + r.day) + "\" referrerpolicy=\"no-referrer\" src=\"" + esc(shown) + "\">" +
+            "<figcaption>" + esc(r.klass) + "　" + esc(r.day) + "<br>" + esc(zhDate(r.ymd)) + stage + "</figcaption></figure>";
+        }).join("")
+        : "<p class=\"hint\" style=\"grid-column:1/-1\">暫時未有全班相片。同學儲存之後，這裡會見到。</p>";
+      ["classWall", "classWallApp"].forEach(function (id) {
+        const box = $(id);
+        if (box) box.innerHTML = html;
+      });
+    }
+    function wallMessage(text) {
+      const html = "<p class=\"hint\" style=\"grid-column:1/-1\">" + esc(text) + "</p>";
+      ["classWall", "classWallApp"].forEach(function (id) {
+        const box = $(id);
+        if (box) box.innerHTML = html;
+      });
+    }
+    function applyCloudToRecs() {
+      if (!state.class) return;
+      (state.wall || []).forEach(function (r) {
+        if (r.klass !== state.class || !r.ymd || !r.url) return;
+        const cur = state.recs[r.ymd] || {};
+        const localPhoto = String(cur.photo || "");
+        const keepLocal = localPhoto.indexOf("data:image") === 0 && (cur.at || 0) >= (r.ts || 0);
+        state.recs[r.ymd] = {
+          ymd: r.ymd,
+          day: r.dayNum,
+          stage: cur.stage || r.stage || "",
+          note: cur.note || cleanNote(r.note),
+          photo: keepLocal ? localPhoto : r.url,
+          at: Math.max(cur.at || 0, r.ts || 0)
+        };
+      });
+    }
+    async function loadClassWall() {
+      try {
+        const main = await fetchGviz(ACTIVITY);
+        if (!main) {
+          if (!(state.wall || []).length) renderClassWall();
+          return;
+        }
+        const map = {};
+        rowsToWall(main).forEach(function (item) { putWall(map, item); });
+        state.wall = numberWallDays(Object.keys(map).map(function (k) { return map[k]; }));
+        state.wallReady = true;
+        upsertPending();
+        applyCloudToRecs();
+        renderClassWall();
+        if (!$("app").classList.contains("hidden") && state.class && !state.dirty && !isLive()) {
+          refreshView();
+        }
+      } catch (e) {
+        if (!(state.wall || []).length) wallMessage("暫時未能讀取全班相片。請檢查網絡，再按重新整理。");
+      }
+    }
+    function rememberJustSaved() {
+      const id = imgurIdFromText(state.publicUrl);
+      if (!id || !state.class || !state.viewingYmd) return;
+      state.pending = {
+        klass: state.class,
+        ymd: state.viewingYmd,
+        dayNum: state.day,
+        day: "第" + state.day + "日",
+        stage: state.stage,
+        note: $("note").value.trim(),
+        id: id,
+        url: "https://i.imgur.com/" + id + ".jpg",
+        ts: Date.now()
+      };
+      upsertPending();
+      renderClassWall();
+    }
+
+    function toWritten(raw) {
+      let t = String(raw || "").trim();
+      if (!t) return "";
+      const pairs = [
+        [/未發到芽|未見發芽|未有發芽|未發芽到/g, "尚未發芽"],
+        [/發緊芽|發咗芽|出咗芽/g, "開始發芽"],
+        [/見到啲白|見到白色|有啲白|出咗白|白色嘅根|白色的根|白色嘅芽|白色的芽|出咗芽|長出芽/g, "長出白色的芽"],
+        [/長高咗|高咗好多|開始長高|高咗/g, "開始長高"],
+        [/出咗真葉|長出真葉|有真葉|出咗葉/g, "長出真葉"],
+        [/歪去有光|側去窗邊|趷去光|倒向有光|趷去窗/g, "開始倒向有光的一邊"],
+        [/枯咗|蔫咗|開始枯萎|枯萎/g, "開始枯萎"],
+        [/死咗|已經死|死亡/g, "已經死亡"],
+        [/琴日|噚日/g, "昨天"],
+        [/今日/g, "今天"],
+        [/聽日/g, "明天"],
+        [/而家/g, "現在"],
+        [/冇乜/g, "沒有什麼"],
+        [/唔好/g, "不要"],
+        [/唔使/g, "不用"],
+        [/唔知/g, "不知道"],
+        [/仲未/g, "還沒有"],
+        [/仲有/g, "還有"],
+        [/好似/g, "好像"],
+        [/好高/g, "很高"],
+        [/好短/g, "很短"],
+        [/好快/g, "很快"],
+        [/好慢/g, "很慢"],
+        [/窗邊/g, "窗邊"],
+        [/花盆入面|盆入面|盆度/g, "花盆中"],
+        [/黑暗嘅地方|暗處|黑暗/g, "黑暗處"],
+        [/幼苗/g, "幼苗"],
+        [/種子/g, "種子"],
+        [/我覺得/g, "我覺得"],
+        [/睇到/g, "看到"],
+        [/影相/g, "拍照"],
+        [/冇/g, "沒有"],
+        [/唔/g, "不"],
+        [/咗/g, "了"],
+        [/緊/g, "正在"],
+        [/嘅/g, "的"],
+        [/啲/g, "些"],
+        [/咁/g, "這麼"],
+        [/喺/g, "在"],
+        [/佢哋/g, "它們"],
+        [/佢/g, "它"],
+        [/啦|喇|囉|喎|㗎|吖|呀/g, ""],
+        [/  +/g, " "]
+      ];
+      pairs.forEach(function (p) { t = t.replace(p[0], p[1]); });
+      t = t.replace(/[，,]+/g, "，").replace(/[。\.]+/g, "。").trim();
+      if (t && !/[。！？]$/.test(t)) t += "。";
+      return t;
+    }
+
+    const PHOTO_EDGE = 1920;
+    function fitCanvas(w, h, max) {
+      max = max || PHOTO_EDGE;
+      if (w > max || h > max) {
+        if (w > h) { h = Math.round(h * max / w); w = max; }
+        else { w = Math.round(w * max / h); h = max; }
+      }
+      return { w: w, h: h };
+    }
+    function drawToJpeg(source, w, h, max, quality) {
+      const size = fitCanvas(w, h, max || PHOTO_EDGE);
+      const c = document.createElement("canvas");
+      c.width = size.w; c.height = size.h;
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      try { ctx.imageSmoothingQuality = "high"; } catch (e) {}
+      ctx.drawImage(source, 0, 0, size.w, size.h);
+      return c.toDataURL("image/jpeg", quality == null ? 0.86 : quality);
+    }
+    function makeThumb(dataUrl, max, quality) {
+      return new Promise(function (resolve) {
+        const img = new Image();
+        img.onload = function () {
+          try { resolve(drawToJpeg(img, img.width, img.height, max || 240, quality || 0.5)); }
+          catch (e) { resolve(dataUrl); }
+        };
+        img.onerror = function () { resolve(dataUrl); };
+        img.src = dataUrl;
+      });
+    }
+    async function photoForSave(dataUrl) {
+      const steps = [[1920, 0.86], [1920, 0.78], [1600, 0.8], [1600, 0.72], [1280, 0.75]];
+      let pic = dataUrl;
+      for (let i = 0; i < steps.length; i++) {
+        const len = (String(pic || "").split(",")[1] || "").length;
+        if (len > 0 && len < 1000000) return pic;
+        pic = await makeThumb(dataUrl, steps[i][0], steps[i][1]);
+      }
+      return pic || dataUrl;
+    }
+    function compressBlob(file) {
+      return new Promise(function (resolve, reject) {
+        const fail = function () { reject(new Error("photo")); };
+        const viaBitmap = function () {
+          if (typeof createImageBitmap !== "function") return Promise.reject();
+          return createImageBitmap(file, { imageOrientation: "from-image" }).then(function (bmp) {
+            const data = drawToJpeg(bmp, bmp.width, bmp.height);
+            if (bmp.close) bmp.close();
+            return data;
+          });
+        };
+        viaBitmap().then(resolve).catch(function () {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = function () {
+            try { resolve(drawToJpeg(img, img.width, img.height)); }
+            catch (e) { fail(); }
+            URL.revokeObjectURL(url);
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            fail();
+          };
+          img.src = url;
+        });
+      });
+    }
+    function compressCanvas(video) {
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) return "";
+      return drawToJpeg(video, w, h);
+    }
+    function isMobileDevice() {
+      const ua = navigator.userAgent || "";
+      if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+      if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+      if (navigator.maxTouchPoints > 1 && window.matchMedia && window.matchMedia("(pointer: coarse)").matches) return true;
+      return false;
+    }
+    function isLive() {
+      return !!(state.stream && state.stream.getTracks().some(function (t) { return t.readyState === "live"; }));
+    }
+    function setCamLabel() {
+      $("btnCam").textContent = isLive() ? "拍攝" : "拍照";
+    }
+    function waitVideoReady(video) {
+      return new Promise(function (resolve) {
+        if (video.readyState >= 2 && video.videoWidth) return resolve(true);
+        const finish = function (ok) {
+          video.removeEventListener("loadeddata", onReady);
+          video.removeEventListener("playing", onReady);
+          clearTimeout(timer);
+          resolve(!!ok);
+        };
+        const onReady = function () { if (video.videoWidth) finish(true); };
+        const timer = setTimeout(function () { finish(video.videoWidth > 0); }, 2000);
+        video.addEventListener("loadeddata", onReady);
+        video.addEventListener("playing", onReady);
+      });
+    }
+    function snapPhoto() {
+      const video = $("live");
+      const data = compressCanvas(video);
+      if (!data) {
+        toast("請稍候，鏡頭尚未準備好。", true);
+        return false;
+      }
+      state.photo = data;
+      state.dirty = true;
+      stopLive();
+      showPhoto();
+      toast("已拍攝相片");
+      return true;
+    }
+    function stopLive() {
+      if (state.stream) {
+        state.stream.getTracks().forEach(function (t) { t.stop(); });
+        state.stream = null;
+      }
+      const video = $("live");
+      video.srcObject = null;
+      video.classList.add("hidden");
+      $("liveRow").classList.add("hidden");
+      setCamLabel();
+      showPhoto();
+    }
+    function showPhoto() {
+      const img = $("photoImg");
+      const ph = $("photoPh");
+      const video = $("live");
+      if (isLive()) {
+        video.classList.remove("hidden");
+        img.classList.add("hidden");
+        ph.classList.add("hidden");
+      } else if (state.photo) {
+        img.src = state.photo;
+        img.classList.remove("hidden");
+        ph.classList.add("hidden");
+        video.classList.add("hidden");
+      } else {
+        img.classList.add("hidden");
+        ph.classList.remove("hidden");
+        video.classList.add("hidden");
+      }
+      $("btnDel").classList.toggle("hidden", !state.photo || isLive());
+    }
+    function renderStages() {
+      const box = $("stages");
+      box.innerHTML = "";
+      STAGES.forEach(function (name) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "stage" + (state.stage === name ? " on" : "");
+        b.textContent = name;
+        b.onclick = function () {
+          state.stage = name;
+          state.dirty = true;
+          renderStages();
+        };
+        box.appendChild(b);
+      });
+    }
+    function renderGallery() {
+      const box = $("gallery");
+      box.innerHTML = "";
+      const days = Object.keys(state.recs).filter(function (k) {
+        return state.recs[k] && state.recs[k].photo && /^\d{4}-\d{2}-\d{2}$/.test(k);
+      }).sort();
+      days.forEach(function (ymd) {
+        const rec = state.recs[ymd];
+        const b = document.createElement("button");
+        b.type = "button";
+        const n = dayOf(ymd);
+        b.innerHTML = "<img alt=\"\" src=\"" + rec.photo + "\"><span>第" + n + "日<br>" + esc(zhDate(ymd)) + "</span>";
+        b.onclick = function () { openYmd(ymd); };
+        box.appendChild(b);
+      });
+      if (!box.children.length) {
+        box.innerHTML = "<p class=\"hint\" style=\"grid-column:1/-1\">尚未有相片。</p>";
+      }
+    }
+    function refreshView() {
+      const ymd = state.viewingYmd || hkToday();
+      state.viewingYmd = ymd;
+      const rec = state.recs[ymd] || {};
+      state.photo = rec.photo || "";
+      state.stage = rec.stage || "";
+      state.publicUrl = "";
+      $("note").value = rec.note || "";
+      const day = dayOf(ymd);
+      state.day = day;
+      const start = startYmd();
+      $("dayTitle").textContent = "第 " + day + " 日";
+      $("dayDate").textContent = zhDate(ymd) + (ymd === hkToday() ? "　今天" : "");
+      if (ymd !== hkToday()) {
+        $("dayMeta").textContent = "你正在查看 " + zhDate(ymd) + "。在這裡拍照會取代這一日的相片。";
+      } else if (!savedDates().length || (savedDates().length === 1 && savedDates()[0] === ymd && day === 1)) {
+        $("dayMeta").textContent = "這是第一次拍照，記為第 1 日。之後再拍，會由這天起計算日數。";
+      } else {
+        $("dayMeta").textContent = "由 " + zhDate(start) + " 第一次拍照起計。中間沒有拍照的日子不會列出。";
+      }
+      $("btnSave").textContent = rec.photo ? "儲存並取代舊紀錄" : "儲存這日紀錄";
+      $("backToday").classList.toggle("hidden", ymd === hkToday());
+      showPhoto();
+      renderStages();
+      renderGallery();
+    }
+    function openYmd(ymd) {
+      stopLive();
+      state.dirty = false;
+      state.viewingYmd = ymd;
+      refreshView();
+    }
+    function showToday() {
+      stopLive();
+      state.dirty = false;
+      state.viewingYmd = hkToday();
+      refreshView();
+    }
+    async function loadRecs() {
+      try {
+        state.recs = (await dbGet(recKey())) || {};
+      } catch (e) {
+        state.recs = {};
+      }
+      applyCloudToRecs();
+    }
+    async function persistLocal() {
+      state.recs[state.viewingYmd] = {
+        ymd: state.viewingYmd,
+        day: state.day,
+        stage: state.stage,
+        note: $("note").value.trim(),
+        photo: state.photo,
+        at: Date.now()
+      };
+      try { await dbSet(recKey(), state.recs); } catch (e) {}
+    }
+    function postScore(payload) {
+      try {
+        fetch(SCORE_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        }).catch(function () {});
+      } catch (e) {}
+    }
+    async function uploadPublicPhoto(dataUrl) {
+      const b64 = String(dataUrl || "").split(",")[1] || "";
+      if (!b64) return "";
+      const ctrl = new AbortController();
+      const timer = setTimeout(function () { ctrl.abort(); }, 25000);
+      try {
+        const res = await fetch("https://api.imgur.com/3/image", {
+          method: "POST",
+          signal: ctrl.signal,
+          headers: {
+            Authorization: "Client-ID 546c25a59c58ad7",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ image: b64, type: "base64" })
+        });
+        const j = await res.json();
+        if (j && j.success && j.data && j.data.link) return String(j.data.link);
+      } catch (e) {}
+      finally { clearTimeout(timer); }
+      return "";
+    }
+    function imgurIdFromUrl(url) {
+      const m = String(url || "").match(/imgur\.com\/([A-Za-z0-9]{5,8})/i);
+      return m ? m[1] : "";
+    }
+    function sendTeacher(extra) {
+      let note = $("note").value.trim();
+      const imgId = imgurIdFromUrl(state.publicUrl);
+      if (imgId && note.indexOf("IMG:") < 0) {
+        note = (note ? note + "\n" : "") + "IMG:" + imgId;
+      }
+      const body = Object.assign({
+        token: SCORE_TOKEN,
+        kind: "spaceplant",
+        activity: ACTIVITY,
+        class: state.class,
+        day: state.day,
+        ymd: state.viewingYmd,
+        level: "第" + state.day + "日",
+        result: state.stage,
+        note: note,
+        photo: (function () {
+          const pic = String(state.photo || "");
+          if (pic.indexOf("data:image") !== 0) return "";
+          const len = (pic.split(",")[1] || "").length;
+          return len > 0 && len < 1100000 ? pic : "";
+        })()
+      }, extra || {});
+      postScore(body);
+    }
+    async function deleteToday() {
+      const ymd = state.viewingYmd;
+      const day = state.day;
+      if (!ymd) return;
+      stopLive();
+      state.photo = "";
+      state.stage = "";
+      $("note").value = "";
+      delete state.recs[ymd];
+      state.dirty = false;
+      try { await dbSet(recKey(), state.recs); } catch (e) {}
+      sendTeacher({ op: "delete", photo: "", note: "", result: "", ymd: ymd, day: day });
+      state.wall = (state.wall || []).filter(function (r) { return !(r.klass === state.class && r.ymd === ymd); });
+      state.pending = null;
+      numberWallDays(state.wall);
+      renderClassWall();
+      showToday();
+      toast("已刪除這日相片。可以重新拍照。");
+    }
+    async function onFile(file) {
+      if (!file) return;
+      try {
+        const data = await compressBlob(file);
+        state.photo = data;
+        state.dirty = true;
+        stopLive();
+        showPhoto();
+        toast("已拍攝相片");
+      } catch (e) {
+        toast("未能讀取相片，請改用「拍照」。", true);
+      }
+    }
+
+    $("fileCam").addEventListener("change", function () {
+      const f = this.files && this.files[0];
+      this.value = "";
+      onFile(f);
+    });
+    $("fileAlbum").addEventListener("change", function () {
+      const f = this.files && this.files[0];
+      this.value = "";
+      onFile(f);
+    });
+    $("live").addEventListener("click", function () {
+      if (isLive()) snapPhoto();
+    });
+    $("btnCam").onclick = async function () {
+      if (isLive()) {
+        snapPhoto();
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast("請改用「從相簿選擇」，或改用電話、平板電腦拍照。", true);
+        return;
+      }
+      try {
+        state.stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        const video = $("live");
+        video.setAttribute("playsinline", "true");
+        video.setAttribute("webkit-playsinline", "true");
+        video.muted = true;
+        video.srcObject = state.stream;
+        video.classList.remove("hidden");
+        $("photoImg").classList.add("hidden");
+        $("photoPh").classList.add("hidden");
+        $("liveRow").classList.remove("hidden");
+        try { await video.play(); } catch (e) {}
+        const ready = await waitVideoReady(video);
+        setCamLabel();
+        if (!ready) {
+          toast("鏡頭已開啟，請稍候再按「拍攝」。", true);
+          return;
+        }
+        toast("鏡頭已開啟。請對準種子或幼苗，再按「拍攝」。");
+      } catch (e) {
+        toast("未能開啟鏡頭。請按「從相簿選擇」，或改用電話、平板電腦拍照。", true);
+      }
+    };
+    $("btnCloseLive").onclick = stopLive;
+
+    (function setupCamMode() {
+      const mobile = isMobileDevice();
+      $("camLabel").classList.toggle("hidden", !mobile);
+      $("btnCam").classList.toggle("hidden", mobile);
+      $("camHint").textContent = mobile
+        ? "按下「拍照」後，請使用相機拍攝種子或幼苗。"
+        : "按下「拍照」開啟鏡頭，對準種子或幼苗後再按「拍攝」。";
+    })();
+
+    let recer = null;
+    function speechEngine() {
+      const C = window.SpeechRecognition || window.webkitSpeechRecognition;
+      return C ? new C() : null;
+    }
+    $("btnVoice").onclick = function () {
+      if (state.listening && recer) {
+        try { recer.stop(); } catch (e) {}
+        return;
+      }
+      recer = speechEngine();
+      if (!recer) {
+        $("voiceHint").textContent = "這部裝置未能使用語音功能。請在下方用文字寫下種子或幼苗的生長情況。";
+        $("note").focus();
+        toast("請改用文字記錄。", true);
+        return;
+      }
+      recer.lang = "zh-HK";
+      recer.interimResults = false;
+      recer.maxAlternatives = 1;
+      recer.onstart = function () {
+        state.listening = true;
+        $("btnVoice").textContent = "正在聆聽，請說出種子或幼苗的生長情況";
+        $("btnVoice").classList.add("live");
+      };
+      recer.onend = function () {
+        state.listening = false;
+        $("btnVoice").textContent = "開始錄音";
+        $("btnVoice").classList.remove("live");
+      };
+      recer.onerror = function () {
+        toast("未能聽到語音，可以再試一次，或改用文字記錄。", true);
+      };
+      recer.onresult = function (ev) {
+        const said = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
+        $("note").value = toWritten(said);
+        state.dirty = true;
+        toast("已轉換為書面語");
+      };
+      try { recer.start(); } catch (e) {
+        toast("未能開啟麥克風。", true);
+      }
+    };
+    $("note").addEventListener("input", function () { state.dirty = true; });
+    $("note").addEventListener("blur", function () {
+      const v = $("note").value.trim();
+      if (v) $("note").value = toWritten(v);
+    });
+
+    $("btnDel").onclick = function () {
+      if (!state.photo) return;
+      $("delModal").classList.remove("hidden");
+    };
+    $("btnDelNo").onclick = function () { $("delModal").classList.add("hidden"); };
+    $("btnDelYes").onclick = async function () {
+      $("delModal").classList.add("hidden");
+      await deleteToday();
+    };
+    $("backToday").onclick = function () { showToday(); };
+
+    $("btnSave").onclick = async function () {
+      if (!state.photo) { toast("請先拍照。", true); return; }
+      if (!state.viewingYmd) state.viewingYmd = hkToday();
+      state.day = dayOf(state.viewingYmd);
+      $("btnSave").disabled = true;
+      toast("正在交給老師…");
+      if (String(state.photo || "").indexOf("data:image") === 0) {
+        state.photo = await photoForSave(state.photo);
+      }
+      await persistLocal();
+      try {
+        if (String(state.photo || "").indexOf("data:image") === 0) {
+          state.publicUrl = await uploadPublicPhoto(state.photo);
+        } else if (!imgurIdFromText(state.publicUrl)) {
+          state.publicUrl = imgurIdFromText(state.photo) ? state.photo : "";
+        }
+      } catch (e) {
+        state.publicUrl = state.publicUrl || "";
+      }
+      sendTeacher();
+      rememberJustSaved();
+      const shared = state.publicUrl;
+      state.dirty = false;
+      refreshView();
+      loadClassWall();
+      $("btnSave").disabled = false;
+      toast(shared ? "已儲存。其他電話打開同一頁，都可以見到這張相片。" : "已儲存在這部裝置。若其他電話未見相片，請再儲存一次。");
+    };
+
+    $("startBtn").onclick = async function () {
+      const id = identityOk();
+      if (!id.ok) return;
+      state.class = id.class;
+      state.dirty = false;
+      state.recs = {};
+      $("who").textContent = state.class + "　太空種子返校";
+      $("start").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      state.viewingYmd = hkToday();
+      await loadRecs();
+      await loadClassWall();
+      showToday();
+      window.scrollTo(0, 0);
+    };
+    $("wallRefresh").onclick = function () { loadClassWall(); };
+    $("wallRefreshApp").onclick = function () { loadClassWall(); };
+    $("logout").onclick = function () {
+      stopLive();
+      state.dirty = false;
+      $("app").classList.add("hidden");
+      $("start").classList.remove("hidden");
+      window.scrollTo(0, 0);
+    };
+    $("adminBtn").onclick = function () {
+      $("teacherPin").value = "";
+      $("teacherModal").classList.remove("hidden");
+      setTimeout(function () { $("teacherPin").focus(); }, 50);
+    };
+    $("teacherNo").onclick = function () { $("teacherModal").classList.add("hidden"); };
+    $("teacherYes").onclick = function () {
+      if ($("teacherPin").value.trim() !== TEACHER_PIN) {
+        toast("密碼不正確。", true);
+        return;
+      }
+      $("teacherModal").classList.add("hidden");
+      window.open(TEACHER_SHEET, "_blank", "noopener");
+    };
+    $("teacherPin").addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") $("teacherYes").click();
+    });
+
+    renderStages();
+    loadClassWall();
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") loadClassWall();
+    });
+    window.addEventListener("pagehide", function () { stopLive(); });
+  </script>
+</body>
+</html>
