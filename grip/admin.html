@@ -3435,7 +3435,7 @@
       <div class="note">
         此頁只供教師查看成績。請輸入密碼。
         <div class="pin-row">
-          <input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" />
+          <input id="pin" type="password" inputmode="${new URLSearchParams(location.search).get("from") === "spaceplant" || (location.hash || "").indexOf("/i/spaceplant") >= 0 ? "text" : "numeric"}" maxlength="16" autocomplete="off" />
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
@@ -3610,8 +3610,21 @@
         ? "此項目沒有學生成績紀錄。"
         : "此遊戲成績頁即將推出。手握力同家中種綠豆已可刪除不適合的內容。"}</p>`;
   }
+  function spaceBackend() {
+    const from = new URLSearchParams(location.search).get("from");
+    return from === "spaceplant" || (location.hash || "").indexOf("/i/spaceplant") >= 0;
+  }
+  function spaceOnlySession() {
+    try {
+      return sessionStorage.getItem("space-admin") === "1" && sessionStorage.getItem("grip-admin") !== "1";
+    } catch (e) { return false; }
+  }
   function route() {
     if (!isIn()) { renderLogin(); return; }
+    if (spaceOnlySession() && (location.hash || "") !== "#/i/spaceplant") {
+      location.hash = "#/i/spaceplant";
+      return;
+    }
     const hash = (location.hash || "#/").replace(/^#/, "");
     const parts = hash.split("/").filter(Boolean);
     if (parts[0] === "a" && parts[1]) return renderArea(parts[1]);
@@ -3627,13 +3640,19 @@
     const pin = $("pin");
     const msg = $("gateMsg");
     if (!pin) return;
-    if (pin.value !== TEACHER_PIN) {
-      if (msg) msg.textContent = "密碼不正確";
-      pin.value = "";
-      pin.focus();
+    const typed = pin.value.trim();
+    if (typed === TEACHER_PIN) {
+      try { sessionStorage.removeItem("space-admin"); } catch (e) {}
+      enterApp();
       return;
     }
-    enterApp();
+    if (spaceBackend() && typed.toUpperCase() === "SPACE") {
+      enterSpaceOnly();
+      return;
+    }
+    if (msg) msg.textContent = "密碼不正確";
+    pin.value = "";
+    pin.focus();
   }
   function enterApp() {
     document.body.classList.add("in");
@@ -3642,10 +3661,24 @@
     syncEditButtons();
     route();
   }
+  function enterSpaceOnly() {
+    document.body.classList.add("in");
+    try {
+      sessionStorage.setItem("space-admin", "1");
+      sessionStorage.removeItem("grip-admin");
+    } catch (e) {}
+    $("hubActions").classList.add("hidden");
+    syncEditButtons();
+    if ((location.hash || "") !== "#/i/spaceplant") location.hash = "#/i/spaceplant";
+    else showSpaceDash();
+  }
   function lock() {
     document.body.classList.remove("in");
     state.editing = false;
-    try { sessionStorage.removeItem("grip-admin"); } catch (e) {}
+    try {
+      sessionStorage.removeItem("grip-admin");
+      sessionStorage.removeItem("space-admin");
+    } catch (e) {}
     hideDash();
     $("hubActions").classList.add("hidden");
     if (location.hash && location.hash !== "#/") location.hash = "#/";
@@ -3958,6 +3991,7 @@
     await loadLayout();
     try {
       if (sessionStorage.getItem("grip-admin") === "1") enterApp();
+      else if (sessionStorage.getItem("space-admin") === "1" && spaceBackend()) enterSpaceOnly();
       else renderLogin();
     } catch (e) { renderLogin(); }
   }
