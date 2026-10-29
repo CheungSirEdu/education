@@ -21,6 +21,7 @@
       "pe"
     ],
     "sci": [
+      "spaceplant",
       "pdir",
       "p2-sci",
       "p4-sci",
@@ -46,9 +47,11 @@
       "living",
       "mungbean",
       "beanlog",
-      "spaceplant",
       "jump",
       "p2jump"
+    ],
+    "spaceplant": [
+      "spaceplant"
     ],
     "p4-sci": [
       "foodchain",
