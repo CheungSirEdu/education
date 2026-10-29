@@ -531,6 +531,7 @@
     }
     function cleanNote(note) {
       return String(note || "")
+        .replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "")
         .replace(/\n?IMG:[A-Za-z0-9]+/gi, "")
         .replace(/📷https?:\/\/\S+/g, "")
         .trim();
@@ -645,11 +646,12 @@
       const html = items.length
         ? items.map(function (r) {
           const stage = r.stage ? "<br>" + esc(r.stage) : "";
+          const said = cleanNote(r.note) ? "<br>" + esc(cleanNote(r.note)) : "";
           const shown = r.id && String(r.url).indexOf("imgur.com") >= 0
             ? ("https://i.imgur.com/" + r.id + "l.jpg")
             : r.url;
           return "<figure><img alt=\"" + esc(r.klass + " " + r.day) + "\" referrerpolicy=\"no-referrer\" src=\"" + esc(shown) + "\">" +
-            "<figcaption>" + esc(r.klass) + "　" + esc(r.day) + "<br>" + esc(zhDate(r.ymd)) + stage + "</figcaption></figure>";
+            "<figcaption>" + esc(r.klass) + "　" + esc(r.day) + "<br>" + esc(zhDate(r.ymd)) + stage + said + "</figcaption></figure>";
         }).join("")
         : "<p class=\"hint\" style=\"grid-column:1/-1\">暫時未有全班相片。同學儲存之後，這裡會見到。</p>";
       ["classWall", "classWallApp"].forEach(function (id) {
@@ -681,15 +683,54 @@
         };
       });
     }
+    function rowsFromShared(table) {
+      const out = [];
+      if (!table) return out;
+      const iClass = colIndex(table, "班別");
+      const iNo = colIndex(table, "學號");
+      const iTime = colIndex(table, "時間");
+      const iStage = colIndex(table, "生長情況");
+      const iNote = colIndex(table, "觀察");
+      const iLink = colIndex(table, "相片連結");
+      (table.rows || []).forEach(function (row) {
+        let klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        if (klass.indexOf("SP") !== 0) return;
+        klass = klass.slice(2);
+        const dayNum = parseInt(String(gvizCell(row, iNo) || "").replace(/[^\d]/g, ""), 10);
+        const raw = iNote >= 0 ? String(gvizCell(row, iNote) || "") : "";
+        const ymdMatch = raw.match(/YMD:(\d{4}-\d{2}-\d{2})/);
+        const ts = gvizTs(gvizCell(row, iTime));
+        const ymd = ymdMatch ? ymdMatch[1] : ymdFromTs(ts);
+        const link = iLink >= 0 ? String(gvizCell(row, iLink) || "") : "";
+        const imgur = imgurIdFromText(raw + " " + link);
+        const drive = driveIdFromText(link);
+        const url = imgur
+          ? ("https://i.imgur.com/" + imgur + ".jpg")
+          : (drive ? ("https://lh3.googleusercontent.com/d/" + drive) : "");
+        if (!klass || !ymd || !url) return;
+        out.push({
+          klass: klass,
+          ymd: ymd,
+          dayNum: dayNum >= 1 ? dayNum : 1,
+          day: dayNum >= 1 ? ("第" + dayNum + "日") : "",
+          stage: iStage >= 0 ? String(gvizCell(row, iStage) || "").trim() : "",
+          note: cleanNote(raw),
+          id: imgur || drive,
+          url: url,
+          ts: ts
+        });
+      });
+      return out;
+    }
     async function loadClassWall() {
       try {
-        const main = await fetchGviz(ACTIVITY);
-        if (!main) {
-          if (!(state.wall || []).length) renderClassWall();
-          return;
-        }
         const map = {};
-        rowsToWall(main).forEach(function (item) { putWall(map, item); });
+        const shared = await fetchGviz("家中種綠豆");
+        rowsFromShared(shared).forEach(function (item) { putWall(map, item); });
+        try {
+          const main = await fetchGviz(ACTIVITY);
+          rowsToWall(main).forEach(function (item) { putWall(map, item); });
+        } catch (e2) {}
         state.wall = numberWallDays(Object.keys(map).map(function (k) { return map[k]; }));
         state.wallReady = true;
         upsertPending();
@@ -1013,14 +1054,12 @@
       try { await dbSet(recKey(), state.recs); } catch (e) {}
     }
     function postScore(payload) {
-      try {
-        fetch(SCORE_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        }).catch(function () {});
-      } catch (e) {}
+      return fetch(SCORE_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(function () {});
     }
     async function uploadPublicPhoto(dataUrl) {
       const b64 = String(dataUrl || "").split(",")[1] || "";
@@ -1048,29 +1087,34 @@
       return m ? m[1] : "";
     }
     function sendTeacher(extra) {
-      let note = $("note").value.trim();
+      const more = extra || {};
+      const deleting = more.op === "delete";
+      const ymd = more.ymd || state.viewingYmd || hkToday();
+      const day = more.day || state.day || 1;
+      let note = deleting ? "" : $("note").value.trim();
       const imgId = imgurIdFromUrl(state.publicUrl);
-      if (imgId && note.indexOf("IMG:") < 0) {
-        note = (note ? note + "\n" : "") + "IMG:" + imgId;
-      }
-      const body = Object.assign({
+      let shared = "YMD:" + ymd;
+      if (note) shared += "\n" + note;
+      if (!deleting && imgId) shared += "\nIMG:" + imgId;
+      return postScore({
         token: SCORE_TOKEN,
-        kind: "spaceplant",
-        activity: ACTIVITY,
-        class: state.class,
-        day: state.day,
-        ymd: state.viewingYmd,
-        level: "第" + state.day + "日",
-        result: state.stage,
-        note: note,
+        kind: "beanlog",
+        activity: "家中種綠豆",
+        class: "SP" + state.class,
+        no: String(day),
+        day: 1,
+        level: "第1日",
+        op: more.op || "",
+        result: deleting ? "" : state.stage,
+        note: deleting ? "" : shared,
         photo: (function () {
+          if (deleting) return "";
           const pic = String(state.photo || "");
           if (pic.indexOf("data:image") !== 0) return "";
           const len = (pic.split(",")[1] || "").length;
           return len > 0 && len < 1100000 ? pic : "";
         })()
-      }, extra || {});
-      postScore(body);
+      });
     }
     async function deleteToday() {
       const ymd = state.viewingYmd;
@@ -1083,7 +1127,7 @@
       delete state.recs[ymd];
       state.dirty = false;
       try { await dbSet(recKey(), state.recs); } catch (e) {}
-      sendTeacher({ op: "delete", photo: "", note: "", result: "", ymd: ymd, day: day });
+      await sendTeacher({ op: "delete", ymd: ymd, day: day });
       state.wall = (state.wall || []).filter(function (r) { return !(r.klass === state.class && r.ymd === ymd); });
       state.pending = null;
       numberWallDays(state.wall);
@@ -1243,7 +1287,7 @@
       } catch (e) {
         state.publicUrl = state.publicUrl || "";
       }
-      sendTeacher();
+      await sendTeacher();
       rememberJustSaved();
       const shared = state.publicUrl;
       state.dirty = false;

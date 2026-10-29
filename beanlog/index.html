@@ -499,6 +499,7 @@ img.zhang-sir-mark {
       const iNote = spec.note ? colIndex(table, spec.note) : -1;
       (table.rows || []).forEach(function (row) {
         const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        if (klass.indexOf("SP") === 0) return;
         const no = String(parseInt(String(gvizCell(row, iNo) || "").replace(/[^\d]/g, ""), 10));
         const dayRaw = String(gvizCell(row, iDay) || "").trim();
         const dayNum = dayNumOf(dayRaw);

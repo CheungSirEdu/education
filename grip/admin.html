@@ -2566,6 +2566,7 @@
     const out = [];
     (data.table.rows || []).forEach(row => {
       const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+      if (klass.indexOf("SP") === 0) return;
       const no = String(parseInt(String(gvizCell(row, iNo)), 10));
       const day = String(gvizCell(row, iDay) || "").trim();
       const url = String(gvizCell(row, iUrl) || "");
@@ -2596,6 +2597,7 @@
       const out = [];
       (data.table.rows || []).forEach(row => {
         const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+        if (klass.indexOf("SP") === 0) return;
         const no = String(parseInt(String(gvizCell(row, iNo)), 10));
         const day = String(gvizCell(row, iLevel) || "").trim();
         const result = String(gvizCell(row, iResult) || "").trim();
@@ -3097,32 +3099,47 @@
   function spaceFileName(r) {
     return String(r.klass || "") + "-" + String(r.ymd || "未記日期") + "-" + String(r.day || "").replace(/\s+/g, "") + ".jpg";
   }
+  function spaceNoteText(raw) {
+    return String(raw || "")
+      .replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "")
+      .replace(/\n?IMG:[A-Za-z0-9]+/gi, "")
+      .replace(/📷https?:\/\/\S+/g, "")
+      .trim();
+  }
   async function fetchSpaceGviz() {
     const cb = "space_gviz_" + Date.now();
     const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
     const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
-      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("太空種子") +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("家中種綠豆") +
       "&headers=1&t=" + Date.now();
     const data = await scriptJsonp(src, cb);
     if (!data || data.status === "error" || !data.table) return [];
     const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
     const idx = (name) => cols.indexOf(name);
-    const iClass = idx("班別"), iDay = idx("第幾日"), iYmd = idx("日期");
+    const iClass = idx("班別"), iNo = idx("學號");
     const iStage = idx("生長情況"), iNote = idx("觀察"), iUrl = idx("相片連結");
     const iTime = idx("時間");
     const out = [];
     (data.table.rows || []).forEach(row => {
-      const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
-      const day = String(gvizCell(row, iDay) || "").trim();
-      const dateCell = row.c && iYmd >= 0 ? row.c[iYmd] : null;
-      const ymd = ymdFromGviz(dateCell && dateCell.v, dateCell && (dateCell.f || dateCell.v));
-      const url = String(gvizCell(row, iUrl) || "");
-      if (!klass || (!day && !ymd)) return;
+      let klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+      if (klass.indexOf("SP") !== 0) return;
+      klass = klass.slice(2);
+      const dayNum = parseInt(String(gvizCell(row, iNo) || "").replace(/[^\d]/g, ""), 10);
+      const raw = iNote >= 0 ? String(gvizCell(row, iNote) || "") : "";
+      const ymdMatch = raw.match(/YMD:(\d{4}-\d{2}-\d{2})/);
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const ymd = ymdMatch ? ymdMatch[1] : ymdFromGviz(timeCell && timeCell.v, timeCell && (timeCell.f || timeCell.v));
+      const img = parseImgurId(raw) || parseImgurId(gvizCell(row, iUrl));
+      const src = img ? imgurFull(img) : "";
+      if (!klass || !ymd || !src) return;
       out.push(spaceNorm({
-        klass, day, ymd,
+        klass,
+        day: dayNum >= 1 ? ("第" + dayNum + "日") : "",
+        ymd,
         stage: iStage >= 0 ? gvizCell(row, iStage) : "",
-        note: iNote >= 0 ? gvizCell(row, iNote) : "",
-        photo: url,
+        note: spaceNoteText(raw),
+        photo: src,
+        src,
         ts: gvizTs(gvizCell(row, iTime))
       }));
     });
@@ -3287,7 +3304,7 @@
           ${state.editing ? `<span class="photo-del" data-space-del="${i}">刪除</span>` : ""}
           <span class="photo-ph" style="display:block;min-height:140px;background:#e8f5e9"></span>
           <div class="cap"><div class="who">${esc(r.klass)}</div>
-          <div class="meta">${esc(r.day)}${r.ymd ? "　" + esc(spaceZhDate(r.ymd)) : ""}${r.stage ? "　" + esc(r.stage) : ""}</div></div>
+          <div class="meta">${esc(r.day)}${r.ymd ? "　" + esc(spaceZhDate(r.ymd)) : ""}${r.stage ? "　" + esc(r.stage) : ""}${r.note ? "<br>" + esc(r.note) : ""}</div></div>
         </button>`).join("")}</div>`;
     $("spaceMain")._photos = photos;
     const cards = $("spaceMain").querySelectorAll("button[data-space]");
@@ -3408,16 +3425,18 @@
     if (!r) return;
     const who = r.klass + "　" + (r.day || "") + (r.ymd ? "　" + spaceZhDate(r.ymd) : "");
     if (!confirm("確定刪除這張相片？\n" + who + "\n刪除後可以重新拍攝。")) return;
+    const dayNum = parseInt(String(r.day || "").replace(/[^\d]/g, ""), 10) || 1;
     await postScore({
       token: SCORE_TOKEN,
-      kind: "spaceplant",
-      activity: "太空種子",
-      class: r.klass,
-      day: parseInt(String(r.day || "").replace(/[^\d]/g, ""), 10) || 1,
-      ymd: r.ymd,
-      level: r.day,
+      kind: "beanlog",
+      activity: "家中種綠豆",
+      class: "SP" + r.klass,
+      no: String(dayNum),
+      day: 1,
+      level: "第1日",
       op: "delete",
-      photo: ""
+      photo: "",
+      note: ""
     });
     if (r.ymd) await deleteLocalSpace(r.klass, r.ymd);
     state.spaceRecords = (state.spaceRecords || []).filter(x =>
