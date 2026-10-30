@@ -242,15 +242,7 @@
       <label class="one">班別
         <select id="klass" autocomplete="off">
           <option value="">請選擇</option>
-          <optgroup label="一年班">
-            <option value="1A">1A</option>
-            <option value="1B">1B</option>
-          </optgroup>
-          <optgroup label="二年班">
-            <option value="2A">2A</option>
-            <option value="2B">2B</option>
-            <option value="2C">2C</option>
-          </optgroup>
+          <option value="老師種植">老師種植</option>
           <optgroup label="四年班">
             <option value="4A">4A</option>
             <option value="4B">4B</option>
@@ -381,7 +373,7 @@
       dirty: false
     };
 
-    const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "4A", "4B", "4C"];
+    const CLASS_OPTIONS = ["老師種植", "4A", "4B", "4C"];
     function identityOk() {
       const klass = ($("klass").value || "").trim();
       return { ok: CLASS_OPTIONS.indexOf(klass) !== -1, class: klass };
@@ -596,7 +588,7 @@
         const url = imgur
           ? ("https://i.imgur.com/" + imgur + ".jpg")
           : (drive ? ("https://lh3.googleusercontent.com/d/" + drive) : "");
-        if (!klass || !ymd || !url) return;
+        if (!klass || !ymd || !url || CLASS_OPTIONS.indexOf(klass) < 0) return;
         out.push({
           klass: klass,
           ymd: ymd,
@@ -624,7 +616,7 @@
       return list;
     }
     function sortedWall(list) {
-      const order = ["2A", "2B", "2C", "1A", "1B", "4A", "4B", "4C"];
+      const order = CLASS_OPTIONS;
       return list.slice().sort(function (a, b) {
         const ra = order.indexOf(a.klass);
         const rb = order.indexOf(b.klass);
@@ -710,7 +702,7 @@
         const url = imgur
           ? ("https://i.imgur.com/" + imgur + ".jpg")
           : (drive ? ("https://lh3.googleusercontent.com/d/" + drive) : "");
-        if (!klass || !ymd || !url) return;
+        if (!klass || !ymd || !url || CLASS_OPTIONS.indexOf(klass) < 0) return;
         out.push({
           klass: klass,
           ymd: ymd,
@@ -777,7 +769,7 @@
     async function syncLocalPhotos() {
       if (state.syncing) return;
       state.syncing = true;
-      const classes = { "1A": 1, "1B": 1, "2A": 1, "2B": 1, "2C": 1, "4A": 1, "4B": 1, "4C": 1 };
+      const classes = { "老師種植": 1, "4A": 1, "4B": 1, "4C": 1 };
       try {
         let rows = [];
         try { rows = await dbAll(); } catch (e0) { rows = []; }
