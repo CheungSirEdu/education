@@ -371,8 +371,11 @@
       publicUrl: "",
       recs: {},
       wall: [],
+      cloudWall: [],
+      localWall: [],
       wallReady: false,
       pending: null,
+      syncing: false,
       stream: null,
       listening: false,
       dirty: false
@@ -731,6 +734,11 @@
           const main = await fetchGviz(ACTIVITY);
           rowsToWall(main).forEach(function (item) { putWall(map, item); });
         } catch (e2) {}
+        state.cloudWall = Object.keys(map).map(function (k) { return map[k]; });
+        (state.localWall || []).forEach(function (item) {
+          const hit = state.cloudWall.some(function (r) { return r.klass === item.klass && r.ymd === item.ymd; });
+          if (!hit) putWall(map, item);
+        });
         state.wall = numberWallDays(Object.keys(map).map(function (k) { return map[k]; }));
         state.wallReady = true;
         upsertPending();
@@ -742,6 +750,132 @@
       } catch (e) {
         if (!(state.wall || []).length) wallMessage("暫時未能讀取全班相片。請檢查網絡，再按重新整理。");
       }
+      syncLocalPhotos();
+    }
+    function dbAll() {
+      return dbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          if (!db.objectStoreNames.contains("recs")) { resolve([]); return; }
+          const tx = db.transaction("recs", "readonly");
+          const out = [];
+          const req = tx.objectStore("recs").openCursor();
+          req.onsuccess = function () {
+            const cur = req.result;
+            if (!cur) { resolve(out); return; }
+            out.push({ key: cur.key, val: cur.value });
+            cur.continue();
+          };
+          req.onerror = function () { reject(req.error); };
+        });
+      });
+    }
+    function cloudHas(klass, ymd) {
+      return (state.cloudWall || []).some(function (r) {
+        return r.klass === klass && r.ymd === ymd && r.url;
+      });
+    }
+    async function syncLocalPhotos() {
+      if (state.syncing) return;
+      state.syncing = true;
+      const classes = { "1A": 1, "1B": 1, "2A": 1, "2B": 1, "2C": 1, "4A": 1, "4B": 1, "4C": 1 };
+      try {
+        let rows = [];
+        try { rows = await dbAll(); } catch (e0) { rows = []; }
+        const local = [];
+        let posted = false;
+        for (let i = 0; i < rows.length; i++) {
+          const key = String(rows[i].key || "");
+          if (key.indexOf("class|") !== 0) continue;
+          const klass = key.slice(6).trim().toUpperCase();
+          if (!classes[klass]) continue;
+          const recs = rows[i].val && typeof rows[i].val === "object" ? rows[i].val : {};
+          const dates = Object.keys(recs).filter(function (ymd) {
+            const rec = recs[ymd];
+            return rec && rec.photo && /^\d{4}-\d{2}-\d{2}$/.test(ymd);
+          }).sort();
+          let dirty = false;
+          for (let d = 0; d < dates.length; d++) {
+            const ymd = dates[d];
+            const rec = recs[ymd];
+            const photo = String(rec.photo || "");
+            const isData = photo.indexOf("data:image") === 0;
+            let id = rec.publicId || imgurIdFromText(photo);
+            let pic = "";
+            if (!cloudHas(klass, ymd) && !id && isData) {
+              pic = await photoForSave(photo);
+              id = imgurIdFromUrl(await uploadPublicPhoto(pic));
+              if (id) {
+                rec.publicId = id;
+                dirty = true;
+              }
+            }
+            const due = !rec.sharedAt || Date.now() - rec.sharedAt > 20000;
+            if (!cloudHas(klass, ymd) && id && due) {
+              if (!pic && isData) pic = await photoForSave(photo);
+              const dayNum = daySpan(dates[0], ymd);
+              const said = String(rec.note || "").replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "").replace(/\n?IMG:[A-Za-z0-9]+/gi, "").trim();
+              let shared = "YMD:" + ymd;
+              if (said) shared += "\n" + said;
+              shared += "\nIMG:" + id;
+              const b64len = (String(pic).split(",")[1] || "").length;
+              await postScore({
+                token: SCORE_TOKEN,
+                kind: "beanlog",
+                activity: "家中種綠豆",
+                class: "SP" + klass,
+                no: String(dayNum >= 1 ? dayNum : 1),
+                day: 1,
+                level: "第1日",
+                op: "",
+                result: rec.stage || "",
+                note: shared,
+                photo: b64len > 0 && b64len < 1100000 ? pic : ""
+              });
+              rec.publicId = id;
+              rec.sharedAt = Date.now();
+              dirty = true;
+              posted = true;
+            }
+            if (cloudHas(klass, ymd)) continue;
+            const showUrl = id ? ("https://i.imgur.com/" + id + ".jpg") : (isData ? photo : "");
+            if (!showUrl) continue;
+            local.push({
+              klass: klass,
+              ymd: ymd,
+              dayNum: daySpan(dates[0], ymd),
+              day: "",
+              stage: rec.stage || "",
+              note: saidFrom(rec),
+              id: id || "",
+              url: showUrl,
+              ts: rec.at || Date.now()
+            });
+          }
+          if (dirty) {
+            try { await dbSet(key, recs); } catch (e1) {}
+          }
+        }
+        state.localWall = local;
+        if (local.length) {
+          const map = {};
+          (state.cloudWall || []).forEach(function (item) { putWall(map, item); });
+          local.forEach(function (item) { putWall(map, item); });
+          state.wall = numberWallDays(Object.keys(map).map(function (k) { return map[k]; }));
+          state.wallReady = true;
+          upsertPending();
+          renderClassWall();
+        }
+        if (posted) {
+          await new Promise(function (resolve) { setTimeout(resolve, 4000); });
+          state.syncing = false;
+          await loadClassWall();
+          return;
+        }
+      } catch (e2) {}
+      state.syncing = false;
+    }
+    function saidFrom(rec) {
+      return String((rec && rec.note) || "").replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "").replace(/\n?IMG:[A-Za-z0-9]+/gi, "").trim();
     }
     function rememberJustSaved() {
       const id = imgurIdFromText(state.publicUrl);
