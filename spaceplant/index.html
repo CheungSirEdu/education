@@ -243,10 +243,14 @@
         <select id="klass" autocomplete="off">
           <option value="">請選擇</option>
           <option value="老師種植">老師種植</option>
-          <optgroup label="四年班">
-            <option value="4A">4A</option>
-            <option value="4B">4B</option>
-            <option value="4C">4C</option>
+          <optgroup label="組別">
+            <option value="第一組">第一組</option>
+            <option value="第二組">第二組</option>
+            <option value="第三組">第三組</option>
+            <option value="第四組">第四組</option>
+            <option value="第五組">第五組</option>
+            <option value="第六組">第六組</option>
+            <option value="第七組">第七組</option>
           </optgroup>
         </select>
       </label>
@@ -373,7 +377,7 @@
       dirty: false
     };
 
-    const CLASS_OPTIONS = ["老師種植", "4A", "4B", "4C"];
+    const CLASS_OPTIONS = ["老師種植", "第一組", "第二組", "第三組", "第四組", "第五組", "第六組", "第七組"];
     function identityOk() {
       const klass = ($("klass").value || "").trim();
       return { ok: CLASS_OPTIONS.indexOf(klass) !== -1, class: klass };
@@ -769,7 +773,7 @@
     async function syncLocalPhotos() {
       if (state.syncing) return;
       state.syncing = true;
-      const classes = { "老師種植": 1, "4A": 1, "4B": 1, "4C": 1 };
+      const classes = { "老師種植": 1, "第一組": 1, "第二組": 1, "第三組": 1, "第四組": 1, "第五組": 1, "第六組": 1, "第七組": 1 };
       try {
         let rows = [];
         try { rows = await dbAll(); } catch (e0) { rows = []; }
