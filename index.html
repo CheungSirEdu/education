@@ -66,9 +66,11 @@
     body.editing header { box-shadow: 0 8px 0 #c9a227; }
     .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
     .chars {
-      display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px;
+      display: flex; justify-content: center; gap: 28px; margin: 8px 0 18px;
     }
+    .chars figure { margin: 0; text-align: center; }
     .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .chars figcaption { margin-top: 4px; font-size: 16px; font-weight: 800; color: var(--green-dark); }
     .note {
       background: var(--card);
       border: 5px solid var(--green);
@@ -933,8 +935,14 @@
       const areas = orderedAreas();
       $("app").innerHTML = `
         <div class="chars">
-          <img src="assets/boy.png" alt="小志">
-          <img src="assets/girl.png" alt="小蓮">
+          <figure>
+            <img src="assets/boy.png" alt="小志">
+            <figcaption>小志</figcaption>
+          </figure>
+          <figure>
+            <img src="assets/girl.png" alt="小蓮">
+            <figcaption>小蓮</figcaption>
+          </figure>
         </div>
         <p class="note">${editing
           ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
