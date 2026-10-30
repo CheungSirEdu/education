@@ -66,9 +66,9 @@
     body.editing header { box-shadow: 0 8px 0 #c9a227; }
     .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
     .chars {
-      display: flex; justify-content: center; align-items: flex-end; gap: 28px; margin: 8px 0 18px;
+      display: flex; justify-content: center; gap: 24px; margin: 8px 0 18px;
     }
-    .chars img { height: 112px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+    .chars img { height: 88px; width: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
     .note {
       background: var(--card);
       border: 5px solid var(--green);
@@ -933,8 +933,8 @@
       const areas = orderedAreas();
       $("app").innerHTML = `
         <div class="chars">
-          <img src="assets/boy.png?v=2627" alt="小志">
-          <img src="assets/girl.png?v=2627" alt="小蓮">
+          <img src="assets/boy.png?v=1" alt="">
+          <img src="assets/girl.png?v=1" alt="">
         </div>
         <p class="note">${editing
           ? "編輯排版中：可以改名稱、改下面小字，或撳「上移／下移」。改動會儲存，所有裝置都會見到。"
