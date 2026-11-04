@@ -986,7 +986,7 @@
       return t;
     }
 
-    const PHOTO_EDGE = 1920;
+    const PHOTO_EDGE = 1536;
     function fitCanvas(w, h, max) {
       max = max || PHOTO_EDGE;
       if (w > max || h > max) {
@@ -1017,7 +1017,7 @@
       });
     }
     async function photoForSave(dataUrl) {
-      const steps = [[1920, 0.86], [1920, 0.78], [1600, 0.8], [1600, 0.72], [1280, 0.75]];
+      const steps = [[1536, 0.86], [1536, 0.78], [1280, 0.8], [1280, 0.72], [1024, 0.75]];
       let pic = dataUrl;
       for (let i = 0; i < steps.length; i++) {
         const len = (String(pic || "").split(",")[1] || "").length;
@@ -1351,7 +1351,7 @@
       }
       try {
         state.stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: "user", width: { ideal: 1024 }, height: { ideal: 576 } },
           audio: false
         });
         const video = $("live");
