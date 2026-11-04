@@ -405,7 +405,8 @@
       syncing: false,
       stream: null,
       listening: false,
-      dirty: false
+      dirty: false,
+      userPicked: false
     };
 
     const CLASS_OPTIONS = ["1A", "1B", "2A", "2B", "2C", "3A", "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "5D", "6A", "6B", "6C", "6D"];
@@ -1158,7 +1159,7 @@
         const rec = state.recs[i];
         b.className = "day" + (i === Number(state.day) ? " on" : "") + (rec && rec.photo ? " done" : "");
         b.textContent = "第" + i + "日";
-        b.onclick = function () { pickDay(i); };
+        b.onclick = function () { state.userPicked = true; pickDay(i); };
         box.appendChild(b);
       }
     }
@@ -1174,7 +1175,7 @@
         b.type = "button";
         const when = rec.ymd ? "<br>" + esc(zhDate(rec.ymd)) : "";
         b.innerHTML = "<img alt=\"\" src=\"" + rec.photo + "\"><span>第" + d + "日" + when + "</span>";
-        b.onclick = function () { pickDay(d); };
+        b.onclick = function () { state.userPicked = true; pickDay(d); };
         box.appendChild(b);
       });
       if (!box.children.length) {
@@ -1588,6 +1589,7 @@
       state.class = id.class;
       state.no = id.no;
       state.dirty = false;
+      state.userPicked = false;
       state.day = 1;
       state.recs = {};
       $("who").textContent = state.class + "　" + state.no + "號　一人一花";
@@ -1598,9 +1600,13 @@
       const photographed = Object.keys(state.recs).map(function (k) { return parseInt(k, 10); }).filter(function (n) {
         return state.recs[n] && state.recs[n].photo;
       }).sort(function (a, b) { return a - b; });
-      state.day = photographed[0] || 1;
+      if (!(state.userPicked || state.dirty || state.photo || isLive() || state.listening)) {
+        state.day = photographed[0] || 1;
+      }
       await loadClassWall();
-      pickDay(state.day || 1);
+      if (!(state.userPicked || state.dirty || state.photo || isLive() || state.listening)) {
+        pickDay(state.day || 1);
+      }
       window.scrollTo(0, 0);
     };
     $("wallRefresh").onclick = function () { loadClassWall(); };
@@ -1609,6 +1615,7 @@
       if (voiceWanted) stopVoice(false);
       stopLive();
       state.dirty = false;
+      state.userPicked = false;
       $("app").classList.add("hidden");
       $("start").classList.remove("hidden");
       window.scrollTo(0, 0);
