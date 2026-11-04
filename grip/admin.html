@@ -3568,7 +3568,7 @@
     const map = {};
     (rows || []).forEach(r => {
       if (!r.klass || !r.no || r.no === "NaN" || !r.day) return;
-      const k = r.klass + "\t" + r.no + "\t" + (r.ymd || r.day);
+      const k = r.klass + "\t" + r.no + "\t" + r.day;
       const cur = map[k];
       if (!cur || r.ts >= cur.ts) map[k] = r;
     });

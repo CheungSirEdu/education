@@ -105,11 +105,21 @@
       padding-right: 56px;
     }
     .who { flex: 1; font-weight: 900; color: var(--green-dark); font-size: clamp(16px, 4.5vw, 20px); line-height: 1.3; }
+    .days-hint { max-width: 720px; margin: 0 auto 8px; }
+    .days {
+      max-width: 720px; margin: 0 auto 12px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    }
+    .day {
+      min-height: 48px; background: #fff; border: 3px solid #f3c1c6; color: var(--ink);
+      font-size: 15px; padding: 6px 2px; line-height: 1.2;
+    }
+    .day.on { background: #ffcdd2; border-color: #c62828; }
+    .day.done { box-shadow: inset 0 -6px 0 #e57373; }
     .wrap { max-width: 720px; margin: 0 auto; }
     #dayTitle { margin: 0; text-align: center; font-size: clamp(28px, 8vw, 40px); color: var(--green-dark); }
-    .daydate {
-      margin: 0 0 4px; text-align: center; font-weight: 900;
-      font-size: clamp(18px, 5vw, 22px); color: var(--green-dark);
+    @media (max-width: 420px) {
+      .day { font-size: 13px; min-height: 46px; }
     }
     .photo {
       background: #fff; border: 5px solid var(--green); border-radius: 22px;
@@ -301,11 +311,10 @@
       <div class="who" id="who"></div>
       <button class="ghost" id="logout" type="button" style="width:auto;padding:8px 12px;margin:0;min-height:44px;font-size:16px">離開</button>
     </div>
+    <p class="hint days-hint">請選擇要記錄的日子，由第 1 日到第 30 日。不用每日拍照。同一日可以再次拍照並儲存。</p>
+    <div class="days" id="days"></div>
     <div class="wrap">
       <h2 id="dayTitle">第 1 日</h2>
-      <p class="daydate" id="dayDate"></p>
-      <p class="hint" id="dayMeta"></p>
-      <button class="ghost hidden" id="backToday" type="button">返回今天拍照</button>
       <div class="photo" id="photoBox">
         <div class="ph" id="photoPh">尚未拍照<br>請對準花朵或植物</div>
         <img id="photoImg" class="hidden" alt="一人一花相片">
@@ -328,7 +337,7 @@
       <div class="stages" id="stages"></div>
 
       <h2>語音紀錄</h2>
-      <p class="hint" id="voiceHint">按下後，請說出花朵或植物的生長情況，系統會轉換為書面語。</p>
+      <p class="hint" id="voiceHint">按下後開始講，講的時候文字會即時出現。講完再按一次，就會轉成書面語。</p>
       <button class="voice" id="btnVoice" type="button">開始錄音</button>
       <textarea id="note" maxlength="400" placeholder="轉換後的書面語會顯示於此，亦可自行修改。"></textarea>
 
@@ -360,8 +369,7 @@
     const SCORE_TOKEN = "chilin-edu-2026";
     const SHEET_ID = "1qY-l71g-ApKQGdHtsl9r7QkjcI6iFk7yu3CAu_NmW2w";
     const PREFIX = "FL";
-    const SHEET_DAY = 20;
-    const MAX_DAY = 400;
+    const MAX_DAY = 30;
     const STAGES = [
       "未發芽",
       "開始發芽",
@@ -378,7 +386,6 @@
       class: "",
       no: "",
       day: 1,
-      viewingYmd: "",
       stage: "",
       photo: "",
       publicUrl: "",
@@ -427,12 +434,6 @@
         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       }
     }
-    function daySpan(start, ymd) {
-      const a = Date.parse(start + "T00:00:00Z");
-      const b = Date.parse(ymd + "T00:00:00Z");
-      if (!a || !b || b < a) return 1;
-      return Math.round((b - a) / 86400000) + 1;
-    }
     function zhDate(ymd) {
       const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ""));
       if (!m) return "";
@@ -460,25 +461,28 @@
         return "";
       }
     }
-    function savedDates() {
-      const dates = [];
-      Object.keys(state.recs).forEach(function (k) {
-        const rec = state.recs[k];
-        if (rec && rec.photo && /^\d{4}-\d{2}-\d{2}$/.test(k)) dates.push(k);
+    function normalizeRecs(raw) {
+      const out = {};
+      Object.keys(raw || {}).forEach(function (k) {
+        const rec = raw[k];
+        if (!rec || typeof rec !== "object" || !rec.photo) return;
+        let d = dayNumOf(k);
+        if (!d && /^\d{4}-\d{2}-\d{2}$/.test(k)) d = dayNumOf(rec.day);
+        if (!d) return;
+        const prev = out[d];
+        if (prev && (prev.at || 0) > (rec.at || 0)) return;
+        out[d] = {
+          day: d,
+          ymd: /^\d{4}-\d{2}-\d{2}$/.test(rec.ymd || "") ? rec.ymd : (/^\d{4}-\d{2}-\d{2}$/.test(k) ? k : ""),
+          stage: rec.stage || "",
+          note: rec.note || "",
+          photo: rec.photo,
+          publicId: rec.publicId || "",
+          at: rec.at || 0,
+          sharedAt: rec.sharedAt || 0
+        };
       });
-      (state.wall || []).forEach(function (r) {
-        if (r.klass === state.class && r.no === state.no && r.ymd && r.url) dates.push(r.ymd);
-      });
-      dates.sort();
-      return dates;
-    }
-    function startYmd() {
-      const dates = savedDates();
-      return dates.length ? dates[0] : hkToday();
-    }
-    function dayOf(ymd) {
-      const n = daySpan(startYmd(), ymd);
-      return n >= 1 && n <= MAX_DAY ? n : 1;
+      return out;
     }
 
     function dbOpen() {
@@ -583,10 +587,13 @@
       return cols.indexOf(name);
     }
     function putWall(map, item) {
-      if (!item.klass || !item.no || !item.ymd || !item.url) return;
-      const k = item.klass + "\t" + item.no + "\t" + item.ymd;
+      const dayNum = dayNumOf(item.dayNum);
+      if (!item.klass || !item.no || !dayNum || !item.url) return;
+      item.dayNum = dayNum;
+      item.day = "第" + dayNum + "日";
+      const k = item.klass + "\t" + item.no + "\t" + dayNum;
       const cur = map[k];
-      if (!cur || item.ts >= cur.ts) map[k] = item;
+      if (!cur || (item.ts || 0) >= (cur.ts || 0)) map[k] = item;
     }
     function rowsToWall(table) {
       const out = [];
@@ -626,18 +633,12 @@
       });
       return out;
     }
-    function studentKey(r) { return r.klass + "\t" + r.no; }
     function numberWallDays(list) {
-      const first = {};
       list.forEach(function (r) {
-        if (!r.ymd || !r.no) return;
-        const k = studentKey(r);
-        if (!first[k] || r.ymd < first[k]) first[k] = r.ymd;
-      });
-      list.forEach(function (r) {
-        const k = studentKey(r);
-        if (r.ymd && first[k]) r.dayNum = daySpan(first[k], r.ymd);
-        r.day = "第" + (r.dayNum || 1) + "日";
+        const n = dayNumOf(r.dayNum) || dayNumOf(r.day);
+        if (!n) return;
+        r.dayNum = n;
+        r.day = "第" + n + "日";
       });
       return list;
     }
@@ -650,14 +651,14 @@
         const cb = rb < 0 ? 99 : rb;
         if (ca !== cb) return ca - cb;
         if (Number(a.no) !== Number(b.no)) return Number(a.no) - Number(b.no);
-        if (a.ymd !== b.ymd) return a.ymd < b.ymd ? -1 : 1;
-        return a.dayNum - b.dayNum;
+        if (a.dayNum !== b.dayNum) return a.dayNum - b.dayNum;
+        return (a.ts || 0) - (b.ts || 0);
       });
     }
     function upsertPending() {
       const p = state.pending;
       if (!p) return;
-      const i = state.wall.findIndex(function (r) { return r.klass === p.klass && r.no === p.no && r.ymd === p.ymd; });
+      const i = state.wall.findIndex(function (r) { return r.klass === p.klass && r.no === p.no && r.dayNum === p.dayNum; });
       if (i < 0) state.wall.push(p);
       else if (p.ts >= (state.wall[i].ts || 0)) state.wall[i] = Object.assign({}, state.wall[i], p);
       else state.pending = null;
@@ -691,17 +692,21 @@
     function applyCloudToRecs() {
       if (!state.class || !state.no) return;
       (state.wall || []).forEach(function (r) {
-        if (r.klass !== state.class || r.no !== state.no || !r.ymd || !r.url) return;
-        const cur = state.recs[r.ymd] || {};
+        if (r.klass !== state.class || r.no !== state.no || !r.url) return;
+        const d = dayNumOf(r.dayNum);
+        if (!d || (state.dirty && d === Number(state.day))) return;
+        const cur = state.recs[d] || {};
         const localPhoto = String(cur.photo || "");
         const keepLocal = localPhoto.indexOf("data:image") === 0 && (cur.at || 0) >= (r.ts || 0);
-        state.recs[r.ymd] = {
-          ymd: r.ymd,
-          day: r.dayNum,
+        state.recs[d] = {
+          day: d,
+          ymd: cur.ymd || r.ymd || "",
           stage: cur.stage || r.stage || "",
           note: cur.note || cleanNote(r.note),
           photo: keepLocal ? localPhoto : r.url,
-          at: Math.max(cur.at || 0, r.ts || 0)
+          publicId: cur.publicId || r.id || "",
+          at: Math.max(cur.at || 0, r.ts || 0),
+          sharedAt: cur.sharedAt || 0
         };
       });
     }
@@ -731,13 +736,14 @@
         const url = imgur
           ? ("https://i.imgur.com/" + imgur + ".jpg")
           : (drive ? ("https://lh3.googleusercontent.com/d/" + drive) : "");
-        if (!klass || no === "NaN" || !ymd || !url || CLASS_OPTIONS.indexOf(klass) < 0) return;
+        if (!klass || no === "NaN" || !url || CLASS_OPTIONS.indexOf(klass) < 0) return;
+        if (!(dayNum >= 1 && dayNum <= MAX_DAY)) return;
         out.push({
           klass: klass,
           no: no,
           ymd: ymd,
-          dayNum: dayNum >= 1 ? dayNum : 1,
-          day: dayNum >= 1 ? ("第" + dayNum + "日") : "",
+          dayNum: dayNum,
+          day: "第" + dayNum + "日",
           stage: iStage >= 0 ? String(gvizCell(row, iStage) || "").trim() : "",
           note: cleanNote(raw),
           id: imgur || drive,
@@ -754,7 +760,7 @@
         rowsFromShared(shared).forEach(function (item) { putWall(map, item); });
         state.cloudWall = Object.keys(map).map(function (k) { return map[k]; });
         (state.localWall || []).forEach(function (item) {
-          const hit = state.cloudWall.some(function (r) { return r.klass === item.klass && r.no === item.no && r.ymd === item.ymd; });
+          const hit = state.cloudWall.some(function (r) { return r.klass === item.klass && r.no === item.no && r.dayNum === item.dayNum; });
           if (!hit) putWall(map, item);
         });
         state.wall = numberWallDays(Object.keys(map).map(function (k) { return map[k]; }));
@@ -762,8 +768,8 @@
         upsertPending();
         applyCloudToRecs();
         renderClassWall();
-        if (!$("app").classList.contains("hidden") && state.class && !state.dirty && !isLive()) {
-          refreshView();
+        if (!$("app").classList.contains("hidden") && state.class && !state.dirty && !isLive() && !state.listening) {
+          pickDay(state.day || 1);
         }
       } catch (e) {
         if (!(state.wall || []).length) wallMessage("暫時未能讀取全校相片。請檢查網絡，再按重新整理。");
@@ -787,9 +793,9 @@
         });
       });
     }
-    function cloudHas(klass, no, ymd) {
+    function cloudHas(klass, no, dayNum) {
       return (state.cloudWall || []).some(function (r) {
-        return r.klass === klass && r.no === no && r.ymd === ymd && r.url;
+        return r.klass === klass && r.no === no && r.dayNum === dayNum && r.url;
       });
     }
     async function syncLocalPhotos() {
@@ -807,20 +813,20 @@
           const klass = String(parts[0] || "").trim().toUpperCase();
           const no = String(parseInt(parts[1], 10));
           if (CLASS_OPTIONS.indexOf(klass) < 0 || !/^\d{1,3}$/.test(no)) continue;
-          const recs = rows[i].val && typeof rows[i].val === "object" ? rows[i].val : {};
-          const dates = Object.keys(recs).filter(function (ymd) {
-            const rec = recs[ymd];
-            return rec && rec.photo && /^\d{4}-\d{2}-\d{2}$/.test(ymd);
-          }).sort();
+          const raw = rows[i].val && typeof rows[i].val === "object" ? rows[i].val : {};
+          const recs = normalizeRecs(raw);
+          const days = Object.keys(recs).map(function (k) { return parseInt(k, 10); }).filter(function (n) {
+            return n >= 1 && n <= MAX_DAY && recs[n] && recs[n].photo;
+          });
           let dirty = false;
-          for (let d = 0; d < dates.length; d++) {
-            const ymd = dates[d];
-            const rec = recs[ymd];
+          for (let di = 0; di < days.length; di++) {
+            const dayNum = days[di];
+            const rec = recs[dayNum];
             const photo = String(rec.photo || "");
             const isData = photo.indexOf("data:image") === 0;
             let id = rec.publicId || imgurIdFromText(photo);
             let pic = "";
-            if (!cloudHas(klass, no, ymd) && !id && isData) {
+            if (!cloudHas(klass, no, dayNum) && !id && isData) {
               pic = await photoForSave(photo);
               id = imgurIdFromUrl(await uploadPublicPhoto(pic));
               if (id) {
@@ -829,10 +835,10 @@
               }
             }
             const due = !rec.sharedAt || Date.now() - rec.sharedAt > 20000;
-            const dayNum = daySpan(dates[0], ymd);
-            if (!cloudHas(klass, no, ymd) && id && due && dayNum >= 1 && dayNum <= SHEET_DAY) {
+            const ymd = /^\d{4}-\d{2}-\d{2}$/.test(rec.ymd || "") ? rec.ymd : (ymdFromTs(rec.at) || hkToday());
+            if (!cloudHas(klass, no, dayNum) && id && due) {
               if (!pic && isData) pic = await photoForSave(photo);
-              const said = String(rec.note || "").replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "").replace(/\n?IMG:[A-Za-z0-9]+/gi, "").trim();
+              const said = saidFrom(rec);
               let shared = "YMD:" + ymd;
               if (said) shared += "\n" + said;
               shared += "\nIMG:" + id;
@@ -851,19 +857,20 @@
                 photo: b64len > 0 && b64len < 1100000 ? pic : ""
               });
               rec.publicId = id;
+              rec.ymd = ymd;
               rec.sharedAt = Date.now();
               dirty = true;
               posted = true;
             }
-            if (cloudHas(klass, no, ymd)) continue;
+            if (cloudHas(klass, no, dayNum)) continue;
             const showUrl = id ? ("https://i.imgur.com/" + id + ".jpg") : (isData ? photo : "");
             if (!showUrl) continue;
             local.push({
               klass: klass,
               no: no,
               ymd: ymd,
-              dayNum: daySpan(dates[0], ymd),
-              day: "",
+              dayNum: dayNum,
+              day: "第" + dayNum + "日",
               stage: rec.stage || "",
               note: saidFrom(rec),
               id: id || "",
@@ -898,14 +905,16 @@
       return String((rec && rec.note) || "").replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "").replace(/\n?IMG:[A-Za-z0-9]+/gi, "").trim();
     }
     function rememberJustSaved() {
-      const id = imgurIdFromText(state.publicUrl);
-      if (!id || !state.class || !state.no || !state.viewingYmd) return;
+      const id = imgurIdFromUrl(state.publicUrl) || imgurIdFromText(state.photo);
+      const day = dayNumOf(state.day);
+      if (!id || !state.class || !state.no || !day) return;
+      const ymd = (state.recs[day] && state.recs[day].ymd) || hkToday();
       state.pending = {
         klass: state.class,
         no: state.no,
-        ymd: state.viewingYmd,
-        dayNum: state.day,
-        day: "第" + state.day + "日",
+        ymd: ymd,
+        dayNum: day,
+        day: "第" + day + "日",
         stage: state.stage,
         note: $("note").value.trim(),
         id: id,
@@ -922,12 +931,12 @@
       const pairs = [
         [/未發到芽|未見發芽|未有發芽|未發芽到/g, "尚未發芽"],
         [/發緊芽|發咗芽|出咗芽/g, "開始發芽"],
-        [/見到啲白|見到白色|有啲白|出咗白|白色嘅根|白色的根|白色嘅芽|白色的芽|出咗芽|長出芽/g, "長出白色的芽"],
-        [/長高咗|高咗好多|開始長高|高咗/g, "開始長高"],
-        [/出咗真葉|長出真葉|有真葉|出咗葉/g, "長出真葉"],
-        [/歪去有光|側去窗邊|趷去光|倒向有光|趷去窗/g, "開始倒向有光的一邊"],
-        [/枯咗|蔫咗|開始枯萎|枯萎/g, "開始枯萎"],
-        [/死咗|已經死|死亡/g, "已經死亡"],
+        [/出咗花蕾|長出花蕾|有花蕾|結咗花蕾|見到花蕾/g, "長出花蕾"],
+        [/開晒花|花開晒|花朵盛開|盛開咗/g, "花朵盛開"],
+        [/開緊花|開始開花|開咗花/g, "開始開花"],
+        [/謝晒|已經凋謝|凋謝晒|謝完/g, "已經凋謝"],
+        [/開始謝|謝緊|開始凋謝|凋謝緊|枯咗|蔫咗|開始枯萎/g, "開始凋謝"],
+        [/出咗葉|長出葉子|有葉|出咗真葉|長出真葉/g, "長出葉子"],
         [/琴日|噚日/g, "昨天"],
         [/今日/g, "今天"],
         [/聽日/g, "明天"],
@@ -1132,79 +1141,80 @@
         box.appendChild(b);
       });
     }
+    function renderDays() {
+      const box = $("days");
+      if (!box) return;
+      box.innerHTML = "";
+      for (let i = 1; i <= MAX_DAY; i++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        const rec = state.recs[i];
+        b.className = "day" + (i === Number(state.day) ? " on" : "") + (rec && rec.photo ? " done" : "");
+        b.textContent = "第" + i + "日";
+        b.onclick = function () { pickDay(i); };
+        box.appendChild(b);
+      }
+    }
     function renderGallery() {
       const box = $("gallery");
       box.innerHTML = "";
-      const days = Object.keys(state.recs).filter(function (k) {
-        return state.recs[k] && state.recs[k].photo && /^\d{4}-\d{2}-\d{2}$/.test(k);
-      }).sort();
-      days.forEach(function (ymd) {
-        const rec = state.recs[ymd];
+      const days = Object.keys(state.recs).map(function (k) { return parseInt(k, 10); }).filter(function (d) {
+        return d >= 1 && d <= MAX_DAY && state.recs[d] && state.recs[d].photo;
+      }).sort(function (a, b) { return a - b; });
+      days.forEach(function (d) {
+        const rec = state.recs[d];
         const b = document.createElement("button");
         b.type = "button";
-        const n = dayOf(ymd);
-        b.innerHTML = "<img alt=\"\" src=\"" + rec.photo + "\"><span>第" + n + "日<br>" + esc(zhDate(ymd)) + "</span>";
-        b.onclick = function () { openYmd(ymd); };
+        const when = rec.ymd ? "<br>" + esc(zhDate(rec.ymd)) : "";
+        b.innerHTML = "<img alt=\"\" src=\"" + rec.photo + "\"><span>第" + d + "日" + when + "</span>";
+        b.onclick = function () { pickDay(d); };
         box.appendChild(b);
       });
       if (!box.children.length) {
         box.innerHTML = "<p class=\"hint\" style=\"grid-column:1/-1\">尚未有相片。</p>";
       }
     }
-    function refreshView() {
-      const ymd = state.viewingYmd || hkToday();
-      state.viewingYmd = ymd;
-      const rec = state.recs[ymd] || {};
+    function pickDay(d) {
+      d = dayNumOf(d) || 1;
+      if (voiceWanted) stopVoice(false);
+      stopLive();
+      state.day = d;
+      state.dirty = false;
+      const rec = state.recs[d] || {};
       state.photo = rec.photo || "";
       state.stage = rec.stage || "";
-      state.publicUrl = "";
-      $("note").value = rec.note || "";
-      const day = dayOf(ymd);
-      state.day = day;
-      const start = startYmd();
-      $("dayTitle").textContent = "第 " + day + " 日";
-      $("dayDate").textContent = zhDate(ymd) + (ymd === hkToday() ? "　今天" : "");
-      if (ymd !== hkToday()) {
-        $("dayMeta").textContent = "你正在查看 " + zhDate(ymd) + "。在這裡拍照會取代這一日的相片。";
-      } else if (!savedDates().length || (savedDates().length === 1 && savedDates()[0] === ymd && day === 1)) {
-        $("dayMeta").textContent = "這是第一次拍照，記為第 1 日。之後再拍，會由這天起計算日數。";
-      } else {
-        $("dayMeta").textContent = "由 " + zhDate(start) + " 第一次拍照起計。中間沒有拍照的日子不會列出。";
-      }
+      state.publicUrl = rec.publicId
+        ? ("https://i.imgur.com/" + rec.publicId)
+        : (imgurIdFromText(rec.photo) ? rec.photo : "");
+      $("note").value = cleanNote(rec.note || "");
+      $("dayTitle").textContent = "第 " + d + " 日";
       $("btnSave").textContent = rec.photo ? "儲存並取代舊紀錄" : "儲存這日紀錄";
-      $("backToday").classList.toggle("hidden", ymd === hkToday());
       showPhoto();
+      renderDays();
       renderStages();
       renderGallery();
     }
-    function openYmd(ymd) {
-      stopLive();
-      state.dirty = false;
-      state.viewingYmd = ymd;
-      refreshView();
-    }
-    function showToday() {
-      stopLive();
-      state.dirty = false;
-      state.viewingYmd = hkToday();
-      refreshView();
-    }
     async function loadRecs() {
       try {
-        state.recs = (await dbGet(recKey())) || {};
+        state.recs = normalizeRecs(await dbGet(recKey()));
       } catch (e) {
         state.recs = {};
       }
       applyCloudToRecs();
     }
     async function persistLocal() {
-      state.recs[state.viewingYmd] = {
-        ymd: state.viewingYmd,
-        day: state.day,
+      const day = dayNumOf(state.day);
+      if (!day) return;
+      const prev = state.recs[day] || {};
+      state.recs[day] = {
+        day: day,
+        ymd: hkToday(),
         stage: state.stage,
         note: $("note").value.trim(),
         photo: state.photo,
-        at: Date.now()
+        publicId: prev.publicId || imgurIdFromText(state.photo) || "",
+        at: Date.now(),
+        sharedAt: 0
       };
       try { await dbSet(recKey(), state.recs); } catch (e) {}
     }
@@ -1244,14 +1254,14 @@
     function sendTeacher(extra) {
       const more = extra || {};
       const deleting = more.op === "delete";
-      const ymd = more.ymd || state.viewingYmd || hkToday();
-      const day = more.day || state.day || 1;
+      const day = dayNumOf(more.day || state.day);
+      if (!day) return Promise.resolve();
+      const ymd = more.ymd || (state.recs[day] && state.recs[day].ymd) || hkToday();
       let note = deleting ? "" : $("note").value.trim();
-      const imgId = imgurIdFromUrl(state.publicUrl);
+      const imgId = imgurIdFromUrl(state.publicUrl) || imgurIdFromText(state.photo);
       let shared = "YMD:" + ymd;
       if (note) shared += "\n" + note;
       if (!deleting && imgId) shared += "\nIMG:" + imgId;
-      if (!deleting && (day < 1 || day > SHEET_DAY)) return Promise.resolve();
       return postScore({
         token: SCORE_TOKEN,
         kind: "beanlog",
@@ -1273,26 +1283,30 @@
       });
     }
     async function deleteToday() {
-      const ymd = state.viewingYmd;
-      const day = state.day;
-      if (!ymd) return;
+      const day = dayNumOf(state.day);
+      if (!day) return;
+      if (voiceWanted) stopVoice(false);
       stopLive();
+      const ymd = (state.recs[day] && state.recs[day].ymd) || hkToday();
       state.photo = "";
       state.stage = "";
       $("note").value = "";
-      delete state.recs[ymd];
+      delete state.recs[day];
+      delete state.recs[String(day)];
       state.dirty = false;
       try { await dbSet(recKey(), state.recs); } catch (e) {}
       await sendTeacher({ op: "delete", ymd: ymd, day: day });
-      state.wall = (state.wall || []).filter(function (r) { return !(r.klass === state.class && r.no === state.no && r.ymd === ymd); });
+      state.wall = (state.wall || []).filter(function (r) { return !(r.klass === state.class && r.no === state.no && r.dayNum === day); });
+      state.localWall = (state.localWall || []).filter(function (r) { return !(r.klass === state.class && r.no === state.no && r.dayNum === day); });
       state.pending = null;
       numberWallDays(state.wall);
       renderClassWall();
-      showToday();
+      pickDay(day);
       toast("已刪除這日相片。可以重新拍照。");
     }
     async function onFile(file) {
       if (!file) return;
+      if (voiceWanted) stopVoice(true);
       try {
         const data = await compressBlob(file);
         state.photo = data;
@@ -1319,6 +1333,7 @@
       if (isLive()) snapPhoto();
     });
     $("btnCam").onclick = async function () {
+      if (voiceWanted) stopVoice(true);
       if (isLive()) {
         snapPhoto();
         return;
@@ -1365,52 +1380,152 @@
     })();
 
     let recer = null;
+    let voiceWanted = false;
+    let voiceRestarts = 0;
+    let voiceFinal = "";
+    let voiceInterim = "";
     function speechEngine() {
       const C = window.SpeechRecognition || window.webkitSpeechRecognition;
       return C ? new C() : null;
     }
+    function voiceRaw() {
+      return (voiceFinal + voiceInterim).replace(/\s+/g, "").trim();
+    }
+    function showVoiceRaw() {
+      const raw = voiceRaw();
+      if (!raw) return;
+      $("note").value = raw;
+      state.dirty = true;
+    }
+    function finishVoiceText() {
+      const raw = voiceRaw();
+      voiceFinal = "";
+      voiceInterim = "";
+      if (!raw) return;
+      const written = toWritten(raw);
+      $("note").value = written || raw;
+      state.dirty = true;
+      toast("已寫下你講嘅說話");
+    }
+    function resetVoiceButton() {
+      state.listening = false;
+      $("btnVoice").textContent = "開始錄音";
+      $("btnVoice").classList.remove("live");
+      $("voiceHint").textContent = "按下後開始講，講的時候文字會即時出現。講完再按一次，就會轉成書面語。";
+    }
+    function stopVoice(convert) {
+      voiceWanted = false;
+      const engine = recer;
+      recer = null;
+      if (engine) {
+        engine.onend = null;
+        engine.onerror = null;
+        engine.onresult = null;
+        engine.onstart = null;
+        try { engine.stop(); } catch (e) {}
+      }
+      resetVoiceButton();
+      if (convert) finishVoiceText();
+    }
+    function armRecognizer() {
+      const engine = speechEngine();
+      if (!engine) return null;
+      engine.lang = "zh-HK";
+      engine.continuous = false;
+      engine.interimResults = true;
+      engine.maxAlternatives = 1;
+      engine.onstart = function () {
+        state.listening = true;
+        $("btnVoice").textContent = "正在聆聽，講完再按一次";
+        $("btnVoice").classList.add("live");
+        $("voiceHint").textContent = "正在聽你講，文字會即時出現。講完再按一次。";
+      };
+      engine.onresult = function (ev) {
+        let interim = "";
+        const results = ev.results || [];
+        for (let i = ev.resultIndex || 0; i < results.length; i++) {
+          const bit = results[i][0] ? results[i][0].transcript : "";
+          if (results[i].isFinal) voiceFinal += bit;
+          else interim += bit;
+        }
+        voiceInterim = interim;
+        showVoiceRaw();
+      };
+      engine.onerror = function (ev) {
+        const code = ev && ev.error ? ev.error : "";
+        if (code === "aborted" || code === "no-speech") return;
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          voiceWanted = false;
+          resetVoiceButton();
+          toast("請允許使用麥克風，或者改用文字記錄。", true);
+          return;
+        }
+        if (code === "network") toast("語音需要網絡，可以再試一次，或改用文字記錄。", true);
+      };
+      engine.onend = function () {
+        if (!voiceWanted || engine !== recer) return;
+        if (voiceInterim) {
+          voiceFinal += voiceInterim;
+          voiceInterim = "";
+          showVoiceRaw();
+        }
+        if (voiceRestarts >= 60) {
+          stopVoice(true);
+          toast("錄音已停止。可以再按一次繼續講。");
+          return;
+        }
+        voiceRestarts += 1;
+        try {
+          recer = armRecognizer();
+          recer.start();
+        } catch (e) {
+          setTimeout(function () {
+            if (!voiceWanted) return;
+            try {
+              recer = armRecognizer();
+              recer.start();
+            } catch (e2) {
+              stopVoice(true);
+            }
+          }, 200);
+        }
+      };
+      return engine;
+    }
     $("btnVoice").onclick = function () {
-      if (state.listening && recer) {
-        try { recer.stop(); } catch (e) {}
+      if (voiceWanted) {
+        stopVoice(true);
         return;
       }
-      recer = speechEngine();
-      if (!recer) {
+      stopLive();
+      if (!speechEngine()) {
         $("voiceHint").textContent = "這部裝置未能使用語音功能。請在下方用文字寫下花朵或植物的生長情況。";
         $("note").focus();
         toast("請改用文字記錄。", true);
         return;
       }
-      recer.lang = "zh-HK";
-      recer.interimResults = false;
-      recer.maxAlternatives = 1;
-      recer.onstart = function () {
-        state.listening = true;
-        $("btnVoice").textContent = "正在聆聽，請說出花朵或植物的生長情況";
-        $("btnVoice").classList.add("live");
-      };
-      recer.onend = function () {
-        state.listening = false;
-        $("btnVoice").textContent = "開始錄音";
-        $("btnVoice").classList.remove("live");
-      };
-      recer.onerror = function () {
-        toast("未能聽到語音，可以再試一次，或改用文字記錄。", true);
-      };
-      recer.onresult = function (ev) {
-        const said = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
-        $("note").value = toWritten(said);
-        state.dirty = true;
-        toast("已轉換為書面語");
-      };
-      try { recer.start(); } catch (e) {
-        toast("未能開啟麥克風。", true);
+      voiceWanted = true;
+      voiceRestarts = 0;
+      voiceFinal = $("note").value.trim();
+      voiceInterim = "";
+      recer = armRecognizer();
+      try { recer.start(); }
+      catch (e) {
+        voiceWanted = false;
+        resetVoiceButton();
+        toast("未能開啟麥克風。請允許麥克風，或改用文字記錄。", true);
       }
     };
-    $("note").addEventListener("input", function () { state.dirty = true; });
+    $("note").addEventListener("input", function () {
+      if (voiceWanted) return;
+      state.dirty = true;
+    });
     $("note").addEventListener("blur", function () {
+      if (state.listening || voiceWanted) return;
       const v = $("note").value.trim();
-      if (v) $("note").value = toWritten(v);
+      if (!v) return;
+      const written = toWritten(v);
+      $("note").value = written || v;
     });
 
     $("btnDel").onclick = function () {
@@ -1422,12 +1537,12 @@
       $("delModal").classList.add("hidden");
       await deleteToday();
     };
-    $("backToday").onclick = function () { showToday(); };
-
     $("btnSave").onclick = async function () {
+      if (voiceWanted) stopVoice(true);
       if (!state.photo) { toast("請先拍照。", true); return; }
-      if (!state.viewingYmd) state.viewingYmd = hkToday();
-      state.day = dayOf(state.viewingYmd);
+      const day = dayNumOf(state.day);
+      if (!day) { toast("請先選擇日子。", true); return; }
+      state.day = day;
       $("btnSave").disabled = true;
       toast("正在交給老師…");
       if (String(state.photo || "").indexOf("data:image") === 0) {
@@ -1443,39 +1558,48 @@
       } catch (e) {
         state.publicUrl = state.publicUrl || "";
       }
+      const imgId = imgurIdFromUrl(state.publicUrl) || imgurIdFromText(state.photo);
+      if (state.recs[day]) {
+        if (imgId) state.recs[day].publicId = imgId;
+        state.recs[day].sharedAt = Date.now();
+        try { await dbSet(recKey(), state.recs); } catch (e2) {}
+      }
       await sendTeacher();
       rememberJustSaved();
       const shared = state.publicUrl;
       state.dirty = false;
-      refreshView();
+      pickDay(day);
       loadClassWall();
       $("btnSave").disabled = false;
-      if (state.day > SHEET_DAY) {
-        toast("已儲存在這部裝置。由第一次拍照起已超過二十日，其他裝置未必見到。", true);
-      } else {
-        toast(shared ? "已儲存。其他電話打開同一頁，都可以見到這張相片。" : "已儲存在這部裝置。若其他電話未見相片，請再儲存一次。");
-      }
+      toast(shared ? "已儲存。其他電話打開同一頁，都可以見到這張相片。" : "已儲存在這部裝置。若其他電話未見相片，請再儲存一次。");
     };
 
     $("startBtn").onclick = async function () {
       const id = identityOk();
       if (!id.ok) return;
+      if (voiceWanted) stopVoice(false);
       state.class = id.class;
       state.no = id.no;
       state.dirty = false;
+      state.day = 1;
       state.recs = {};
       $("who").textContent = state.class + "　" + state.no + "號　一人一花";
       $("start").classList.add("hidden");
       $("app").classList.remove("hidden");
-      state.viewingYmd = hkToday();
+      pickDay(1);
       await loadRecs();
+      const photographed = Object.keys(state.recs).map(function (k) { return parseInt(k, 10); }).filter(function (n) {
+        return state.recs[n] && state.recs[n].photo;
+      }).sort(function (a, b) { return a - b; });
+      state.day = photographed[0] || 1;
       await loadClassWall();
-      showToday();
+      pickDay(state.day || 1);
       window.scrollTo(0, 0);
     };
     $("wallRefresh").onclick = function () { loadClassWall(); };
     $("wallRefreshApp").onclick = function () { loadClassWall(); };
     $("logout").onclick = function () {
+      if (voiceWanted) stopVoice(false);
       stopLive();
       state.dirty = false;
       $("app").classList.add("hidden");
@@ -1487,7 +1611,10 @@
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") loadClassWall();
     });
-    window.addEventListener("pagehide", function () { stopLive(); });
+    window.addEventListener("pagehide", function () {
+      if (voiceWanted) stopVoice(false);
+      stopLive();
+    });
   </script>
 </body>
 </html>
