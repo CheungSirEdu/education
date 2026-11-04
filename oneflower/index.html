@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -85,13 +86,14 @@
     .one select { padding-right: 36px; }
     .one select:focus, .one input:focus { outline: 0; border-color: var(--green); background: #ffebee; }
     .plant-pic { text-align: center; margin: 0 0 12px; }
-    .demo-hold {
-      min-height: 180px; border: 4px dashed var(--green); border-radius: 16px;
-      background: #fff; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 18px 12px; text-align: center;
+    .demo-title { margin: 0 0 8px; font-weight: 900; color: var(--green-dark); font-size: clamp(18px, 5vw, 22px); }
+    .demo-frame {
+      position: relative; width: 100%; padding-top: 56.25%;
+      border: 4px solid var(--green); border-radius: 16px; overflow: hidden; background: #1a1a1a;
     }
-    .demo-title { margin: 0; font-weight: 900; color: var(--green-dark); font-size: clamp(18px, 5vw, 22px); }
-    .demo-note { margin: 8px 0 0; font-weight: 700; color: var(--muted); line-height: 1.45; }
+    .demo-frame iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+    }
     .primary {
       width: 100%; background: var(--green); color: #fff; font-size: 20px;
       min-height: 54px; padding: 14px; box-shadow: 0 5px 0 var(--green-dark);
@@ -222,7 +224,7 @@
       .stages { grid-template-columns: 1fr; }
     }
     @media (orientation: landscape) and (max-height: 520px) {
-      .demo-hold { min-height: 120px; }
+      .demo-frame { padding-top: 42%; }
       .photo img, .photo video { height: min(46dvh, 200px); }
       .panel { padding-top: calc(8px + var(--safe-t)); }
     }
@@ -292,9 +294,14 @@
       </label>
       <div class="care">請小心拍攝：只拍攝花朵或植物，不要拍到其他人。<br>相片會給老師和同學看見，大家可以互相欣賞彼此的花。</div>
       <div class="plant-pic" id="demoSlot">
-        <div class="demo-hold">
-          <p class="demo-title">一人一花示範片</p>
-          <p class="demo-note">示範片稍後放在這裡。</p>
+        <p class="demo-title">一人一花示範片</p>
+        <div class="demo-frame">
+          <iframe
+            src="https://www.youtube.com/embed/gMHzUWEC8Y4?rel=0&amp;playsinline=1"
+            title="一人一花示範片"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"></iframe>
         </div>
       </div>
       <button class="primary" id="startBtn" type="button" disabled>開始拍照</button>
