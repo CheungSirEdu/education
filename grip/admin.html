@@ -423,6 +423,11 @@
     #space { display: none; }
     .space-top { background: linear-gradient(180deg, #2f7d32, #1b5e20); }
     .space-top .kicker { color: #f4d35e; }
+    body.flower-on header.hub, body.flower-on #shell, body.flower-on #hubFoot, body.flower-on #dash, body.flower-on #bean, body.flower-on #space, body.flower-on #times, body.flower-on #plant, body.flower-on #lang, body.flower-on #jump { display: none !important; }
+    body.flower-on #flower { display: block; }
+    #flower { display: none; }
+    .flower-top { background: linear-gradient(180deg, #c62828, #8e0000); }
+    .flower-top .kicker { color: #ffebee; }
     .photo-wall {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
@@ -610,6 +615,43 @@
   </div>
 </div>
 
+<div id="flower">
+  <header class="top flower-top">
+    <div class="top-inner">
+      <p class="kicker">佛教志蓮小學　科學 · 成績後台</p>
+      <h1>一人一花</h1>
+      <p class="sub">一眼睇晒全校花朵相片</p>
+      <div class="top-actions">
+        <a href="#/">返回目錄</a>
+        <a id="flowerPlay" href="../oneflower/">學生輸入頁</a>
+        <button type="button" id="flowerReload">重新整理</button>
+        <button type="button" id="flowerDownload">下載相片</button>
+        <button type="button" id="flowerCsv">匯出 Excel</button>
+        <button type="button" id="flowerEdit">編輯</button>
+        <button type="button" id="flowerLock">離開後台</button>
+      </div>
+    </div>
+  </header>
+  <div class="dash-wrap">
+    <div class="stats" id="flowerStats"></div>
+    <div class="toolbar">
+      <div class="tabs" id="flowerTabs">
+        <button type="button" data-ftab="photos" class="on">全部相片</button>
+        <button type="button" data-ftab="miss">未交班別</button>
+      </div>
+      <div class="classes" id="flowerClassChips"></div>
+      <div class="dates" id="flowerDayChips"></div>
+      <div class="dates" id="flowerNoChips"></div>
+      <div class="search">
+        <input id="flowerQ" type="search" placeholder="搜尋班別、學號或生長情況" autocomplete="off" />
+        <button class="toolbtn excel-btn" id="flowerCsvBar" type="button">匯出 Excel</button>
+      </div>
+      <p class="status" id="flowerStatus">正在讀取相片…</p>
+    </div>
+    <section class="panel" id="flowerMain"></section>
+  </div>
+</div>
+
 <div id="times">
   <header class="top times-top">
     <div class="top-inner">
@@ -779,6 +821,7 @@
     { id: "p4-math", area: "math", title: "四年級數學", emoji: "➕", blurb: "乘數表同圖形拼砌" },
     { id: "pe", area: "pe", title: "體育", emoji: "💪", blurb: "手握力龍虎榜" },
     { id: "spaceplant", area: "sci", title: "種植太空植物", emoji: "🚀", blurb: "種植從太空帶回學校的種子或幼苗，拍照記錄生長。" },
+    { id: "oneflower", area: "sci", title: "一人一花", emoji: "🌸", blurb: "全校每人一棵花，拍照記錄生長。" },
     { id: "pdir", area: "sci", title: "PDIR 單車", emoji: "🚲", blurb: "砌單車工程室，一、二年級" },
     { id: "p2-sci", area: "sci", title: "二年級科學", emoji: "🌱", blurb: "觀察、實驗、溫習課本" },
     { id: "p4-sci", area: "sci", title: "四年級科學", emoji: "🔬", blurb: "科學、工程、STEAM 練習" },
@@ -798,6 +841,7 @@
     { id: "mungbean", subject: "p2-sci", emoji: "🌱", title: "第三課 動手種植物", blurb: "種綠豆，綠豆幼苗會對光的方向作出反應嗎？" },
     { id: "beanlog", subject: "p2-sci", emoji: "📷", title: "第三課 家中種綠豆", blurb: "每日拍攝綠豆盆栽，記錄生長情況。" },
     { id: "spaceplant", subject: "spaceplant", emoji: "🚀", title: "種植太空植物", blurb: "種植從太空帶回學校的種子或幼苗，拍照記錄生長。" },
+    { id: "oneflower", subject: "oneflower", emoji: "🌸", title: "一人一花", blurb: "全校每人一棵花，拍照記錄生長。" },
     { id: "engineer", subject: "p4-sci", emoji: "🔧", title: "小小工程師跳跳關", blurb: "小小工程師跳跳關，溫習相關科學課題。" },
     { id: "drift", subject: "p4-sci", emoji: "🏎️", title: "第八單元 摩擦力", blurb: "賽車挑戰，比較不同路面的摩擦力。" },
     { id: "foodchain", subject: "p4-sci", emoji: "🐰", title: "食物鏈", blurb: "調節草、兔仔和狼的數量，看看食物鏈怎樣保持平衡。", noScore: true },
@@ -850,6 +894,13 @@
     spaceFilter: "all",
     spaceDay: "all",
     spaceQ: "",
+    flowerRecords: [],
+    flowerLoaded: false,
+    flowerTab: "photos",
+    flowerFilter: "all",
+    flowerDay: "all",
+    flowerNo: "all",
+    flowerQ: "",
     timesRecords: [],
     timesLoaded: false,
     timesTab: "class",
@@ -1479,6 +1530,7 @@
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     const light = $("beanLight");
     if (light) light.classList.add("hidden");
   }
@@ -1490,6 +1542,7 @@
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("dash-on");
     renderChips();
     render();
@@ -1506,6 +1559,7 @@
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("bean-on");
     renderBean();
     if (!state.beanLoaded) {
@@ -1521,11 +1575,28 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("space-on");
     renderSpace();
     if (!state.spaceLoaded) {
       state.spaceLoaded = true;
       loadSpace();
+    }
+  }
+  function showFlowerDash() {
+    document.body.classList.remove("hub-on");
+    document.body.classList.remove("dash-on");
+    document.body.classList.remove("bean-on");
+    document.body.classList.remove("times-on");
+    document.body.classList.remove("plant-on");
+    document.body.classList.remove("lang-on");
+    document.body.classList.remove("jump-on");
+    document.body.classList.remove("space-on");
+    document.body.classList.add("flower-on");
+    renderFlower();
+    if (!state.flowerLoaded) {
+      state.flowerLoaded = true;
+      loadFlower();
     }
   }
   function showTimesDash() {
@@ -1536,6 +1607,7 @@
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("times-on");
     renderTimes();
     if (!state.timesLoaded) {
@@ -1551,6 +1623,7 @@
     document.body.classList.remove("lang-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("plant-on");
     renderPlant();
     if (!state.plantLoaded) {
@@ -1573,6 +1646,7 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("jump-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("lang-on");
     $("langTitle").textContent = langGame().emoji + " " + langGame().title;
     $("langPlay").href = langGame().play;
@@ -1776,6 +1850,7 @@
     document.body.classList.remove("plant-on");
     document.body.classList.remove("lang-on");
     document.body.classList.remove("space-on");
+    document.body.classList.remove("flower-on");
     document.body.classList.add("jump-on");
     const g = jumpGame();
     $("jumpTitle").textContent = g.emoji + " " + g.title;
@@ -2567,7 +2642,7 @@
     const out = [];
     (data.table.rows || []).forEach(row => {
       const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
-      if (klass.indexOf("SP") === 0) return;
+      if (klass.indexOf("SP") === 0 || klass.indexOf("FL") === 0) return;
       const no = String(parseInt(String(gvizCell(row, iNo)), 10));
       const day = String(gvizCell(row, iDay) || "").trim();
       const url = String(gvizCell(row, iUrl) || "");
@@ -2598,7 +2673,7 @@
       const out = [];
       (data.table.rows || []).forEach(row => {
         const klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
-        if (klass.indexOf("SP") === 0) return;
+        if (klass.indexOf("SP") === 0 || klass.indexOf("FL") === 0) return;
         const no = String(parseInt(String(gvizCell(row, iNo)), 10));
         const day = String(gvizCell(row, iLevel) || "").trim();
         const result = String(gvizCell(row, iResult) || "").trim();
@@ -3447,6 +3522,347 @@
     renderSpace();
     toast("已刪除相片");
   }
+  const FLOWER_CLASSES = ["1A", "1B", "2A", "2B", "2C", "3A", "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "5D", "6A", "6B", "6C", "6D"];
+  function flowerNoteText(raw) {
+    return String(raw || "")
+      .replace(/YMD:\d{4}-\d{2}-\d{2}\n?/g, "")
+      .replace(/\n?IMG:[A-Za-z0-9]+/gi, "")
+      .replace(/📷https?:\/\/\S+/g, "")
+      .trim();
+  }
+  function flowerNorm(raw) {
+    const klass = String(raw.klass || "").trim().toUpperCase();
+    const no = String(parseInt(String(raw.no || "").replace(/[^\d]/g, ""), 10));
+    const dayNum = parseInt(String(raw.day || "").replace(/[^\d]/g, ""), 10);
+    const day = dayNum >= 1 ? ("第" + dayNum + "日") : String(raw.day || "").trim();
+    let ymd = String(raw.ymd || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) ymd = "";
+    const note = flowerNoteText(raw.note);
+    const photo = String(raw.photo || "");
+    const srcIn = String(raw.src || "");
+    const imgId = parseImgurId(srcIn) || parseImgurId(photo) || parseImgurId(raw.note);
+    const http = imgId ? imgurFull(imgId) : ([srcIn, photo].find(isGoodPhotoUrl) || "");
+    const src = srcIn.indexOf("data:") === 0 ? srcIn : http;
+    return {
+      klass, no, day, dayNum: dayNum >= 1 ? dayNum : 0, ymd,
+      stage: String(raw.stage || "").trim(),
+      note, photo, src, ts: Number(raw.ts || 0)
+    };
+  }
+  function flowerHasPhoto(r) {
+    return !!(r && (beanThumb(r) || (r.src && String(r.src).indexOf("data:image") === 0)));
+  }
+  function flowerPassQ(r) {
+    const q = state.flowerQ.trim().toLowerCase();
+    if (!q) return true;
+    return (r.klass + " " + r.no + "號 " + r.day + " " + r.ymd + " " + r.stage + " " + r.note).toLowerCase().indexOf(q) >= 0;
+  }
+  function flowerMatch(r) {
+    if (FLOWER_CLASSES.indexOf(r.klass) < 0) return false;
+    if (state.flowerFilter !== "all" && r.klass !== state.flowerFilter) return false;
+    if (state.flowerNo !== "all" && String(r.no) !== String(state.flowerNo)) return false;
+    if (state.flowerDay !== "all" && r.day !== state.flowerDay) return false;
+    return flowerPassQ(r);
+  }
+  function flowerLive(rows) {
+    const map = {};
+    (rows || []).forEach(r => {
+      if (!r.klass || !r.no || r.no === "NaN" || !r.day) return;
+      const k = r.klass + "\t" + r.no + "\t" + (r.ymd || r.day);
+      const cur = map[k];
+      if (!cur || r.ts >= cur.ts) map[k] = r;
+    });
+    return Object.keys(map).map(k => map[k]);
+  }
+  function flowerClasses() {
+    return state.flowerFilter === "all" ? FLOWER_CLASSES.slice() : [state.flowerFilter];
+  }
+  function flowerMissing() {
+    const have = {};
+    flowerLive(state.flowerRecords).forEach(r => {
+      if (!flowerHasPhoto(r)) return;
+      if (state.flowerDay !== "all" && r.day !== state.flowerDay) return;
+      if (flowerClasses().indexOf(r.klass) < 0) return;
+      have[r.klass] = true;
+    });
+    return flowerClasses().filter(c => !have[c]);
+  }
+  function flowerFileName(r) {
+    return String(r.klass || "") + "-" + String(r.no || "") + "號-" + String(r.ymd || "未記日期") + "-" + String(r.day || "").replace(/\s+/g, "") + ".jpg";
+  }
+  async function fetchFlowerGviz() {
+    const cb = "flower_gviz_" + Date.now();
+    const tqx = encodeURIComponent("out:json;responseHandler:" + cb);
+    const src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=" + tqx + "&sheet=" + encodeURIComponent("家中種綠豆") +
+      "&headers=1&t=" + Date.now();
+    const data = await scriptJsonp(src, cb);
+    if (!data || data.status === "error" || !data.table) return [];
+    const cols = (data.table.cols || []).map(c => String(c.label || c.id || ""));
+    const idx = (name) => cols.indexOf(name);
+    const iClass = idx("班別"), iNo = idx("學號"), iDay = idx("第幾日");
+    const iStage = idx("生長情況"), iNote = idx("觀察"), iUrl = idx("相片連結");
+    const iTime = idx("時間");
+    const out = [];
+    (data.table.rows || []).forEach(row => {
+      let klass = String(gvizCell(row, iClass) || "").trim().toUpperCase();
+      if (klass.indexOf("FL") !== 0) return;
+      klass = klass.slice(2);
+      const no = String(parseInt(String(gvizCell(row, iNo) || "").replace(/[^\d]/g, ""), 10));
+      const raw = iNote >= 0 ? String(gvizCell(row, iNote) || "") : "";
+      const ymdMatch = raw.match(/YMD:(\d{4}-\d{2}-\d{2})/);
+      const timeCell = row.c && iTime >= 0 ? row.c[iTime] : null;
+      const ymd = ymdMatch ? ymdMatch[1] : ymdFromGviz(timeCell && timeCell.v, timeCell && (timeCell.f || timeCell.v));
+      const img = parseImgurId(raw) || parseImgurId(gvizCell(row, iUrl));
+      const photo = img ? imgurFull(img) : String(gvizCell(row, iUrl) || "");
+      if (!klass || no === "NaN" || FLOWER_CLASSES.indexOf(klass) < 0) return;
+      out.push(flowerNorm({
+        klass, no,
+        day: gvizCell(row, iDay),
+        ymd, stage: iStage >= 0 ? gvizCell(row, iStage) : "",
+        note: raw, photo, src: photo,
+        ts: gvizTs(gvizCell(row, iTime))
+      }));
+    });
+    return out;
+  }
+  async function loadFlower() {
+    $("flowerStatus").textContent = "正在讀取相片…";
+    try {
+      state.flowerRecords = await fetchFlowerGviz();
+    } catch (e) {
+      state.flowerRecords = [];
+    }
+    const total = flowerLive(state.flowerRecords).length;
+    const n = state.flowerRecords.filter(flowerHasPhoto).length;
+    $("flowerStatus").textContent = total
+      ? ("已更新　" + total + " 筆紀錄，" + n + " 張相片。撳相片可以放大。")
+      : "暫時未有紀錄。學生儲存後請撳重新整理。";
+    renderFlower();
+  }
+  function renderFlowerChips() {
+    const cls = ["all"].concat(FLOWER_CLASSES);
+    $("flowerClassChips").innerHTML = cls.map(c =>
+      `<button class="chip${state.flowerFilter === c ? " on" : ""}" type="button" data-fclass="${c}">${c === "all" ? "全部班別" : c}</button>`
+    ).join("");
+    const live = flowerLive(state.flowerRecords).filter(r =>
+      state.flowerFilter === "all" ? FLOWER_CLASSES.indexOf(r.klass) >= 0 : r.klass === state.flowerFilter
+    );
+    const days = {};
+    live.forEach(r => { if (r.day) days[r.day] = true; });
+    const dayList = Object.keys(days).sort((a, b) => (parseInt(a.replace(/[^\d]/g, ""), 10) || 0) - (parseInt(b.replace(/[^\d]/g, ""), 10) || 0));
+    $("flowerDayChips").innerHTML = [`<button class="chip${state.flowerDay === "all" ? " on" : ""}" type="button" data-fday="all">全部日子</button>`]
+      .concat(dayList.map(d => `<button class="chip${state.flowerDay === d ? " on" : ""}" type="button" data-fday="${esc(d)}">${esc(d)}</button>`)).join("");
+    const nos = {};
+    live.forEach(r => { if (r.no && r.no !== "NaN") nos[String(r.no)] = true; });
+    const noList = Object.keys(nos).sort((a, b) => Number(a) - Number(b));
+    if (state.flowerNo !== "all" && noList.indexOf(String(state.flowerNo)) < 0) state.flowerNo = "all";
+    $("flowerNoChips").innerHTML = [`<button class="chip${state.flowerNo === "all" ? " on" : ""}" type="button" data-fno="all">全部學號</button>`]
+      .concat(noList.map(n => `<button class="chip${state.flowerNo === n ? " on" : ""}" type="button" data-fno="${esc(n)}">${esc(n)}號</button>`)).join("");
+  }
+  function renderFlowerStats() {
+    const live = flowerLive(state.flowerRecords).filter(r =>
+      state.flowerFilter === "all" ? FLOWER_CLASSES.indexOf(r.klass) >= 0 : r.klass === state.flowerFilter
+    );
+    const photos = live.filter(r => flowerHasPhoto(r) && (state.flowerDay === "all" || r.day === state.flowerDay));
+    const missing = flowerMissing();
+    const submitted = flowerClasses().length - missing.length;
+    $("flowerStats").innerHTML = `
+      <div class="stat ok"><div class="lab">相片</div><div class="big num">${photos.length}</div><div class="tiny">一目了然</div></div>
+      <div class="stat"><div class="lab">已交</div><div class="big num">${submitted}</div><div class="tiny">至少一張相片</div></div>
+      <div class="stat warn"><div class="lab">未交</div><div class="big num">${missing.length}</div><div class="tiny">對照 ${flowerClasses().length} 班</div></div>
+      <div class="stat"><div class="lab">日子</div><div class="big num">${state.flowerDay === "all" ? "全部" : state.flowerDay.replace("第","").replace("日","")}</div><div class="tiny">${state.flowerFilter === "all" ? "全部班別" : state.flowerFilter}</div></div>`;
+  }
+  function openFlowerLight(r) {
+    const src = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+    const when = spaceZhDate(r.ymd);
+    $("beanLight").innerHTML = `
+      <img src="${esc(src)}" alt="" referrerpolicy="no-referrer">
+      <div class="cap">${esc(r.klass)}　${esc(r.no)}號　${esc(r.day)}${when ? "　" + esc(when) : ""}${r.stage ? "　" + esc(r.stage) : ""}${r.note ? "<br>" + esc(r.note) : ""}<br><span style="opacity:.8">撳空白處關閉</span></div>
+      <div class="actions">
+        <button type="button" id="lightSave" style="background:#c62828;color:#fff">下載這張相片</button>
+        ${state.editing ? `<button class="danger" type="button" id="lightDel">刪除這張相片</button>` : ""}
+      </div>`;
+    $("beanLight").classList.remove("hidden");
+    const img = $("beanLight").querySelector("img");
+    if (img) img.onerror = function () {
+      const alt = beanFullUrl(r.src || r.photo || r.note);
+      if (alt && img.getAttribute("src") !== alt) img.src = alt;
+    };
+    const save = $("lightSave");
+    if (save) save.onclick = function (ev) { ev.stopPropagation(); downloadFlowerFile(r); };
+    const del = $("lightDel");
+    if (del) del.onclick = function (ev) { ev.stopPropagation(); deleteFlowerPhoto(r); };
+  }
+  function renderFlower() {
+    if (!$("flowerMain")) return;
+    renderFlowerChips();
+    renderFlowerStats();
+    document.querySelectorAll("#flowerTabs button").forEach(b => b.classList.toggle("on", b.getAttribute("data-ftab") === state.flowerTab));
+    if (state.flowerTab === "miss") {
+      const missing = flowerMissing();
+      $("flowerMain").innerHTML = editBanner() + `<h2 class="h2">未交班別　${missing.length}</h2>
+        <div class="pills">${missing.map(c => `<span class="pill">${esc(c)}</span>`).join("") || `<p class="empty">這範圍的班別已經交過相片。</p>`}</div>`;
+      return;
+    }
+    const photos = flowerLive(state.flowerRecords).filter(flowerMatch).filter(flowerHasPhoto).slice().sort((a, b) => {
+      const ca = FLOWER_CLASSES.indexOf(a.klass), cb = FLOWER_CLASSES.indexOf(b.klass);
+      if (ca !== cb) return (ca < 0 ? 99 : ca) - (cb < 0 ? 99 : cb);
+      if (Number(a.no) !== Number(b.no)) return Number(a.no) - Number(b.no);
+      return String(a.ymd).localeCompare(String(b.ymd));
+    });
+    if (!photos.length) {
+      $("flowerMain").innerHTML = editBanner() + `<p class="empty">暫時未有紀錄。請學生儲存後，撳「重新整理」。</p>`;
+      return;
+    }
+    let heading = "全部相片　" + photos.length;
+    if (state.flowerFilter !== "all") heading = state.flowerFilter + "　" + photos.length + " 張";
+    $("flowerMain").innerHTML = editBanner() + `<h2 class="h2">${esc(heading)}</h2>
+      <div class="photo-wall">${photos.map((r, i) => `
+        <button class="photo-card" type="button" data-flower="${i}">
+          ${state.editing ? `<span class="photo-del" data-flower-del="${i}">刪除</span>` : ""}
+          <span class="photo-ph" style="display:block;min-height:140px;background:#ffebee"></span>
+          <div class="cap"><div class="who">${esc(r.klass)}　${esc(r.no)}號</div>
+          <div class="meta">${esc(r.day)}${r.ymd ? "　" + esc(spaceZhDate(r.ymd)) : ""}${r.stage ? "　" + esc(r.stage) : ""}${r.note ? "<br>" + esc(r.note) : ""}</div></div>
+        </button>`).join("")}</div>`;
+    $("flowerMain")._photos = photos;
+    const cards = $("flowerMain").querySelectorAll("button[data-flower]");
+    photos.forEach(function (r, i) {
+      const card = cards[i];
+      if (!card) return;
+      makePreviewSrc(beanCardUrl(r)).then(function (src) {
+        if (!src) return;
+        const img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.src = src;
+        img.style.width = "100%";
+        img.style.aspectRatio = "1";
+        img.style.objectFit = "cover";
+        img.style.display = "block";
+        const ph = card.querySelector(".photo-ph");
+        if (ph) ph.replaceWith(img);
+      });
+    });
+  }
+  function exportFlowerExcel() {
+    const headers = ["班別", "學號", "第幾日", "日期", "生長情況", "觀察", "相片"];
+    const rows = flowerLive(state.flowerRecords).filter(flowerMatch).map(r => [
+      r.klass, r.no, r.day, r.ymd, r.stage, r.note, flowerHasPhoto(r) ? "有" : "無"
+    ]);
+    downloadExcel("一人一花紀錄-" + state.today, headers, rows);
+  }
+  async function downloadFlowerFile(r) {
+    const url = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+    if (!url) { toast("這張相片未能下載"); return; }
+    toast("正在下載清晰相片…");
+    try {
+      const res = await fetch(url, { referrerPolicy: "no-referrer" });
+      if (!res.ok) throw new Error("fetch");
+      saveBlob(await res.blob(), flowerFileName(r));
+      toast("已下載 " + flowerFileName(r));
+    } catch (e) {
+      toast("未能下載這張相片");
+    }
+  }
+  async function downloadFlowerPhotos() {
+    const list = flowerLive(state.flowerRecords).filter(flowerMatch).filter(flowerHasPhoto);
+    if (!list.length) { toast("這個範圍未有相片"); return; }
+    const btn = $("flowerDownload");
+    if (btn) btn.disabled = true;
+    $("flowerStatus").textContent = "正在下載 " + list.length + " 張清晰相片…";
+    const files = [];
+    const used = {};
+    const names = list.map(r => {
+      let name = flowerFileName(r);
+      if (used[name]) name = name.replace(/\.jpg$/i, "-" + (++used[name]) + ".jpg");
+      else used[name] = 1;
+      return name;
+    });
+    let done = 0;
+    async function one(r, name) {
+      try {
+        const url = r.photo && String(r.photo).indexOf("data:image") === 0 ? r.photo : beanClearUrl(r);
+        const res = await fetch(url, { referrerPolicy: "no-referrer" });
+        if (!res.ok) return;
+        files.push({ name: name, data: new Uint8Array(await res.arrayBuffer()) });
+      } catch (e) {}
+      done += 1;
+      $("flowerStatus").textContent = "正在下載清晰相片… " + done + " / " + list.length;
+    }
+    let cursor = 0;
+    async function worker() {
+      while (cursor < list.length) {
+        const i = cursor++;
+        await one(list[i], names[i]);
+      }
+    }
+    try {
+      await Promise.all([worker(), worker(), worker()]);
+      if (!files.length) { toast("未能下載相片"); return; }
+      saveBlob(buildZip(files), "一人一花相片.zip");
+      toast("已下載 " + files.length + " 張相片");
+      $("flowerStatus").textContent = "已下載 " + files.length + " 張清晰相片";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+  async function deleteLocalFlower(klass, no, ymd) {
+    const key = "stu|" + klass + "|" + no;
+    try {
+      const recs = await new Promise(function (resolve) {
+        const req = indexedDB.open("oneflower-v1", 1);
+        req.onerror = () => resolve(null);
+        req.onsuccess = function () {
+          const db = req.result;
+          if (!db.objectStoreNames.contains("recs")) return resolve(null);
+          const tx = db.transaction("recs", "readonly");
+          const q = tx.objectStore("recs").get(key);
+          q.onsuccess = () => resolve(q.result || {});
+          q.onerror = () => resolve(null);
+        };
+      });
+      if (!recs) return;
+      delete recs[ymd];
+      await new Promise(function (resolve) {
+        const req = indexedDB.open("oneflower-v1", 1);
+        req.onsuccess = function () {
+          const db = req.result;
+          const tx = db.transaction("recs", "readwrite");
+          tx.objectStore("recs").put(recs, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+        };
+        req.onerror = () => resolve();
+      });
+    } catch (e) {}
+  }
+  async function deleteFlowerPhoto(r) {
+    if (!r) return;
+    const who = r.klass + "　" + r.no + "號　" + (r.day || "") + (r.ymd ? "　" + spaceZhDate(r.ymd) : "");
+    if (!confirm("確定刪除這張相片？\n" + who + "\n刪除後可以重新拍攝。")) return;
+    const dayNum = parseInt(String(r.day || "").replace(/[^\d]/g, ""), 10) || 1;
+    await postScore({
+      token: SCORE_TOKEN,
+      kind: "beanlog",
+      activity: "家中種綠豆",
+      class: "FL" + r.klass,
+      no: String(r.no),
+      day: dayNum,
+      level: "第" + dayNum + "日",
+      op: "delete",
+      photo: "",
+      note: ""
+    });
+    if (r.ymd) await deleteLocalFlower(r.klass, r.no, r.ymd);
+    state.flowerRecords = (state.flowerRecords || []).filter(x =>
+      !(x.klass === r.klass && x.no === r.no && x.ymd === r.ymd && x.day === r.day)
+    );
+    $("beanLight").classList.add("hidden");
+    renderFlower();
+    toast("已刪除相片");
+  }
   function renderLogin() {
     hideDash();
     $("lockBtn").classList.add("hidden");
@@ -3459,14 +3875,14 @@
         </div>
         <button class="pin-go" id="pinGo" type="button">進入後台</button>
         <p class="gate-msg" id="gateMsg"></p>
-        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",spaceplant:"../spaceplant/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/",jump:"https://cheungsiredu.github.io/chilin-jump-game/",engineer:"../engineer/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
+        <p style="margin:12px 0 0"><a class="btn-back" href="${({beanlog:"../beanlog/",spaceplant:"../spaceplant/",oneflower:"../oneflower/",times:"../times/",mungbean:"../mungbean/",jp:"../languages/jp.html",fr:"../languages/fr.html",ko:"../languages/ko.html",lang:"../languages/",jump:"https://cheungsiredu.github.io/chilin-jump-game/",engineer:"../engineer/"})[new URLSearchParams(location.search).get("from")] || "index.html"}">返回學生輸入頁</a></p>
       </div>`;
     const pin = $("pin");
     if (pin) pin.focus();
   }
   function syncEditButtons() {
     const label = state.editing ? "完成編輯" : "編輯";
-    ["editBtn", "dashEdit", "beanEdit", "spaceEdit", "timesEdit", "plantEdit", "langEdit", "jumpEdit"].forEach(id => {
+    ["editBtn", "dashEdit", "beanEdit", "spaceEdit", "flowerEdit", "timesEdit", "plantEdit", "langEdit", "jumpEdit"].forEach(id => {
       const b = $(id);
       if (b) b.textContent = label;
     });
@@ -3478,6 +3894,7 @@
     if (document.body.classList.contains("dash-on")) render();
     if (document.body.classList.contains("bean-on")) renderBean();
     if (document.body.classList.contains("space-on")) renderSpace();
+    if (document.body.classList.contains("flower-on")) renderFlower();
     if (document.body.classList.contains("times-on")) renderTimes();
     if (document.body.classList.contains("plant-on")) renderPlant();
     if (document.body.classList.contains("lang-on")) renderLang();
@@ -3615,6 +4032,7 @@
     if (it.id === "grip") { showDash(); return; }
     if (it.id === "beanlog") { showBeanDash(); return; }
     if (it.id === "spaceplant") { showSpaceDash(); return; }
+    if (it.id === "oneflower") { showFlowerDash(); return; }
     if (it.id === "times") { showTimesDash(); return; }
     if (it.id === "living") { location.href = "../living/teacher.html"; return; }
     if (it.id === "pdir") { location.href = "../pdir/teacher.html"; return; }
@@ -3808,6 +4226,56 @@
       if (!card) return;
       const r = photos[Number(card.getAttribute("data-space"))];
       if (r) openSpaceLight(r);
+    };
+    $("flowerLock").onclick = lock;
+    $("flowerReload").onclick = () => loadFlower();
+    $("flowerCsv").onclick = exportFlowerExcel;
+    $("flowerCsvBar").onclick = exportFlowerExcel;
+    $("flowerEdit").onclick = toggleEdit;
+    $("flowerDownload").onclick = () => downloadFlowerPhotos();
+    $("flowerTabs").onclick = (e) => {
+      const b = e.target.closest("button[data-ftab]");
+      if (!b) return;
+      state.flowerTab = b.getAttribute("data-ftab");
+      renderFlower();
+    };
+    $("flowerClassChips").onclick = (e) => {
+      const b = e.target.closest("button[data-fclass]");
+      if (!b) return;
+      state.flowerFilter = b.getAttribute("data-fclass");
+      state.flowerNo = "all";
+      renderFlower();
+    };
+    $("flowerDayChips").onclick = (e) => {
+      const b = e.target.closest("button[data-fday]");
+      if (!b) return;
+      state.flowerDay = b.getAttribute("data-fday");
+      renderFlower();
+    };
+    $("flowerNoChips").onclick = (e) => {
+      const b = e.target.closest("button[data-fno]");
+      if (!b) return;
+      state.flowerNo = b.getAttribute("data-fno");
+      renderFlower();
+    };
+    $("flowerQ").addEventListener("input", () => {
+      state.flowerQ = $("flowerQ").value;
+      renderFlower();
+    });
+    $("flowerMain").onclick = (e) => {
+      const photos = $("flowerMain")._photos || [];
+      const del = e.target.closest("[data-flower-del]");
+      if (del) {
+        e.preventDefault();
+        e.stopPropagation();
+        const r = photos[Number(del.getAttribute("data-flower-del"))];
+        if (r) deleteFlowerPhoto(r);
+        return;
+      }
+      const card = e.target.closest("button[data-flower]");
+      if (!card) return;
+      const r = photos[Number(card.getAttribute("data-flower"))];
+      if (r) openFlowerLight(r);
     };
     $("editBtn").onclick = toggleEdit;
     $("dashEdit").onclick = toggleEdit;

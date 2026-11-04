@@ -22,6 +22,7 @@
     ],
     "sci": [
       "spaceplant",
+      "oneflower",
       "pdir",
       "p2-sci",
       "p4-sci",
@@ -52,6 +53,9 @@
     ],
     "spaceplant": [
       "spaceplant"
+    ],
+    "oneflower": [
+      "oneflower"
     ],
     "p4-sci": [
       "foodchain",
